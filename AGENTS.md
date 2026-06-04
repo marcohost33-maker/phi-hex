@@ -11,8 +11,8 @@ KI-Coding-Agent-Anweisungen. Reihenfolge: §1 Working agreements > §2 Conventio
 ## Project
 - **Was:** XY-Modell / BKT-Physik auf Dreiecks- und Honeycomb-Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Finite-Size-Scaling.
 - **Stack:** Python >= 3.10 (numpy/scipy fuer volle Laeufe; CI = Syntax + Lint).
-- **Provenance:** `SOURCES.md` ist die Integritaets-Wahrheit (SHA-256 je Quelldatei). Kanonische
-  v3-Engines leben zusaetzlich in `coworker-dde/src` — Aenderungen dort und hier synchron halten.
+- **Provenance:** `SOURCES.md` ist die Integritaets-Wahrheit (SHA-256 je Quelldatei). Quelle ist
+  Drive `0Phi Hex` + `Universe 2.0\Hqstphi Hex` (KEINE dde-Doppelhaltung - anders als hex-hqst/u2/u6/hexa-ntk).
 
 ## Working agreements
 1. **Reality-Anchor.** "Tests N/N PASS (verified <date>)" statt "sollte gehen". Gate-Logs in `results/` sind die Evidenz.
@@ -39,3 +39,4 @@ KI-Coding-Agent-Anweisungen. Reihenfolge: §1 Working agreements > §2 Conventio
 ## When stuck
 - `README.md` (Struktur/Status) -> `SOURCES.md` (Herkunft) -> Engine-Header (Selftest-Anleitung).
 - Eskalation nach 3 Fehlversuchen am selben Schritt: Draft-PR/Issue statt Loop.
+
