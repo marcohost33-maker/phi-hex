@@ -183,6 +183,10 @@ def build_triangular_lattice(radius: int,
             j = idx_of.get(nb)
             if j is not None and i < j:
                 edges_set.add((i, j))
+    # P0-Fix 2026-06-04 (Wissenschafts-Audit S1): diese Zeile wurde beim
+    # v2.0->v2.2-Hardening geloescht -> NameError im open-boundary-Pfad;
+    # der Default-Selbsttest lief as-shipped nie. (Drive-SoT v2.2 hat den Bug noch!)
+    edges = sorted(edges_set)
     pos_open = [axial_to_xy(a) for a in ax_of]
     # Bond-Vektoren auf physikalische Einheitslaenge a=1 (NN-Abstand). Der
     # rohe axial_to_xy-Abstand ist sqrt(3); Division stellt a=1 her. Die
