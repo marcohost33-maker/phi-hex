@@ -21,6 +21,7 @@ _MODULE_FILES = {
     "phi_hex_core_v2": "260602 PHI HEX core v2 2 hardened.py",
     "phy026_wolff_cluster": "260602 PHY026 wolff cluster v01.py",
     "phy028_square_validation": "260602 PHY028 square validation v01.py",
+    "phy030_triangular_tbkt": "260604 PHY030 triangular tbkt per-site v01.py",
 }
 
 
