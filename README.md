@@ -1,6 +1,6 @@
 # Phi-Hex
 
-> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-04). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/. Testsuite 7/7 PASS (lokal, 2026-06-04).
+> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-04). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/. Testsuite 14/14 PASS (lokal, 2026-06-04; +7 Weber-Minnhagen-Log-Fit).
 > **Lineage/Provenance:** siehe `SOURCES.md` (SHA-256 je Quelldatei) | **Lizenz:** Apache-2.0
 
 XY-Modell / BKT-Physik auf Dreiecks- und Honeycomb-Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Finite-Size-Scaling.
@@ -23,9 +23,21 @@ Wolff-Sampling auf dem Dreiecks-Torus, Nelson-Kosterlitz-Crossing
 
 | Gitter | T_BKT (per-Site, neu) | Referenz (arXiv:2501.07388) | Methode |
 |---|---|---|---|
-| triangular | **~1.42 ± 0.04** (L=19-Crossing 1.456; 1/lnL-Extrap. 1.382) | 1.418 | Wolff + NK-Crossing, FSS |
+| triangular | **1.4007 ± 0.0081** (Weber-Minnhagen-Log-Fit, v02) | 1.418 | Wolff + WM-Log-Korrektur, chi^2-Fit |
+| triangular | ~1.42 (v01-Schranken: L=19-Crossing 1.456; 1/lnL-Extrap. 1.382) | 1.418 | Wolff + NK-Crossing, FSS (konservativ) |
 | square | 0.893 (PHY028, V&V) | 0.893 | Sandvik-Paar (C-frei) |
 | honeycomb | nicht neu gemessen | 0.573 | offen |
+
+**v02 (SOTA-Praezisierung, 2026-06-04):** Der Weber-Minnhagen-Log-Korrektur-Fit
+`Υ(T_BKT,L) = (2 T_BKT/π)·(1 + 1/(2 ln L + C))` (Weber & Minnhagen PRB 37,
+5986(R) (1988); Methodik arXiv:1302.2900) liefert einen Punktschaetzer
+**1.4007 ± 0.0081 (−1.22%)** — naeher an der Referenz 1.418 als beide
+konservativen v01-Schranken. Querscheck per C-freier Paar-Methode: 1.3801.
+Beide v02-Schaetzer liegen knapp UNTER 1.418; bei nur drei kleinen Gittern
+(L=9..19) sind sub-leading Log-Korrekturen eine reale Praezisions-Grenze
+(ehrlich ausgewiesen). **v01 bleibt gueltig** als konservative Schranken-Methode.
+Code: `src/260604 PHY030 ... v02 wm-logfit.py`, Evidenz:
+`results/260604 PHY030 v02 wm-logfit report.txt`.
 
 **Superseded:** alle vor 2026-06-04 publizierten T_BKT-Zahlen, die auf der
 Flaechen-Normierung beruhen (u.a. PHY026-Report "Υ(T→0)=J·√3"), sind durch
@@ -53,9 +65,10 @@ Die Selftests laufen direkt in der Engine (`python <engine>.py`; Details im
 Engine-Header). Die Testsuite (numpy/scipy/pytest noetig):
 
 ```
-pytest                 # volle Suite (inkl. slow Mess-Lauf), 7/7 PASS
-pytest -m "not slow"   # nur schnelle Korrektheits-Gates
-python "src/260604 PHY030 triangular tbkt per-site v01.py"   # T_BKT-Neumessung
+pytest                 # volle Suite (inkl. slow Mess-Lauf), 14/14 PASS
+pytest -m "not slow"   # nur schnelle Korrektheits-Gates (inkl. WM-Synthetik-Orakel)
+python "src/260604 PHY030 triangular tbkt per-site v01.py"            # T_BKT-Schranken (konservativ)
+python "src/260604 PHY030 triangular tbkt per-site v02 wm-logfit.py"  # T_BKT Weber-Minnhagen-Log-Fit
 ```
 
 CI prueft Syntax (`compileall`) + Lint (non-blocking) — die vollen

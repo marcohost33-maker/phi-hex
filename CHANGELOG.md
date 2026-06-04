@@ -3,6 +3,38 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-06-04] PHY030 v02 — Weber-Minnhagen-Log-Korrektur-Fit (SOTA-Praezisierung)
+
+Praeziserer T_BKT-Punktschaetzer ergaenzend zu den konservativen v01-Schranken.
+v01 bleibt unveraendert gueltig.
+
+### Added
+- `src/260604 PHY030 triangular tbkt per-site v02 wm-logfit.py`: T_BKT via
+  Weber-Minnhagen-Finite-Size-Form `Υ(T_BKT,L) = (2 T_BKT/π)·(1 + 1/(2 ln L + C))`
+  (Weber & Minnhagen, Phys. Rev. B 37, 5986(R) (1988); Methodik arXiv:1302.2900,
+  arXiv:2406.12076). Zwei Auswertungen derselben Wolff-Daten:
+  - **(A) Fixed-T-Least-Squares:** je T 1-Parameter-Fit (C) gewichtet 1/sem^2;
+    `T_BKT = argmin_T chi^2(T)`, parabolische Verfeinerung, 1-sigma aus chi^2_min+1.
+  - **(B) Paar-C-Elimination** (C-frei, arXiv:1302.2900): T_BKT(L1,L2) via
+    `1/R(T,L1) − 1/R(T,L2) = 2 ln(L2/L1)`.
+  - Gleiche Pipeline/Params wie v01 (radii 4/6/9, n_measure=400, n_burn=300,
+    n_seeds=4, master_seed=42), feineres T-Gitter (Δ=0.01, 1.36–1.46).
+- `tests/test_tbkt_wm_logfit.py` (+7 Tests): Synthetik-Orakel (rekonstruiert
+  bekanntes T_true aus WM-konformen Daten, fails-before-faehig) + Mini-Smoke.
+
+### Result (Evidenz: `results/260604 PHY030 v02 wm-logfit report.txt`)
+| Methode | T_BKT | Abw. vs 1.418 |
+|---|---|---|
+| v02 WM-Fit (A) | **1.4007 ± 0.0081** | −1.22% |
+| v02 Paar-Mittel (B) | 1.3801 | −2.67% |
+| v01 obere Schranke (L=19-Crossing) | 1.456 | +2.68% |
+| v01 untere Schranke (1/lnL-Extrap.) | 1.382 | −2.54% |
+
+Der WM-Fit liegt naeher an der Referenz als beide v01-Schranken (Gate <3% PASS),
+Residuen je L < 0.002. Beide v02-Schaetzer liegen knapp UNTER 1.418 — bei nur
+drei kleinen Gittern (L=9..19) sind sub-leading Log-Korrekturen eine reale
+Praezisions-Grenze (arXiv:1302.2900), ehrlich ausgewiesen. Testsuite 14/14 PASS.
+
 ## [2026-06-04] Helicity per-Site + T_BKT-Neumessung
 
 Wissenschafts-Audit 2026-06-04 (Befunde S2/S3), Marco-Entscheid 2026-06-04.
