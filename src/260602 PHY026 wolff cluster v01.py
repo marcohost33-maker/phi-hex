@@ -299,12 +299,16 @@ def run_phy026() -> dict[str, Any]:
     print(f"  -> mittlerer tau-Vorteil Wolff: Faktor "
           f"{float(np.mean([b['tau_ratio_local_over_wolff'] for b in bench])):.1f}")
 
-    # Teil 3: T=0-Konsistenz des Helicity-Modulus (Regressions-Gate)
-    print("\nTeil 3: Theorie-Gate Helicity(T->0) = J*sqrt(3)")
+    # Teil 3: T->0-Konsistenz des Helicity-Modulus (Regressions-Gate).
+    # KONVENTION per-Site (Audit S2, 2026-06-04): Spinwellen-Grenzwert des
+    # Dreiecksgitters ist Upsilon(0)=1.5*J. Bei kleinem T>0 liegt der Wert
+    # durch Spinwellen-Renormierung leicht darunter.
+    sw_limit = 1.5
+    print("\nTeil 3: Theorie-Gate Helicity(T->0) = 1.5*J (per-Site)")
     r0 = measure_helicity_wolff(radius=3, T=0.05, n_measure=300,
                                 n_burn=200, n_seeds=2, master_seed=7)
     print(f"  Upsilon(T=0.05) = {r0.upsilon_mean:.3f}  "
-          f"(Theorie J*sqrt(3) = {math.sqrt(3):.3f})")
+          f"(Spinwellen-Grenzwert 1.5*J = {sw_limit:.3f})")
 
     # Ehrliche Gate-Wahl: Bei nur 3 kleinen Gittern (L=5,7,9) ist der
     # dynamische Exponent z NICHT zuverlaessig messbar (Finite-Size-Streuung
@@ -321,7 +325,7 @@ def run_phy026() -> dict[str, Any]:
         "PASS_WOLFF_TAU_BOUNDED": all(b["tau_wolff"] < 5.0 for b in bench),
         "PASS_CLUSTER_NONTRIVIAL": all(
             0.0 < b["mean_cluster_fraction"] <= 1.0 for b in bench),
-        "PASS_HELICITY_T0_THEORY": abs(r0.upsilon_mean - math.sqrt(3)) < 0.2,
+        "PASS_HELICITY_T0_THEORY": abs(r0.upsilon_mean - sw_limit) < 0.1,
     }
     print("\nPASS-Gates:")
     for k, v in pass_gates.items():

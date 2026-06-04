@@ -190,7 +190,7 @@ def build_triangular_lattice(radius: int,
     pos_open = [axial_to_xy(a) for a in ax_of]
     # Bond-Vektoren auf physikalische Einheitslaenge a=1 (NN-Abstand). Der
     # rohe axial_to_xy-Abstand ist sqrt(3); Division stellt a=1 her. Die
-    # Helicity-Skala wird ueber die Flaechen-Normierung gesetzt, nicht hier.
+    # Helicity-Skala wird ueber die per-Site-Normierung gesetzt, nicht hier.
     _a_raw = math.sqrt(3.0)
     edge_disp = [((pos_open[j][0] - pos_open[i][0]) / _a_raw,
                   (pos_open[j][1] - pos_open[i][1]) / _a_raw)
@@ -246,7 +246,7 @@ def _build_triangular_torus(L: int, radius: int) -> TriangularLattice:
     # Minimum-image Bond-Verschiebung. Bond-Vektoren werden auf physikalische
     # Einheitslaenge a=1 (naechster-Nachbar-Abstand) gesetzt: der rohe
     # axial_to_xy-Abstand ist sqrt(3), daher Division durch sqrt(3).
-    # Die korrekte Helicity-Skala entsteht dann ueber die FLAECHEN-Normierung
+    # Die korrekte Helicity-Skala entsteht dann ueber die per-Site-Normierung
     # in helicity_from_ensemble (nicht ueber willkuerliche Bond-Skalierung).
     _a_raw = math.sqrt(3.0)
     j1_xy = {d: (axial_to_xy(d)[0] / _a_raw, axial_to_xy(d)[1] / _a_raw)
@@ -365,29 +365,33 @@ def helicity_terms(theta: np.ndarray, lattice: TriangularLattice,
 
 def helicity_from_ensemble(t1_samples: list[float],
                            sin_samples: list[float],
-                           cfg: XYConfig, n_nodes: int,
-                           area_per_site: float = None) -> float:
+                           cfg: XYConfig, n_nodes: int) -> float:
     """Helicity-Modulus aus separat gemittelten Ensemble-Termen.
 
-    Flaechen-normierte Standard-Definition (Teitel-Jayaprakash / Olsson):
-      Upsilon = (1/A) [ J*<T1> - (J^2/T)*<sin_accum^2> ]
-    mit A = N * area_per_site der Systemflaeche.
+    KONVENTION: per-Site-Normierung (Literatur-Standard, arXiv:2406.12076;
+    so misst auch PHY028 das Quadratgitter). Marco-Entscheid 2026-06-04,
+    Wissenschafts-Audit S2:
 
-    Fuer das Triangular Lattice mit NN-Abstand a=1 ist
-    area_per_site = sqrt(3)/2. Diese Normierung ist VORWAERTS aus der
-    Theorie abgeleitet (nicht an den Zielwert angepasst): bei T=0 liefert
-    sie Upsilon(0) = J*sqrt(3), den korrekten Triangular-Wert.
+      Upsilon = (1/N) [ J*<T1> - (J^2/T)*<sin_accum^2> ]
+
+    mit N = Zahl der Gitter-Plaetze. Da die Bond-Vektoren in helicity_terms
+    auf NN-Einheitslaenge a=1 normiert sind, ergibt das per-Site-Schema bei
+    T=0 (perfekt ausgerichtet) den korrekten Spinwellen-Grenzwert
+    Upsilon(0) = 3/2 * J fuer das Dreiecksgitter (z=6) - groessen-unabhaengig.
+
+    HISTORIE (superseded): bis 2026-06-04 wurde durch die FLAECHE
+    A = N*sqrt(3)/2 geteilt. Das lieferte Upsilon(0) = J*sqrt(3) = 1.732 und
+    ueberschaetzte T_BKT um ~15% (von der laxen Toleranz tol=0.15 verdeckt).
+    Diese Definition ist NICHT der Nelson-Kosterlitz-Standard und wurde
+    ersetzt.
 
     Am BKT-Uebergang schneidet Upsilon(T) die universelle Gerade 2*T/pi
     (Nelson-Kosterlitz). Darueber faellt Upsilon gegen null bzw. negativ.
     """
-    if area_per_site is None:
-        area_per_site = math.sqrt(3.0) / 2.0  # Triangular, a=1
-    area = n_nodes * area_per_site
     mean_t1 = float(np.mean(t1_samples))
     mean_sin2 = float(np.mean(np.square(sin_samples)))
-    return (cfg.J * mean_t1 / area
-            - (cfg.J ** 2) * mean_sin2 / (area * max(cfg.T, 1e-12)))
+    return (cfg.J * mean_t1 / n_nodes
+            - (cfg.J ** 2) * mean_sin2 / (n_nodes * max(cfg.T, 1e-12)))
 
 
 def nelson_kosterlitz_line(T: float) -> float:
@@ -745,12 +749,14 @@ def required_sample_size(
 # 9. Validierungs-Gates (Referenzwerte als Regressionstests)
 # ============================================================================
 
-# Lattice-abhaengige BKT-Referenzwerte (in Einheiten J), Web-verifiziert.
+# Lattice-abhaengige BKT-Referenzwerte (in Einheiten J/k_B), web-verifiziert
+# (arXiv:2501.07388; Hasenbusch 2005; Okabe-Otsuka 2025).
 # WICHTIG: Phi-Hex-Knoten = triangular (z=6) -> ca. 1.4.
+# Diese T_BKT-Werte sind KONVENTIONS-UNABHAENGIG (kein per-Site/Flaechen-Bezug).
 T_BKT_REFERENCE = {
-    "square": 0.8929,        # Hasenbusch 2005, Jha 2020
-    "triangular": 1.418,     # Sorokin (helicity), Okabe-Otsuka 2025
-    "honeycomb": 0.575,      # MC; Theorie 1/sqrt(2) umstritten
+    "square": 0.8929,        # Hasenbusch 2005, Jha 2020 (arXiv:2501.07388: 0.893)
+    "triangular": 1.418,     # Sorokin (helicity), Okabe-Otsuka 2025; arXiv:2501.07388
+    "honeycomb": 0.573,      # arXiv:2501.07388 (MC); Theorie 1/sqrt(2) umstritten
 }
 
 
@@ -758,7 +764,7 @@ def validation_gates(measured_T_bkt: Optional[float],
                      lattice_type: str,
                      convergence_slope: Optional[float] = None,
                      variational_derivative_error: Optional[float] = None,
-                     tol_T_bkt_rel: float = 0.15) -> dict[str, Any]:
+                     tol_T_bkt_rel: float = 0.03) -> dict[str, Any]:
     """Pflicht-Validierungs-Gates als Regressionstests.
 
     Gibt PASS/FAIL je Gate. T_BKT-Gate nutzt lattice-spezifischen Referenzwert.
