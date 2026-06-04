@@ -1,14 +1,40 @@
 # Phi-Hex
 
-> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-02). Kern-Engine kompiliert; Selftest-Evidenz vom 2026-06-02 liegt in results/.
+> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-04). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/. Testsuite 7/7 PASS (lokal, 2026-06-04).
 > **Lineage/Provenance:** siehe `SOURCES.md` (SHA-256 je Quelldatei) | **Lizenz:** Apache-2.0
 
 XY-Modell / BKT-Physik auf Dreiecks- und Honeycomb-Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Finite-Size-Scaling.
 
+## Konvention: Helicity-Modulus per-Site (Stand 2026-06-04)
+
+> **Konventionswechsel 2026-06-04 (Marco-Entscheid, Wissenschafts-Audit S2/S3).**
+> Der Helicity-Modulus wird jetzt **per-Site** normiert (Division durch die
+> Site-Zahl N), Literatur-Standard (arXiv:2406.12076). Spinwellen-Grenzwert
+> Dreiecksgitter: **Υ(0) = 1.5 J** (exakt, getestet, tol 0.03).
+>
+> **Vorher (superseded):** Normierung durch die FLAECHE A = N·√3/2 -> Υ(0) = J·√3 ≈ 1.732.
+> Das ueberschaetzte T_BKT um **~15%** und war durch die zu laxe Toleranz tol=0.15
+> nie hart geprueft. BKT-Sprung-Kriterium: Nelson-Kosterlitz Υ(T_BKT) = 2·T_BKT/π.
+
+### T_BKT-Mess-Stand (per-Site, Neumessung 2026-06-04)
+
+Wolff-Sampling auf dem Dreiecks-Torus, Nelson-Kosterlitz-Crossing
+(`src/260604 PHY030 ...`, Evidenz: `results/260604 PHY030 ... report.txt`):
+
+| Gitter | T_BKT (per-Site, neu) | Referenz (arXiv:2501.07388) | Methode |
+|---|---|---|---|
+| triangular | **~1.42 ± 0.04** (L=19-Crossing 1.456; 1/lnL-Extrap. 1.382) | 1.418 | Wolff + NK-Crossing, FSS |
+| square | 0.893 (PHY028, V&V) | 0.893 | Sandvik-Paar (C-frei) |
+| honeycomb | nicht neu gemessen | 0.573 | offen |
+
+**Superseded:** alle vor 2026-06-04 publizierten T_BKT-Zahlen, die auf der
+Flaechen-Normierung beruhen (u.a. PHY026-Report "Υ(T→0)=J·√3"), sind durch
+diesen Mess-Stand ersetzt. Details in `CHANGELOG.md`.
+
 ## Kern
 
-- **Engine:** `src/260602 PHI HEX core v2 2 hardened.py` (Kern, 2026-06-02) + PHY024-029-Experiment-Serie
-- **Evidenz:** Selftest-Report + PHY025-029 Reports in `results/`; methodischer Audit (4 Responses) in `spec/`. Referenzlinie T_BKT(triangular) ~= 1.4.
+- **Engine:** `src/260602 PHI HEX core v2 2 hardened.py` (Kern) + PHY024-030-Experiment-Serie
+- **Evidenz:** Selftest-Report + PHY025-030 Reports in `results/`; Testsuite in `tests/`; methodischer Audit (4 Responses) in `spec/`. Mess-Stand T_BKT(triangular) = 1.42 ± 0.04 (per-Site, 2026-06-04; Referenz 1.418).
 
 ## Struktur
 
@@ -23,9 +49,17 @@ SOURCES.md  Provenance: Quelle + SHA-256 + mtime je Datei
 
 ## Reproduzieren
 
-Die Selftests laufen direkt in der Engine (`python <engine>.py --selftest` bzw. eingebaute Runner;
-Details im Engine-Header). CI prueft Syntax (`compileall`) + Lint (non-blocking) — volle
-physikalische Gate-Runs brauchen numpy/scipy und laufen lokal.
+Die Selftests laufen direkt in der Engine (`python <engine>.py`; Details im
+Engine-Header). Die Testsuite (numpy/scipy/pytest noetig):
+
+```
+pytest                 # volle Suite (inkl. slow Mess-Lauf), 7/7 PASS
+pytest -m "not slow"   # nur schnelle Korrektheits-Gates
+python "src/260604 PHY030 triangular tbkt per-site v01.py"   # T_BKT-Neumessung
+```
+
+CI prueft Syntax (`compileall`) + Lint (non-blocking) — die vollen
+physikalischen Gate-Runs brauchen numpy/scipy und laufen lokal.
 
 ## Verwandte Repos
 

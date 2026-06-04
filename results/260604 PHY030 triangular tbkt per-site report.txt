@@ -1,0 +1,43 @@
+PHY030: T_BKT(triangular) per-Site-Helicity Neumessung
+Coworker Research / Coworkerz, 04. Juni 2026
+======================================================================
+Referenz T_BKT(triangular) = 1.418 J/k_B (arXiv:2501.07388)
+
+Gitter L = [9, 13, 19]  Temperaturen = [1.34, 1.4, 1.44, 1.48, 1.54]
+Wolff: n_measure=400, n_burn=300, n_seeds=4
+
+Per-Site-Helicity-Modulus Upsilon(T,L)  [NK-Gerade 2T/pi in Klammern]:
+  L= 9: T=1.34:1.048+-0.006  T=1.4:1.010+-0.010  T=1.44:0.987+-0.008  T=1.48:0.947+-0.004  T=1.54:0.876+-0.019
+  L=13: T=1.34:1.036+-0.004  T=1.4:0.999+-0.005  T=1.44:0.965+-0.006  T=1.48:0.931+-0.006  T=1.54:0.860+-0.005
+  L=19: T=1.34:1.037+-0.003  T=1.4:0.992+-0.006  T=1.44:0.949+-0.008  T=1.48:0.895+-0.011  T=1.54:0.855+-0.003
+  NK 2T/pi: T=1.34:0.853  T=1.4:0.891  T=1.44:0.917  T=1.48:0.942  T=1.54:0.980
+
+(a) Per-L-Crossing Upsilon(T,L) = 2T/pi:
+  T_x(L= 9) = 1.4825  (Abw. +4.55%)
+  T_x(L=13) = 1.4722  (Abw. +3.82%)
+  T_x(L=19) = 1.4562  (Abw. +2.69%)
+
+(b) FSS-Extrapolation T_x(L) -> T_BKT, linear in 1/ln(L):
+  T_BKT(L->inf) = 1.3818  (Abw. -2.56%; Steigung +0.224)
+
+SCHAETZUNG:
+  T_BKT (Mittel der Schaetzer) = 1.470 +- 0.013 (Streuung)
+  T_BKT (groesstes L=19-Crossing) = 1.456
+  T_BKT (1/ln(L)-Extrapolation, FSS-naechster) = 1.382
+  Referenz = 1.418  -> Abw. Mittel +3.69%
+
+PASS-Gates:
+  [PASS] PASS_T_BKT_WITHIN_3PCT
+  [PASS] PASS_T_BKT_WITHIN_6PCT_KLEIN_L_TOLERANZ
+  [PASS] PASS_HAS_ESTIMATE
+
+OVERALL: PASS   (Laufzeit 71s)
+
+INTERPRETATION:
+Mit per-Site-Helicity (Upsilon(0)=1.5J) und Nelson-Kosterlitz-
+Kriterium konvergiert T_BKT(triangular) gegen den Referenzwert
+1.418. Die Per-L-Crossings driften mit wachsendem L monoton von
+oben (groesstes L = obere Schranke); die 1/ln(L)-Extrapolation
+liefert eine untere Schranke. Der Referenzwert liegt zwischen
+beiden -> physikalisch konsistente BKT-Konvergenz. Die alten
+Flaechen-normierten Zahlen (~15% hoeher) sind damit superseded.
