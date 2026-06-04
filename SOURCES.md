@@ -27,3 +27,5 @@
 | FD94D780D24ABA83 | 2026-06-02 00:32 | results\phy024 | C:\Users\marco\OneDrive\Desktop\Universe 2.0\Hqstphi Hex\PHY024_R1mini_Analysis_v01.md |
 | CCA77AD852A9264A | 2026-06-02 00:32 | spec\phy024 | C:\Users\marco\OneDrive\Desktop\Universe 2.0\Hqstphi Hex\PHY024_R0_XY_PhiHex_Runbook_v01.md |
 | 784DF60DF50084C0 | 2026-06-02 00:32 | spec\phy024 | C:\Users\marco\OneDrive\Desktop\Universe 2.0\Hqstphi Hex\PHY024_R2_Runbook_v01.md |
+| 74A93CB521DA4AF2 | 2026-06-04 | src | repo-native (Branch claude/helicity-per-site, Audit S2; KEINE Drive-Quelle) — PHY030 T_BKT per-Site |
+| 40ACCA3C4A63EB6B | 2026-06-04 | results | repo-native (Gate-Evidenz PHY030, deterministisch seed=42; KEINE Drive-Quelle) |

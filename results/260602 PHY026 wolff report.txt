@@ -1,3 +1,12 @@
+### SUPERSEDED 2026-06-04 (Konventionswechsel, Audit S2) ###
+# Dieser Report nutzt die alte FLAECHEN-Normierung des Helicity-Modulus:
+# "Teil 3: Theorie-Gate Helicity(T->0) = J*sqrt(3)" (=1.732). Diese
+# Konvention wurde am 2026-06-04 auf per-Site umgestellt (Upsilon(0)=1.5J,
+# Marco-Entscheid). Gueltiger T_BKT-Mess-Stand:
+#   results/260604 PHY030 triangular tbkt per-site report.txt
+# Details: CHANGELOG.md. Report bleibt als Lineage erhalten (nicht geloescht).
+########################################################################
+
 PHY026: Wolff-Single-Cluster-Embedding (Stufe 1)
 Coworker Research / Coworkerz, 02. Juni 2026
 ======================================================================
