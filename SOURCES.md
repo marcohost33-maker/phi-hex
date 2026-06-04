@@ -30,3 +30,6 @@
 | 74A93CB521DA4AF2 | 2026-06-04 | src | repo-native (Branch claude/helicity-per-site, Audit S2; KEINE Drive-Quelle) — PHY030 T_BKT per-Site |
 | 40ACCA3C4A63EB6B | 2026-06-04 | results | repo-native (Gate-Evidenz PHY030, deterministisch seed=42; KEINE Drive-Quelle) |
 | 6D13EEB42035B461 | 2026-06-04 16:20 | src | C:\Users\marco\repos-staging\phi-hex\src\260604 PHY030 triangular tbkt per-site v01.py (v2: __main__-Defaults = Report-Params, Equalita-Auflage 2026-06-04) |
+| 577DE1E3345038C9 | 2026-06-04 | src | repo-native (PHY030 v02 Weber-Minnhagen-Log-Fit; Methodik arXiv:1302.2900 + Weber&Minnhagen PRB 37,5986(R)(1988); KEINE Drive-Quelle) |
+| B9D82736BBE2595B | 2026-06-04 | tests | repo-native (Synthetik-Orakel + Smoke fuer PHY030 v02 WM-Log-Fit; KEINE Drive-Quelle) |
+| 06D49F65483D2FEB | 2026-06-04 | results | repo-native (Gate-Evidenz PHY030 v02 WM-Log-Fit, deterministisch seed=42; KEINE Drive-Quelle) |

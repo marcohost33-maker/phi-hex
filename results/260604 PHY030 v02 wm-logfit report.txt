@@ -1,0 +1,68 @@
+PHY030 v02 - T_BKT(triangular) via Weber-Minnhagen-Log-Fit
+Coworker Research / Coworkerz, 2026-06-04
+======================================================================
+
+WM-Form: Upsilon(T_BKT,L) = (2 T_BKT/pi)*(1 + 1/(2 ln L + C))
+Methode: Weber-Minnhagen single-parameter log correction; fixed-T weighted least-squares (A) + pair C-elimination (B)
+Quellen: arXiv:1302.2900; Weber & Minnhagen PRB 37, 5986(R) (1988)
+Referenz T_BKT = 1.418 J/k_B (arXiv:2501.07388)
+
+Gitter L = [9, 13, 19]
+T-Gitter = [1.36, 1.37, 1.38, 1.39, 1.4, 1.41, 1.42, 1.43, 1.44, 1.45, 1.46]
+Wolff: n_measure=400, n_burn=300, n_seeds=4, master_seed=42
+
+--- Messung Upsilon(T,L) ---
+  L= 9: T=1.36:1.0401+-0.0082  T=1.37:1.0353+-0.0042  T=1.38:1.0175+-0.0119  T=1.39:1.0211+-0.0053  T=1.40:1.0100+-0.0100  T=1.41:1.0000+-0.0149  T=1.42:1.0041+-0.0032  T=1.43:0.9928+-0.0065  T=1.44:0.9871+-0.0082  T=1.45:0.9860+-0.0046  T=1.46:0.9626+-0.0057
+  L=13: T=1.36:1.0282+-0.0070  T=1.37:1.0106+-0.0036  T=1.38:0.9972+-0.0054  T=1.39:1.0003+-0.0028  T=1.40:0.9987+-0.0055  T=1.41:0.9916+-0.0019  T=1.42:0.9833+-0.0085  T=1.43:0.9784+-0.0029  T=1.44:0.9646+-0.0062  T=1.45:0.9669+-0.0039  T=1.46:0.9497+-0.0079
+  L=19: T=1.36:1.0194+-0.0018  T=1.37:1.0115+-0.0029  T=1.38:1.0005+-0.0028  T=1.39:0.9883+-0.0115  T=1.40:0.9922+-0.0057  T=1.41:0.9712+-0.0112  T=1.42:0.9756+-0.0051  T=1.43:0.9566+-0.0095  T=1.44:0.9489+-0.0077  T=1.45:0.9373+-0.0090  T=1.46:0.9377+-0.0063
+
+--- (A) Fixed-T WM-Fit chi^2(T) ---
+  T=1.36: chi^2=1.8007e+01  C=-0.1259
+  T=1.37: chi^2=1.6517e+01  C=+0.8274
+  T=1.38: chi^2=7.8878e+00  C=+1.5981
+  T=1.39: chi^2=1.8655e+00  C=+2.4080
+  T=1.40: chi^2=1.1701e-01  C=+3.0834  <- argmin
+  T=1.41: chi^2=1.4313e+00  C=+4.4542
+  T=1.42: chi^2=7.8691e+00  C=+5.0538
+  T=1.43: chi^2=6.1602e+00  C=+8.1291
+  T=1.44: chi^2=9.2280e+00  C=+13.2538
+  T=1.45: chi^2=2.1816e+01  C=+14.0014
+  T=1.46: chi^2=8.0214e+00  C=+37.4576
+
+  T_BKT(WM-Fit) = 1.4007 +- 0.0081
+  C = +3.0834
+  Abweichung vs Referenz 1.418: -1.22%
+
+  Residuen je L bei T_BKT (gemessen - WM-Modell):
+    L= 9: gemessen=1.0100  WM=1.0110  Residuum=-0.0010
+    L=13: gemessen=0.9987  WM=1.0003  Residuum=-0.0016
+    L=19: gemessen=0.9922  WM=0.9911  Residuum=+0.0011
+
+--- (B) Paar-C-Eliminations-Querscheck (C-frei) ---
+  T_BKT(L=9,13) = 1.3663
+  T_BKT(L=9,19) = 1.3852
+  T_BKT(L=13,19) = 1.3888
+  Mittel = 1.3801  (Abw. -2.67%)
+
+--- Vergleich v01-Schranken / Referenz ---
+  v01 untere Schranke (1/ln L-Extrap.) = 1.382  (-2.54%)
+  v01 obere Schranke  (L=19-Crossing)  = 1.456  (+2.68%)
+  v02 WM-Punktschaetzer (A)            = 1.4007  (-1.22%)
+  v02 Paar-Mittel (B)                  = 1.3801  (-2.67%)
+  Referenz                             = 1.418
+  WM-Fit naeher an Referenz als beide v01-Schranken: True
+
+--- PASS-Gates ---
+  [PASS] PASS_WM_FIT_WITHIN_3PCT
+  [PASS] PASS_WM_FIT_WITHIN_REF_BAND
+  [PASS] PASS_WM_CLOSER_THAN_V01_BOUNDS
+  [PASS] PASS_PAIR_CROSSCHECK_EXISTS
+  [PASS] PASS_RESIDUALS_SMALL
+  OVERALL: PASS
+
+--- Caveats ---
+  - Nur drei kleine Gitter (L=9,13,19); sub-leading Log-
+    Korrekturen (arXiv:1302.2900) sind bei kleinem L eine
+    reale Grenze der Praezision.
+  - v01 bleibt gueltig als konservative Schranken-Methode.
+  - Statistik: n_seeds=4 (bewusst kleines Budget, Minuten).

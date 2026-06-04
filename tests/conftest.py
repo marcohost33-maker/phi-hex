@@ -22,6 +22,7 @@ _MODULE_FILES = {
     "phy026_wolff_cluster": "260602 PHY026 wolff cluster v01.py",
     "phy028_square_validation": "260602 PHY028 square validation v01.py",
     "phy030_triangular_tbkt": "260604 PHY030 triangular tbkt per-site v01.py",
+    "phy030_tbkt_wm_logfit": "260604 PHY030 triangular tbkt per-site v02 wm-logfit.py",
 }
 
 
