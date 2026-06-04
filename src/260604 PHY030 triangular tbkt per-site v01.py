@@ -92,7 +92,7 @@ def sandvik_pair_tbkt(data_L, data_2L):
     return None
 
 
-def run_phy030(radii=(3, 4, 6), temps=(1.35, 1.40, 1.45, 1.50, 1.55),
+def run_phy030(radii=(4, 6, 9), temps=(1.34, 1.40, 1.44, 1.48, 1.54),
                n_measure=400, n_burn=300, n_seeds=4, master_seed=42):
     t_start = time.time()
     print("PHY030: T_BKT(triangular) per-Site-Helicity Neumessung")

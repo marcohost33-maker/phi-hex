@@ -29,3 +29,4 @@
 | 784DF60DF50084C0 | 2026-06-02 00:32 | spec\phy024 | C:\Users\marco\OneDrive\Desktop\Universe 2.0\Hqstphi Hex\PHY024_R2_Runbook_v01.md |
 | 74A93CB521DA4AF2 | 2026-06-04 | src | repo-native (Branch claude/helicity-per-site, Audit S2; KEINE Drive-Quelle) — PHY030 T_BKT per-Site |
 | 40ACCA3C4A63EB6B | 2026-06-04 | results | repo-native (Gate-Evidenz PHY030, deterministisch seed=42; KEINE Drive-Quelle) |
+| 6D13EEB42035B461 | 2026-06-04 16:20 | src | C:\Users\marco\repos-staging\phi-hex\src\260604 PHY030 triangular tbkt per-site v01.py (v2: __main__-Defaults = Report-Params, Equalita-Auflage 2026-06-04) |
