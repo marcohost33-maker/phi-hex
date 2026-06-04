@@ -125,6 +125,34 @@ def test_pair_C_elimination_recovers_T_true():
     assert abs(tp - T_true) < 0.006, f"Paar T_BKT={tp:.4f} verfehlt {T_true}"
 
 
+def test_mutation_guard_sign_flip_kills_fit(monkeypatch):
+    """Regression-Guard (Equalita-Auflage 2026-06-04): Sign-Flip im WM-
+    Korrekturterm muss das chi^2 um Groessenordnungen verschlechtern.
+
+    Verankert den manuellen Mutations-Beleg (chi^2-Ratio ~1e6 bei echten
+    Daten) als automatisierten CI-Case: wer wm_form (Produktions-Funktion)
+    still bricht, reisst diesen Test."""
+    import phy030_tbkt_wm_logfit as mod
+
+    T_true, C_true = 1.418, 2.0
+    T_grid = [round(1.40 + 0.01 * k, 3) for k in range(5)]
+    Ls = [9, 13, 19]
+    ups_of_T, sems_of_T = _make_synthetic(
+        Ls, T_grid, T_true, C_true, noise_sigma=1e-3, seed=777)
+    fit_ok = mod.fit_tbkt_fixedT(T_grid, Ls, ups_of_T, sems_of_T)
+
+    def wm_mutated(T, L, C):
+        # Vorzeichen des Log-Korrekturterms gekippt (die Audit-Mutation).
+        return (2.0 * T / math.pi) * (1.0 - 1.0 / (2.0 * math.log(L) + C))
+
+    monkeypatch.setattr(mod, "wm_form", wm_mutated)
+    fit_bad = mod.fit_tbkt_fixedT(T_grid, Ls, ups_of_T, sems_of_T)
+    # Mutierter Fit muss um >=3 Groessenordnungen schlechter sein.
+    assert fit_bad["chi2_min"] > 1e3 * max(fit_ok["chi2_min"], 1e-12), (
+        f"Mutations-Guard greift nicht: chi2_ok={fit_ok['chi2_min']:.3e} "
+        f"chi2_mut={fit_bad['chi2_min']:.3e}")
+
+
 # ---------------------------------------------------------------------------
 # (b) Smoke: Pipeline-Integritaet auf Mini-Parametern
 # ---------------------------------------------------------------------------

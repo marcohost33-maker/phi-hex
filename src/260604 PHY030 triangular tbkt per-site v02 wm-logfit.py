@@ -108,7 +108,6 @@ def _best_C_and_chi2(T: float, Ls, ups, sems):
     ein robustes Golden-Section-Minimum genuegt. Rueckgabe: (C_opt, chi2_opt).
     """
     lnL = [math.log(L) for L in Ls]
-    pref = 2.0 * T / math.pi
     w = [1.0 / max(s, 1e-9) ** 2 for s in sems]
 
     def chi2(C: float) -> float:
@@ -118,7 +117,10 @@ def _best_C_and_chi2(T: float, Ls, ups, sems):
             return 1e18
         s = 0.0
         for k, L in enumerate(Ls):
-            model = pref * (1.0 + 1.0 / (2.0 * lnL[k] + C))
+            # Single source of truth: IMMER die oeffentliche wm_form
+            # (keine Inline-Duplikation -- Mutations-Guard im Test haengt
+            # genau hier; Equalita-Auflage 2026-06-04).
+            model = wm_form(T, L, C)
             s += w[k] * (ups[k] - model) ** 2
         return s
 

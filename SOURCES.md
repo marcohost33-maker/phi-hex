@@ -33,3 +33,5 @@
 | 577DE1E3345038C9 | 2026-06-04 | src | repo-native (PHY030 v02 Weber-Minnhagen-Log-Fit; Methodik arXiv:1302.2900 + Weber&Minnhagen PRB 37,5986(R)(1988); KEINE Drive-Quelle) |
 | B9D82736BBE2595B | 2026-06-04 | tests | repo-native (Synthetik-Orakel + Smoke fuer PHY030 v02 WM-Log-Fit; KEINE Drive-Quelle) |
 | 06D49F65483D2FEB | 2026-06-04 | results | repo-native (Gate-Evidenz PHY030 v02 WM-Log-Fit, deterministisch seed=42; KEINE Drive-Quelle) |
+| DDAB86BD905BD88F | 2026-06-04 17:42 | src | C:\Users\marco\repos-staging\phi-hex\src\260604 PHY030 triangular tbkt per-site v02 wm-logfit.py (v02b: Mutations-Guard als CI-Test + wm_form single-source, Equalita-Auflage) |
+| E48C1B736B0F58CB | 2026-06-04 17:41 | tests | C:\Users\marco\repos-staging\phi-hex\tests\test_tbkt_wm_logfit.py (v02b: Mutations-Guard als CI-Test + wm_form single-source, Equalita-Auflage) |
