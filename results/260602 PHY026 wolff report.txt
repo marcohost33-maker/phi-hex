@@ -1,0 +1,82 @@
+PHY026: Wolff-Single-Cluster-Embedding (Stufe 1)
+Coworker Research / Coworkerz, 02. Juni 2026
+======================================================================
+
+Teil 1: Autokorrelations-Benchmark (T=1.4, nahe T_BKT)
+   L |  tau_wolff |  tau_local |    ratio |  t_w/t_l
+--------------------------------------------------------
+   5 |       1.50 |      26.65 |    17.81 |     2.48
+   7 |       1.46 |       9.35 |     6.41 |     2.44
+   9 |       2.12 |      25.60 |    12.05 |     2.79
+
+Teil 2: tau-Skalierung mit L (dynamischer Exponent z)
+  z_wolff  ca. +0.56  (informativ; nahe 0 erwartet)
+  z_local  ca. -0.24  (informativ; bei L=5..9 nicht belastbar messbar)
+  -> mittlerer tau-Vorteil Wolff: Faktor 12.1
+
+Teil 3: Theorie-Gate Helicity(T->0) = J*sqrt(3)
+  Upsilon(T=0.05) = 1.717  (Theorie J*sqrt(3) = 1.732)
+
+PASS-Gates:
+  [PASS] PASS_WOLFF_LOWER_TAU_ALL_L
+  [PASS] PASS_WOLFF_SPEEDUP_SUBSTANTIAL
+  [PASS] PASS_WOLFF_TAU_BOUNDED
+  [PASS] PASS_CLUSTER_NONTRIVIAL
+  [PASS] PASS_HELICITY_T0_THEORY
+
+OVERALL: PASS
+
+--- JSON-Report ---
+{
+  "module": "PHY026_wolff_cluster_embedding",
+  "attribution": "Coworker Research / Coworkerz",
+  "benchmark": [
+    {
+      "radius": 2,
+      "L": 5,
+      "n_nodes": 25,
+      "T": 1.4,
+      "tau_wolff": 1.4962618061757669,
+      "tau_local": 26.6524898022021,
+      "tau_ratio_local_over_wolff": 17.812718130072497,
+      "mean_cluster_fraction": 0.5033121693121693,
+      "time_wolff_s": 0.08363212200004,
+      "time_local_s": 0.0337563670000236
+    },
+    {
+      "radius": 3,
+      "L": 7,
+      "n_nodes": 49,
+      "T": 1.4,
+      "tau_wolff": 1.458930253148034,
+      "tau_local": 9.354186083029395,
+      "tau_ratio_local_over_wolff": 6.41167462450328,
+      "mean_cluster_fraction": 0.4146951058201059,
+      "time_wolff_s": 0.14957374100004017,
+      "time_local_s": 0.0612079910000034
+    },
+    {
+      "radius": 4,
+      "L": 9,
+      "n_nodes": 81,
+      "T": 1.4,
+      "tau_wolff": 2.1238452286175815,
+      "tau_local": 25.597298458369153,
+      "tau_ratio_local_over_wolff": 12.052337012820152,
+      "mean_cluster_fraction": 0.38463492063492066,
+      "time_wolff_s": 0.26911613300001136,
+      "time_local_s": 0.09656171000000313
+    }
+  ],
+  "z_wolff": 0.5590529535232549,
+  "z_local": -0.23581037503010385,
+  "helicity_T0": 1.7172189109380376,
+  "pass_gates": {
+    "PASS_WOLFF_LOWER_TAU_ALL_L": true,
+    "PASS_WOLFF_SPEEDUP_SUBSTANTIAL": true,
+    "PASS_WOLFF_TAU_BOUNDED": true,
+    "PASS_CLUSTER_NONTRIVIAL": true,
+    "PASS_HELICITY_T0_THEORY": true
+  },
+  "overall_pass": true
+}

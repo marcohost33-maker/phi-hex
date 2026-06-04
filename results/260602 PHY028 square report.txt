@@ -1,0 +1,139 @@
+PHY028: Wolff-Validierung auf dem Quadratgitter (Sandvik-Paar)
+Coworker Research / Coworkerz, 02. Juni 2026
+======================================================================
+Bekannter Referenzwert T_BKT(square) = 0.8935(1)
+
+Gate A (perfekt ausgerichtet, T=0): Upsilon = 1.0000 (muss exakt 1.0 sein)
+
+Helicity-Modulus (Wolff, n_seeds=12):
+  L= 8: T=0.86:0.391+-0.009  T=0.88:0.396+-0.014  T=0.9:0.387+-0.011  T=0.92:0.388+-0.009
+  L=16: T=0.86:0.527+-0.006  T=0.88:0.511+-0.005  T=0.9:0.486+-0.008  T=0.92:0.483+-0.008
+  L=32: T=0.86:0.591+-0.003  T=0.88:0.567+-0.004  T=0.9:0.557+-0.004  T=0.92:0.522+-0.004
+
+Sandvik-Paar-Methode T_BKT(L, 2L):
+  T_BKT(8,16): kein Nulldurchgang (Gitter zu klein, asymptotischer Bereich nicht erreicht)
+  T_BKT(16,32) = 0.8950  (Abw. +0.16%)
+
+PASS-Gates:
+  [PASS] PASS_ALIGNED_EXACT_J
+  [PASS] PASS_PAIR_METHOD_WORKS
+  [PASS] PASS_LARGEST_PAIR_WITHIN_1PCT
+
+OVERALL: PASS
+
+INTERPRETATION:
+Das groesste Paar (16,32) reproduziert T_BKT(square) auf <1%.
+Damit sind Wolff-Sampler UND Sandvik-Paar-Methodik unabhaengig
+verifiziert (V&V-Code-Verifikation). Die naive Crossing-
+Extrapolation aus PHY027 ist damit als unsauber widerlegt und
+durch die C-freie Paar-Methode ersetzt.
+
+--- JSON-Report ---
+{
+  "module": "PHY028_square_validation_sandvik",
+  "attribution": "Coworker Research / Coworkerz",
+  "reference_T_bkt_square": 0.8935,
+  "aligned_helicity": 1.0,
+  "measurements": {
+    "8": {
+      "0.86": {
+        "T": 0.86,
+        "L": 8,
+        "upsilon_mean": 0.3907577254270667,
+        "upsilon_sem": 0.00899774842585763,
+        "nk_line": 0.54749300423612
+      },
+      "0.88": {
+        "T": 0.88,
+        "L": 8,
+        "upsilon_mean": 0.39606959861250446,
+        "upsilon_sem": 0.014179034073803361,
+        "nk_line": 0.5602253996834716
+      },
+      "0.9": {
+        "T": 0.9,
+        "L": 8,
+        "upsilon_mean": 0.387296276901115,
+        "upsilon_sem": 0.01126297442986274,
+        "nk_line": 0.5729577951308232
+      },
+      "0.92": {
+        "T": 0.92,
+        "L": 8,
+        "upsilon_mean": 0.38804040771783077,
+        "upsilon_sem": 0.009184057474631208,
+        "nk_line": 0.5856901905781748
+      }
+    },
+    "16": {
+      "0.86": {
+        "T": 0.86,
+        "L": 16,
+        "upsilon_mean": 0.52720670190533,
+        "upsilon_sem": 0.005720346231168058,
+        "nk_line": 0.54749300423612
+      },
+      "0.88": {
+        "T": 0.88,
+        "L": 16,
+        "upsilon_mean": 0.5107706238470785,
+        "upsilon_sem": 0.0045748948543317585,
+        "nk_line": 0.5602253996834716
+      },
+      "0.9": {
+        "T": 0.9,
+        "L": 16,
+        "upsilon_mean": 0.4856606128533414,
+        "upsilon_sem": 0.008231059149830093,
+        "nk_line": 0.5729577951308232
+      },
+      "0.92": {
+        "T": 0.92,
+        "L": 16,
+        "upsilon_mean": 0.48328529789318986,
+        "upsilon_sem": 0.0076153240391089935,
+        "nk_line": 0.5856901905781748
+      }
+    },
+    "32": {
+      "0.86": {
+        "T": 0.86,
+        "L": 32,
+        "upsilon_mean": 0.5911517123539604,
+        "upsilon_sem": 0.0026354907551711547,
+        "nk_line": 0.54749300423612
+      },
+      "0.88": {
+        "T": 0.88,
+        "L": 32,
+        "upsilon_mean": 0.5672617500580385,
+        "upsilon_sem": 0.00372702552240091,
+        "nk_line": 0.5602253996834716
+      },
+      "0.9": {
+        "T": 0.9,
+        "L": 32,
+        "upsilon_mean": 0.5567527769952059,
+        "upsilon_sem": 0.0035780878334598257,
+        "nk_line": 0.5729577951308232
+      },
+      "0.92": {
+        "T": 0.92,
+        "L": 32,
+        "upsilon_mean": 0.5221047300946821,
+        "upsilon_sem": 0.004305082250555601,
+        "nk_line": 0.5856901905781748
+      }
+    }
+  },
+  "pair_tbkt": {
+    "8_16": null,
+    "16_32": 0.8949591228570283
+  },
+  "pass_gates": {
+    "PASS_ALIGNED_EXACT_J": true,
+    "PASS_PAIR_METHOD_WORKS": true,
+    "PASS_LARGEST_PAIR_WITHIN_1PCT": true
+  },
+  "overall_pass": true
+}

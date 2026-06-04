@@ -1,0 +1,27 @@
+phi_hex_core_v2.0 Selbsttest - Coworker Research / Coworkerz
+====================================================================
+Triangular Lattice: 37 Knoten, 90 Kanten, 19 Zellen, mittlere Koordinationszahl 4.86
+
+XY-Langevin-Laeufe (J=1):
+     T |   helicity |    2T/pi |        decay |   g1[0] | pers/cell
+----------------------------------------------------------------------
+  0.20 |      0.683 |    0.127 |    algebraic |   0.950 |      0.00
+  0.80 |      0.780 |    0.509 |    algebraic |   0.793 |      0.05
+  2.00 |     -0.162 |    1.273 |    algebraic |   0.386 |     10.26
+
+Statistik-Toolbox-Smoke-Test:
+  Hedges g = -0.307, Cliff delta = -0.133 (small), BCa-CI = [-1.117, +0.373], excl. 0: False
+
+Validierungs-Gates (Triangular-Referenz):
+  [PASS] PASS_CONVERGENCE_ON2
+  [PASS] PASS_VARIATIONAL_MACHINE_PRECISION
+  [PASS] PASS_REFERENCE_KNOWN
+  Referenz T_BKT(triangular) = 1.418
+
+Selbsttest-Gates:
+  [PASS] PASS_LOW_T_HIGHER_HELICITY
+  [PASS] PASS_LOW_T_MORE_ORDERED
+  [PASS] PASS_STATS_TOOLBOX
+  [PASS] PASS_LATTICE_TRIANGULAR
+
+OVERALL: PASS

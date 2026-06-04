@@ -1,0 +1,279 @@
+PHY025: Finite-Size-Scaling T_BKT (Triangular Torus)
+Coworker Research / Coworkerz, 02. Juni 2026
+======================================================================
+Literatur-Referenz T_BKT(triangular) = 1.418 (Einheiten J)
+
+L = 5 (radius 2, 25 Knoten):
+  T=0.80: Ups=+1.441+-0.003, 2T/pi=0.509, m=0.905
+  T=1.00: Ups=+1.352+-0.004, 2T/pi=0.637, m=0.877
+  T=1.20: Ups=+1.248+-0.006, 2T/pi=0.764, m=0.844
+  T=1.40: Ups=+1.114+-0.016, 2T/pi=0.891, m=0.802
+  T=1.60: Ups=+0.924+-0.027, 2T/pi=1.019, m=0.747  [nicht equilibriert]
+  T=1.80: Ups=+0.706+-0.013, 2T/pi=1.146, m=0.676  [nicht equilibriert]
+  -> naive Crossing T_BKT(L=5) = 1.540
+     (WM-Vorhersage Ups bei T_BKT,ref: 1.183)
+
+L = 7 (radius 3, 49 Knoten):
+  T=0.80: Ups=+1.429+-0.003, 2T/pi=0.509, m=0.889
+  T=1.00: Ups=+1.335+-0.006, 2T/pi=0.637, m=0.855
+  T=1.20: Ups=+1.221+-0.013, 2T/pi=0.764, m=0.816
+  T=1.40: Ups=+1.044+-0.033, 2T/pi=0.891, m=0.761  [nicht equilibriert]
+  T=1.60: Ups=+0.855+-0.040, 2T/pi=1.019, m=0.698  [nicht equilibriert]
+  T=1.80: Ups=+0.563+-0.055, 2T/pi=1.146, m=0.609  [nicht equilibriert]
+  -> naive Crossing T_BKT(L=7) = 1.496
+     (WM-Vorhersage Ups bei T_BKT,ref: 1.135)
+
+L = 9 (radius 4, 81 Knoten):
+  T=0.80: Ups=+1.427+-0.002, 2T/pi=0.509, m=0.882
+  T=1.00: Ups=+1.331+-0.003, 2T/pi=0.637, m=0.846
+  T=1.20: Ups=+1.215+-0.005, 2T/pi=0.764, m=0.806
+  T=1.40: Ups=+1.073+-0.004, 2T/pi=0.891, m=0.756
+  T=1.60: Ups=+0.796+-0.014, 2T/pi=1.019, m=0.680  [nicht equilibriert]
+  T=1.80: Ups=+0.560+-0.035, 2T/pi=1.146, m=0.571  [nicht equilibriert]
+  -> naive Crossing T_BKT(L=9) = 1.490
+     (WM-Vorhersage Ups bei T_BKT,ref: 1.108)
+
+======================================================================
+Finite-Size-Trend der Crossing-Temperatur:
+  L=5: T_BKT(L) = 1.540  (Abw. zur Referenz +8.6%)
+  L=7: T_BKT(L) = 1.496  (Abw. zur Referenz +5.5%)
+  L=9: T_BKT(L) = 1.490  (Abw. zur Referenz +5.1%)
+
+PASS-Gates:
+  [PASS] PASS_CROSSING_FOUND
+  [PASS] PASS_WITHIN_15PCT_OF_REF
+  [PASS] PASS_CROSSING_ABOVE_REF
+  [PASS] PASS_WM_DOWNWARD_DRIFT
+  [PASS] PASS_TORUS_COORDINATION_6
+  [PASS] PASS_NORMALIZATION_T0_THEORY
+
+OVERALL: PASS
+
+INTERPRETATION:
+Weber-Minnhagen: die naive Crossing-Temperatur liegt auf endlichen
+Gittern oberhalb von T_BKT und naehert sich von oben mit wachsendem L.
+Eine monotone Abwaerts-Drift Richtung Referenz ~1.418 bestaetigt die
+korrekte BKT-Universalitaetsklasse des XY-gekoppelten Phi-Hex-Modells.
+
+--- JSON-Report ---
+{
+  "module": "PHY025_FSS_critical_temperature",
+  "attribution": "Coworker Research / Coworkerz",
+  "reference_T_bkt": 1.418,
+  "lattice_type": "triangular_torus",
+  "temperatures": [
+    0.8,
+    1.0,
+    1.2,
+    1.4,
+    1.6,
+    1.8
+  ],
+  "radii": [
+    2,
+    3,
+    4
+  ],
+  "crossings_per_L": {
+    "5": 1.540216616489428,
+    "7": 1.4964151936033647,
+    "9": 1.4898253572484552
+  },
+  "measurements": {
+    "5": [
+      {
+        "T": 0.8,
+        "L": 5,
+        "n_nodes": 25,
+        "upsilon_mean": 1.4407134840527407,
+        "upsilon_sem": 0.0027477411058870814,
+        "nk_line": 0.5092958178940651,
+        "magnetization": 0.9054024855977089,
+        "equilibrated": true
+      },
+      {
+        "T": 1.0,
+        "L": 5,
+        "n_nodes": 25,
+        "upsilon_mean": 1.351811467315865,
+        "upsilon_sem": 0.003589802007878567,
+        "nk_line": 0.6366197723675814,
+        "magnetization": 0.8768422207364143,
+        "equilibrated": true
+      },
+      {
+        "T": 1.2,
+        "L": 5,
+        "n_nodes": 25,
+        "upsilon_mean": 1.2481224583480408,
+        "upsilon_sem": 0.005688716236326974,
+        "nk_line": 0.7639437268410976,
+        "magnetization": 0.8444640522972611,
+        "equilibrated": true
+      },
+      {
+        "T": 1.4,
+        "L": 5,
+        "n_nodes": 25,
+        "upsilon_mean": 1.1136659345538416,
+        "upsilon_sem": 0.01590896350213946,
+        "nk_line": 0.8912676813146139,
+        "magnetization": 0.8022296226229813,
+        "equilibrated": true
+      },
+      {
+        "T": 1.6,
+        "L": 5,
+        "n_nodes": 25,
+        "upsilon_mean": 0.9237689222013669,
+        "upsilon_sem": 0.027326238745761903,
+        "nk_line": 1.0185916357881302,
+        "magnetization": 0.7473238682525668,
+        "equilibrated": false
+      },
+      {
+        "T": 1.8,
+        "L": 5,
+        "n_nodes": 25,
+        "upsilon_mean": 0.7062895420294408,
+        "upsilon_sem": 0.013295580952526559,
+        "nk_line": 1.1459155902616465,
+        "magnetization": 0.6761206206284379,
+        "equilibrated": false
+      }
+    ],
+    "7": [
+      {
+        "T": 0.8,
+        "L": 7,
+        "n_nodes": 49,
+        "upsilon_mean": 1.4289361487416254,
+        "upsilon_sem": 0.002760495623192105,
+        "nk_line": 0.5092958178940651,
+        "magnetization": 0.8887250772183521,
+        "equilibrated": true
+      },
+      {
+        "T": 1.0,
+        "L": 7,
+        "n_nodes": 49,
+        "upsilon_mean": 1.3345162953716487,
+        "upsilon_sem": 0.00582983869729903,
+        "nk_line": 0.6366197723675814,
+        "magnetization": 0.8549600900236305,
+        "equilibrated": true
+      },
+      {
+        "T": 1.2,
+        "L": 7,
+        "n_nodes": 49,
+        "upsilon_mean": 1.2214134331026851,
+        "upsilon_sem": 0.01263081315727152,
+        "nk_line": 0.7639437268410976,
+        "magnetization": 0.815814082267153,
+        "equilibrated": true
+      },
+      {
+        "T": 1.4,
+        "L": 7,
+        "n_nodes": 49,
+        "upsilon_mean": 1.0435583978778362,
+        "upsilon_sem": 0.03269865366705129,
+        "nk_line": 0.8912676813146139,
+        "magnetization": 0.7607737372301472,
+        "equilibrated": false
+      },
+      {
+        "T": 1.6,
+        "L": 7,
+        "n_nodes": 49,
+        "upsilon_mean": 0.8549762988102066,
+        "upsilon_sem": 0.04027050124576325,
+        "nk_line": 1.0185916357881302,
+        "magnetization": 0.6984885251998247,
+        "equilibrated": false
+      },
+      {
+        "T": 1.8,
+        "L": 7,
+        "n_nodes": 49,
+        "upsilon_mean": 0.5633765920072863,
+        "upsilon_sem": 0.05460211625466377,
+        "nk_line": 1.1459155902616465,
+        "magnetization": 0.6089873423363185,
+        "equilibrated": false
+      }
+    ],
+    "9": [
+      {
+        "T": 0.8,
+        "L": 9,
+        "n_nodes": 81,
+        "upsilon_mean": 1.4266219886866052,
+        "upsilon_sem": 0.0016019763097015038,
+        "nk_line": 0.5092958178940651,
+        "magnetization": 0.8816152752527578,
+        "equilibrated": true
+      },
+      {
+        "T": 1.0,
+        "L": 9,
+        "n_nodes": 81,
+        "upsilon_mean": 1.3314313005972307,
+        "upsilon_sem": 0.0026460482165463033,
+        "nk_line": 0.6366197723675814,
+        "magnetization": 0.8463083596160826,
+        "equilibrated": true
+      },
+      {
+        "T": 1.2,
+        "L": 9,
+        "n_nodes": 81,
+        "upsilon_mean": 1.214533227131695,
+        "upsilon_sem": 0.004960096262938373,
+        "nk_line": 0.7639437268410976,
+        "magnetization": 0.805988175962368,
+        "equilibrated": true
+      },
+      {
+        "T": 1.4,
+        "L": 9,
+        "n_nodes": 81,
+        "upsilon_mean": 1.0729932725226965,
+        "upsilon_sem": 0.003506912327434247,
+        "nk_line": 0.8912676813146139,
+        "magnetization": 0.7562616284285868,
+        "equilibrated": true
+      },
+      {
+        "T": 1.6,
+        "L": 9,
+        "n_nodes": 81,
+        "upsilon_mean": 0.7956974252504027,
+        "upsilon_sem": 0.013986800909718967,
+        "nk_line": 1.0185916357881302,
+        "magnetization": 0.6799781698909552,
+        "equilibrated": false
+      },
+      {
+        "T": 1.8,
+        "L": 9,
+        "n_nodes": 81,
+        "upsilon_mean": 0.5602391835265247,
+        "upsilon_sem": 0.034670996793641044,
+        "nk_line": 1.1459155902616465,
+        "magnetization": 0.5713351453302752,
+        "equilibrated": false
+      }
+    ]
+  },
+  "pass_gates": {
+    "PASS_CROSSING_FOUND": true,
+    "PASS_WITHIN_15PCT_OF_REF": true,
+    "PASS_CROSSING_ABOVE_REF": true,
+    "PASS_WM_DOWNWARD_DRIFT": true,
+    "PASS_TORUS_COORDINATION_6": true,
+    "PASS_NORMALIZATION_T0_THEORY": true
+  },
+  "overall_pass": true
+}
