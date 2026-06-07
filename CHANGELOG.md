@@ -3,6 +3,37 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-06-07] Code-Review-Haertung — CI-Test-Gating, Lint-Baseline, Dead-Code
+
+Best-Practice-Welle (GitHub-Actions/pytest + ruff), keine Physik-Aenderung.
+Mess-Zahlen unveraendert.
+
+### Added
+- `.github/workflows/ci.yml`: neuer `test`-Job laeuft die schnellen
+  Korrektheits-Gates (`pytest -m "not slow"`, 13 Tests) ueber die Matrix
+  Python 3.10/3.11/3.12 (`fail-fast: false`, pip-Cache). Bisher lief in CI
+  KEIN Test — die Physik-Korrektheits-Gates konnten Regressionen nicht
+  fangen (Luecke gegen das Reality-Anchor-Prinzip).
+- `requirements-dev.txt`: reproduzierbare Dev-/CI-Abhaengigkeiten (numpy/
+  scipy/pytest/ruff), Cache-Key-Quelle fuer `setup-python`.
+- `ruff.toml`: explizite Lint-Baseline (die der CI-Kommentar als naechsten
+  Schritt ankuendigte). E701/E702 bewusst ignoriert (intentionaler kompakter
+  Stil der JSON-`clean()`-Serialisierer und der Acklam-`_norm_ppf`).
+
+### Changed
+- `ci.yml` ruff-Schritt von non-blocking (`|| true`) auf **blockierend**;
+  Lint-Job getrennt vom Test-Job.
+- README/Status: Testanzahl ehrlich von "14/14" auf **15/15** korrigiert
+  (lokal verifiziert 2026-06-07; pytest sammelt 15 Items — die
+  parametrisierte WM-Orakel-Funktion zaehlt 3-fach).
+
+### Fixed (Dead-Code, ruff F401/F841/F541/E401 — verhaltensneutral)
+- `core` `bca_bootstrap_ci`: ungenutzte `combined`/`full` entfernt.
+- Ungenutzte Importe/Variablen in PHY026/PHY027/PHY028/PHY029, PHY024_R0,
+  phy017 (tote `typing`-Importe, leerer f-string, Multi-Import-Zeile).
+- Provenance: Aenderungen sind repo-native Reviews (Praezedenz PR #1);
+  `SOURCES.md`-Eintraege bleiben unangetastet (append-only Lineage).
+
 ## [2026-06-04] PHY030 v02 — Weber-Minnhagen-Log-Korrektur-Fit (SOTA-Praezisierung)
 
 Praeziserer T_BKT-Punktschaetzer ergaenzend zu den konservativen v01-Schranken.

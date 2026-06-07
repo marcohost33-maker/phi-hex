@@ -1,6 +1,6 @@
 # Phi-Hex
 
-> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-04). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/. Testsuite 14/14 PASS (lokal, 2026-06-04; +7 Weber-Minnhagen-Log-Fit).
+> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-07). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/. Testsuite 15/15 PASS (lokal verifiziert 2026-06-07; davon 13 schnelle Korrektheits-Gates jetzt blockierend in CI, 2 slow Mess-Laeufe lokal).
 > **Lineage/Provenance:** siehe `SOURCES.md` (SHA-256 je Quelldatei) | **Lizenz:** Apache-2.0
 
 XY-Modell / BKT-Physik auf Dreiecks- und Honeycomb-Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Finite-Size-Scaling.
@@ -65,14 +65,17 @@ Die Selftests laufen direkt in der Engine (`python <engine>.py`; Details im
 Engine-Header). Die Testsuite (numpy/scipy/pytest noetig):
 
 ```
-pytest                 # volle Suite (inkl. slow Mess-Lauf), 14/14 PASS
-pytest -m "not slow"   # nur schnelle Korrektheits-Gates (inkl. WM-Synthetik-Orakel)
+pytest                 # volle Suite (inkl. slow Mess-Lauf), 15/15 PASS
+pytest -m "not slow"   # nur schnelle Korrektheits-Gates (13, inkl. WM-Synthetik-Orakel) — CI-Gate
 python "src/260604 PHY030 triangular tbkt per-site v01.py"            # T_BKT-Schranken (konservativ)
 python "src/260604 PHY030 triangular tbkt per-site v02 wm-logfit.py"  # T_BKT Weber-Minnhagen-Log-Fit
 ```
 
-CI prueft Syntax (`compileall`) + Lint (non-blocking) — die vollen
-physikalischen Gate-Runs brauchen numpy/scipy und laufen lokal.
+CI (`.github/workflows/ci.yml`) prueft drei blockierende Gates: Lint
+(`ruff check`, Baseline in `ruff.toml`), Syntax (`compileall`) und die
+schnellen Korrektheits-Tests (`pytest -m "not slow"`) ueber die Python-Matrix
+3.10/3.11/3.12 (Deps aus `requirements-dev.txt`, pip-Cache). Die vollen
+physikalischen Mess-Laeufe (slow, Wolff-Sampling) laufen lokal.
 
 ## Verwandte Repos
 

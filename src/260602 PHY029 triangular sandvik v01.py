@@ -14,7 +14,8 @@ Referenz: T_BKT(triangular) = 1.418(2) (Sorokin; zitiert arXiv:2305.00651).
 Verifikation der Methode: PHY028 reproduziert T_BKT(square)=0.8935 auf 0.16%.
 """
 from __future__ import annotations
-import json, math
+import json
+import math
 import numpy as np
 from dataclasses import asdict
 from typing import Any, Optional

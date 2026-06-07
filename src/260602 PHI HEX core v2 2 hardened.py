@@ -642,9 +642,7 @@ def bca_bootstrap_ci(a: np.ndarray, b: np.ndarray,
     z0 = _norm_ppf(prop)
 
     # acceleration via jackknife auf gepooltem Effekt
-    combined = []
     jack = []
-    full = np.concatenate([a, b])
     # jackknife auf a
     for i in range(len(a)):
         aa = np.delete(a, i)

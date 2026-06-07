@@ -30,13 +30,12 @@ from __future__ import annotations
 import json
 import math
 import numpy as np
-from dataclasses import dataclass, asdict
+from dataclasses import asdict
 from typing import Any, Optional
 
 import sys
 sys.path.insert(0, "/home/claude")
 from phy026_wolff_cluster import measure_helicity_wolff, WolffHelicityResult
-from phi_hex_core_v2 import nelson_kosterlitz_line
 
 
 def find_crossing(measurements: list[WolffHelicityResult]) -> Optional[float]:
@@ -84,7 +83,7 @@ def run_phy027() -> dict[str, Any]:
             print(f"  -> Crossing T*(L={L}) = {tc:.3f} "
                   f"(Abw. {(tc-ref)/ref*100:+.1f}%)\n")
         else:
-            print(f"  -> kein Crossing im Raster\n")
+            print("  -> kein Crossing im Raster\n")
 
     # Extrapolation gegen 1/(ln L)^2
     valid = [(L, tc) for L, tc in crossings.items() if tc is not None]

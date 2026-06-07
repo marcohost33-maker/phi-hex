@@ -38,14 +38,14 @@ import math
 import time
 import numpy as np
 from dataclasses import dataclass, asdict
-from typing import Any, Optional
+from typing import Any
 
 import sys
 sys.path.insert(0, "/home/claude")
 from phi_hex_core_v2 import (
     build_triangular_lattice, build_adjacency, axial_to_xy,
     XYConfig, xy_langevin_step, helicity_terms, helicity_from_ensemble,
-    nelson_kosterlitz_line, make_rng, TriangularLattice,
+    nelson_kosterlitz_line, make_rng,
 )
 
 

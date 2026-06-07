@@ -35,7 +35,7 @@ import json
 import math
 from collections import deque
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Sequence, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 import numpy as np
 
@@ -287,7 +287,6 @@ def g1_by_distance(theta_samples: np.ndarray, dist_matrix: np.ndarray) -> Dict[i
     """
     Compute g1(r)=mean cos(theta_i-theta_j) by graph distance.
     """
-    n = theta_samples.shape[1]
     max_dist = int(np.max(dist_matrix[dist_matrix < 32767]))
     out: Dict[int, float] = {}
 

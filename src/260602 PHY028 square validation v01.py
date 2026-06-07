@@ -36,7 +36,6 @@ import json
 import math
 import numpy as np
 from dataclasses import dataclass, asdict
-from typing import Any, Optional
 
 import sys
 sys.path.insert(0, "/home/claude")
