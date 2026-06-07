@@ -21,7 +21,6 @@ from phy031_honeycomb import (
     REF_HONEYCOMB,
     SW_LIMIT_HONEYCOMB,
     XYConfig,
-    build_honeycomb_adjacency,
     build_honeycomb_lattice,
     helicity_from_ensemble,
     helicity_terms,

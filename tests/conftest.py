@@ -24,6 +24,8 @@ _MODULE_FILES = {
     "phy030_triangular_tbkt": "260604 PHY030 triangular tbkt per-site v01.py",
     "phy030_tbkt_wm_logfit": "260604 PHY030 triangular tbkt per-site v02 wm-logfit.py",
     "phy031_honeycomb": "260607 PHY031 honeycomb tbkt per-site v01.py",
+    "phy032_honeycomb_wm_bootstrap":
+        "260607 PHY032 honeycomb wm-logfit bootstrap v01.py",
 }
 
 

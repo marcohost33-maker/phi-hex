@@ -38,3 +38,6 @@
 | 13BCBD96960F233A | 2026-06-07 | src | repo-native (PHY031 T_BKT honeycomb per-Site v01; Wolff + Sandvik-Paar + NK-Crossing; Ref arXiv:2501.07388; KEINE Drive-Quelle) |
 | FE5B9AC917FF28AE | 2026-06-07 | results | repo-native (Gate-Evidenz PHY031 honeycomb, deterministisch seed=42; KEINE Drive-Quelle) |
 | 3FC5DB6EF124D21E | 2026-06-07 | tests | repo-native (Geometrie-Orakel Upsilon(0)=3/4 + Sandvik-Synthetik-Orakel + Smoke fuer PHY031; KEINE Drive-Quelle) |
+| 5B21C39787765E78 | 2026-06-07 | src | repo-native (PHY032 honeycomb WM-Log-Fit + groessere L (AP-1) + Seed-Bootstrap/Jackknife-CI (AP-2); WM-Fit-Kern 1:1 aus PHY030 v02; Ref arXiv:2501.07388 + arXiv:2406.12076; KEINE Drive-Quelle) |
+| FE09590499875FF7 | 2026-06-07 | results | repo-native (Gate-Evidenz PHY032 honeycomb, deterministisch seed=42, n_boot=2000 seed=42; KEINE Drive-Quelle) |
+| D78B3D2C8DBB1A4D | 2026-06-07 | tests | repo-native (Bootstrap-/Jackknife-Orakel + Estimator-Verdrahtung + Repro-gegen-PHY031 fuer PHY032; KEINE Drive-Quelle) |
