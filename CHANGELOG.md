@@ -6,7 +6,9 @@ Format lose an Keep-a-Changelog angelehnt.
 ## [2026-06-07] PHY031 — T_BKT(honeycomb) gemessen + Lint vollstaendig
 
 Schliesst die als "offen" markierte Luecke T_BKT(honeycomb) und zieht die
-Lint-Baseline auf den vollen pycodestyle-Default (E701/E702) durch.
+Lint-Baseline ohne Ausnahmen auf den ruff-Default-Regelsatz (E4/E7/E9 + F,
+inkl. E701/E702) durch. (Praezisierung: das ist die ruff-Default-Auswahl,
+NICHT das gesamte pycodestyle-Regelwerk, das auch E1/E2/E3/E5 + W umfasst.)
 
 ### Added
 - `src/260607 PHY031 honeycomb tbkt per-site v01.py`: T_BKT(honeycomb) per-Site.
@@ -38,7 +40,8 @@ Finite-Size); das groesste Sandvik-Paar (12,24) verankert T_BKT C-frei auf
 - `ruff.toml`: E701/E702-Ignore entfernt — die kompakten `clean()`-JSON-
   Serialisierer (core/PHY026-029) + inline-`;`-Statements (PHY028/029) sind
   auf die mehrzeilige Form (wie PHY030/031 `_clean`) ausformatiert; der Stack
-  ist jetzt gegen den vollen pycodestyle-Default sauber (verhaltensneutral).
+  ist jetzt gegen den ruff-Default-Regelsatz (E4/E7/E9 + F) ohne Ausnahmen
+  sauber (verhaltensneutral).
 
 ## [2026-06-07] Code-Review-Haertung — CI-Test-Gating, Lint-Baseline, Dead-Code
 

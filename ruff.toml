@@ -2,9 +2,11 @@
 #
 # Setzt die im CI-Workflow angekuendigte "Lint-Baseline" (ci.yml: war
 # "non-blocking bis Lint-Baseline gesetzt"). `ruff check` ist ein
-# blockierendes Gate. Default-Regelsatz (Pyflakes F + pycodestyle E4/E7/E9):
-# faengt tote Importe, undefinierte Namen, ungenutzte Variablen sowie
-# Mehrfach-Statements pro Zeile (E701/E702). Der Stack ist gegen diesen
-# Default-Satz vollstaendig sauber (keine Ausnahmen noetig).
+# blockierendes Gate. Aktiv ist die ruff-DEFAULT-Auswahl (Pyflakes F +
+# pycodestyle-Teilmenge E4/E7/E9) - das ist NICHT das gesamte pycodestyle-
+# Regelwerk (E1/E2/E3/E5 + W sind in der ruff-Default-Auswahl nicht
+# enthalten). Gefangen werden u.a. tote Importe, undefinierte Namen,
+# ungenutzte Variablen und Mehrfach-Statements pro Zeile (E701/E702). Der
+# Stack ist gegen diese Default-Auswahl vollstaendig sauber (keine Ausnahmen).
 target-version = "py310"
 line-length = 88
