@@ -29,7 +29,6 @@ import math
 import numpy as np
 import scipy.sparse as sp
 import scipy.sparse.linalg as spla
-from itertools import combinations_with_replacement
 from typing import Any
 
 

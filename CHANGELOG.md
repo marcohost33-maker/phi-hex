@@ -3,6 +3,77 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-06-07] PHY031 — T_BKT(honeycomb) gemessen + Lint vollstaendig
+
+Schliesst die als "offen" markierte Luecke T_BKT(honeycomb) und zieht die
+Lint-Baseline ohne Ausnahmen auf den ruff-Default-Regelsatz (E4/E7/E9 + F,
+inkl. E701/E702) durch. (Praezisierung: das ist die ruff-Default-Auswahl,
+NICHT das gesamte pycodestyle-Regelwerk, das auch E1/E2/E3/E5 + W umfasst.)
+
+### Added
+- `src/260607 PHY031 honeycomb tbkt per-site v01.py`: T_BKT(honeycomb) per-Site.
+  Honeycomb-Torus (2-atomige Basis A/B, z=3, N=2L^2), gitter-agnostische
+  Wolff-Pipeline (wiederverwendet PHY026 `wolff_sweep` + core-Helicity), C-freie
+  Sandvik-Paar-Schaetzung (L,2L) am Weber-Minnhagen-Punkt + per-L NK-Crossings.
+- `results/260607 PHY031 honeycomb tbkt per-site report.txt`: Gate-Evidenz
+  (deterministisch seed=42).
+- `tests/test_tbkt_honeycomb.py` (+8): Geometrie-Orakel `Upsilon(0)=3/4 J`
+  (analytisch exakt, z=3, groessen-unabhaengig), Koordinations-/Bondlaengen-
+  Check, Sandvik-Synthetik-Orakel (rekonstruiert bekanntes T_true, fails-
+  before-faehig) + slow Crossing-Smoke. conftest/SOURCES.md ergaenzt.
+
+### Result (Evidenz: `results/260607 PHY031 honeycomb tbkt per-site report.txt`)
+| Methode | T_BKT(honeycomb) | Abw. vs 0.573 |
+|---|---|---|
+| Sandvik-Paar (L=12,24), C-frei | **0.595** | +3.90% |
+| Sandvik-Paar (L=6,12), C-frei | 0.602 | +5.06% |
+| per-L NK-Crossing L=24 | 0.628 | +9.53% |
+| per-L NK-Crossing L=6 | 0.678 | +18.31% |
+
+Gate A (perfekt ausgerichtet, T->0): `Upsilon(0) = 0.750000` EXAKT (analytischer
+per-Site-Spinwellen-Grenzwert 3/4 J; vgl. Dreieck 3/2, Quadrat 1). Die per-L-
+Crossings driften monoton von oben gegen die Referenz 0.573 (textbook BKT-
+Finite-Size); das groesste Sandvik-Paar (12,24) verankert T_BKT C-frei auf
++3.9%. Bei kleinen L ehrlich ausgewiesene Finite-Size-Grenze.
+
+### Changed
+- `ruff.toml`: E701/E702-Ignore entfernt — die kompakten `clean()`-JSON-
+  Serialisierer (core/PHY026-029) + inline-`;`-Statements (PHY028/029) sind
+  auf die mehrzeilige Form (wie PHY030/031 `_clean`) ausformatiert; der Stack
+  ist jetzt gegen den ruff-Default-Regelsatz (E4/E7/E9 + F) ohne Ausnahmen
+  sauber (verhaltensneutral).
+
+## [2026-06-07] Code-Review-Haertung — CI-Test-Gating, Lint-Baseline, Dead-Code
+
+Best-Practice-Welle (GitHub-Actions/pytest + ruff), keine Physik-Aenderung.
+Mess-Zahlen unveraendert.
+
+### Added
+- `.github/workflows/ci.yml`: neuer `test`-Job laeuft die schnellen
+  Korrektheits-Gates (`pytest -m "not slow"`, 13 Tests) ueber die Matrix
+  Python 3.10/3.11/3.12 (`fail-fast: false`, pip-Cache). Bisher lief in CI
+  KEIN Test — die Physik-Korrektheits-Gates konnten Regressionen nicht
+  fangen (Luecke gegen das Reality-Anchor-Prinzip).
+- `requirements-dev.txt`: reproduzierbare Dev-/CI-Abhaengigkeiten (numpy/
+  scipy/pytest/ruff), Cache-Key-Quelle fuer `setup-python`.
+- `ruff.toml`: explizite Lint-Baseline (die der CI-Kommentar als naechsten
+  Schritt ankuendigte). E701/E702 bewusst ignoriert (intentionaler kompakter
+  Stil der JSON-`clean()`-Serialisierer und der Acklam-`_norm_ppf`).
+
+### Changed
+- `ci.yml` ruff-Schritt von non-blocking (`|| true`) auf **blockierend**;
+  Lint-Job getrennt vom Test-Job.
+- README/Status: Testanzahl ehrlich von "14/14" auf **15/15** korrigiert
+  (lokal verifiziert 2026-06-07; pytest sammelt 15 Items — die
+  parametrisierte WM-Orakel-Funktion zaehlt 3-fach).
+
+### Fixed (Dead-Code, ruff F401/F841/F541/E401 — verhaltensneutral)
+- `core` `bca_bootstrap_ci`: ungenutzte `combined`/`full` entfernt.
+- Ungenutzte Importe/Variablen in PHY026/PHY027/PHY028/PHY029, PHY024_R0,
+  phy017 (tote `typing`-Importe, leerer f-string, Multi-Import-Zeile).
+- Provenance: Aenderungen sind repo-native Reviews (Praezedenz PR #1);
+  `SOURCES.md`-Eintraege bleiben unangetastet (append-only Lineage).
+
 ## [2026-06-04] PHY030 v02 — Weber-Minnhagen-Log-Korrektur-Fit (SOTA-Praezisierung)
 
 Praeziserer T_BKT-Punktschaetzer ergaenzend zu den konservativen v01-Schranken.

@@ -30,13 +30,12 @@ from __future__ import annotations
 import json
 import math
 import numpy as np
-from dataclasses import dataclass, asdict
+from dataclasses import asdict
 from typing import Any, Optional
 
 import sys
 sys.path.insert(0, "/home/claude")
 from phy026_wolff_cluster import measure_helicity_wolff, WolffHelicityResult
-from phi_hex_core_v2 import nelson_kosterlitz_line
 
 
 def find_crossing(measurements: list[WolffHelicityResult]) -> Optional[float]:
@@ -84,7 +83,7 @@ def run_phy027() -> dict[str, Any]:
             print(f"  -> Crossing T*(L={L}) = {tc:.3f} "
                   f"(Abw. {(tc-ref)/ref*100:+.1f}%)\n")
         else:
-            print(f"  -> kein Crossing im Raster\n")
+            print("  -> kein Crossing im Raster\n")
 
     # Extrapolation gegen 1/(ln L)^2
     valid = [(L, tc) for L, tc in crossings.items() if tc is not None]
@@ -149,16 +148,25 @@ def run_phy027() -> dict[str, Any]:
 if __name__ == "__main__":
     report = run_phy027()
     def clean(o):
-        if o is None: return None
-        if isinstance(o, (np.bool_, bool)): return bool(o)
-        if isinstance(o, (np.integer,)): return int(o)
+        if o is None:
+            return None
+        if isinstance(o, (np.bool_, bool)):
+            return bool(o)
+        if isinstance(o, (np.integer,)):
+            return int(o)
         if isinstance(o, (np.floating,)):
-            v = float(o); return v if math.isfinite(v) else None
-        if isinstance(o, float): return o if math.isfinite(o) else None
-        if isinstance(o, np.ndarray): return [clean(x) for x in o.tolist()]
-        if hasattr(o, "__dataclass_fields__"): return clean(asdict(o))
-        if isinstance(o, dict): return {str(k): clean(v) for k, v in o.items()}
-        if isinstance(o, (list, tuple)): return [clean(x) for x in o]
+            v = float(o)
+            return v if math.isfinite(v) else None
+        if isinstance(o, float):
+            return o if math.isfinite(o) else None
+        if isinstance(o, np.ndarray):
+            return [clean(x) for x in o.tolist()]
+        if hasattr(o, "__dataclass_fields__"):
+            return clean(asdict(o))
+        if isinstance(o, dict):
+            return {str(k): clean(v) for k, v in o.items()}
+        if isinstance(o, (list, tuple)):
+            return [clean(x) for x in o]
         return o
     print("\n--- JSON-Report ---")
     print(json.dumps(clean(report), indent=2, allow_nan=False))
