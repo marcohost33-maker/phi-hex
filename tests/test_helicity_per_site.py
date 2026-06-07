@@ -13,8 +13,6 @@ Unabhaengiges Orakel:
 """
 from __future__ import annotations
 
-import math
-
 import numpy as np
 
 from phi_hex_core_v2 import (

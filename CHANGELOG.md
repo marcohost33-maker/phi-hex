@@ -3,6 +3,55 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-06-07] PHY032 — honeycomb WM-Log-Fit + groessere L (AP-1) + einheitliche Seed-Bootstrap-CI (AP-2)
+
+Schliesst die zwei im Audit (`Vero/Meta/AUDITS/2026-06-07_phi-hex-welle`)
+priorisierten Arbeitspakete: (AP-1) die Weber-Minnhagen-Log-Fit-Methodik von
+PHY030 v02 auch auf honeycomb anwenden + groessere L (12/24/48 statt 6/12/24),
+und (AP-2) einheitliche propagierte Fehlerbalken (Seed-Bootstrap + Jackknife)
+auf ALLE berichteten T_BKT-Schaetzer. Keine Aenderung am Kern-Physik-Code.
+
+### Added
+- `src/260607 PHY032 honeycomb wm-logfit bootstrap v01.py`:
+  - **AP-1:** Weber-Minnhagen Fixed-T-Fit (A) + C-freie Sandvik-Paar (B) auf
+    honeycomb, **1:1 die gitter-agnostischen Fit-Funktionen aus PHY030 v02**
+    (`wm_form`/`fit_tbkt_fixedT`/`tbkt_pair_C_eliminated` — kein Reinvent,
+    single source of truth). L-Set **(12, 24, 48)**, N bis 4608.
+  - **AP-2:** `bootstrap_tbkt_over_seeds` (Perzentil-Bootstrap ueber die
+    n_seeds-Replikate, deterministisch via `make_rng`) + `jackknife_tbkt_over_seeds`
+    (leave-one-seed-out SE), gitter-/methoden-agnostisch auf JEDEN T_BKT-
+    Schaetzer (Sandvik-Paar + WM-Fit) anwendbar. `measure_honeycomb_seedwise`
+    behaelt die per-Seed-Upsilon-Werte (RNG-Stream-Vertrag identisch PHY031 v01).
+  - **Beide Literaturwerte ausgewiesen (kein Kanon gekuert):** 0.573
+    (arXiv:2501.07388) UND 0.576(3) (arXiv:2406.12076).
+- `results/260607 PHY032 honeycomb wm-logfit bootstrap report.txt`:
+  Gate-Evidenz, deterministisch (master_seed=42, n_boot=2000 seed=42).
+- `tests/test_tbkt_honeycomb_bootstrap.py` (+9 schnelle, +1 slow): Bootstrap-
+  Orakel (CI ueberdeckt bekanntes T_true; degenerierter Estimator -> None-CI =
+  Silent-Failure-Gate; Determinismus), Jackknife-Orakel (SE=0 bei identischen
+  Seeds), Estimator-Verdrahtung (WM-Fit rekonstruiert T_true; Rand-Minimum ->
+  None), Repro gegen PHY031 v01 (per-Seed-Mittel bit-identisch, slow).
+
+### Result (Evidenz: `results/260607 PHY032 honeycomb wm-logfit bootstrap report.txt`)
+| Methode | T_BKT(honeycomb) | vs 0.573 | vs 0.576(3) |
+|---|---|---|---|
+| Sandvik-Paar (24,48) — **groesstes L** | **0.5917** CI[0.587,0.598] | +3.27% | +2.73% |
+| Sandvik-Paar (12,48) | 0.5968 CI[0.590,0.598] | +4.15% | +3.60% |
+| Sandvik-Paar (12,24) | 0.6014 CI[0.599,0.610] | +4.95% | +4.41% |
+| Weber-Minnhagen Fixed-T-Fit (alle L, argmin@0.5975) | 0.5964 CI[0.594,0.599] | +4.08% | +3.54% |
+| PHY031 v01 Paar (12,24) — superseded | 0.595 | +3.90% | — |
+
+**Befund (ehrlich, NICHT getunt):** Groesseres L senkt den Sandvik-Paar-Bias
+monoton (Paar(24,48)=+3.27% < Paar(12,24)=+4.95%) — die Audit-Hypothese
+bestaetigt sich (Praezedenz triangular). Der Rest-Bias bei lokal-vertretbaren
+L (max 48 auf 8GB-RAM-PC; Referenz-Studien L=48..192 / 8..128) ist erwartbar
+finite-size-dominiert, nicht methodisch. Die Seed-Bootstrap-CIs erfassen die
+Seed-Streuung (NICHT den finite-size-Bias) und ueberdecken 0.573/0.576 NICHT
+-> der Rest-Abstand ist reales finite-size. Der WM-Fit (0.5964) liegt hier -
+anders als bei triangular - **nicht** unter dem groessten Paar-Schaetzer; bei
+nur drei kleinen L sind sub-leading Log-Korrekturen eine reale Praezisions-
+Grenze. Gate A (T->0): Upsilon(0)=0.750000 EXAKT. Testsuite 33/33 PASS.
+
 ## [2026-06-07] PHY031 — T_BKT(honeycomb) gemessen + Lint vollstaendig
 
 Schliesst die als "offen" markierte Luecke T_BKT(honeycomb) und zieht die

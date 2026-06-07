@@ -1,0 +1,64 @@
+PHY032 v01 - T_BKT(honeycomb) WM-Log-Fit + groessere L + Seed-Bootstrap
+Coworker Research / Coworkerz, 2026-06-07
+========================================================================
+
+AP: AP-1 (WM-Fit + groessere L) + AP-2 (Seed-Bootstrap-CI)
+WM-Form: Upsilon(T_BKT,L) = (2 T_BKT/pi)*(1 + 1/(2 ln L + C))
+Methode: Weber-Minnhagen fixed-T fit (A) + Sandvik-pair C-elim (B); seed percentile bootstrap + jackknife on each T_BKT
+Quellen (Methodik): arXiv:1302.2900; Weber & Minnhagen PRB 37, 5986(R) (1988)
+Referenz (multi-lattice arXiv:2501.07388): T_BKT = 0.573
+Referenz (dediziert arXiv:2406.12076): T_BKT = 0.576 +- 0.003
+Per-Site-T=0-Grenzwert (exakt) = 0.75 J  (Gate A gemessen: 0.750000)
+
+Gitter L = [12, 24, 48]  (N = 2 L^2)
+T-Gitter = [0.56, 0.5725, 0.585, 0.5975, 0.61, 0.6225, 0.635, 0.6475]
+Wolff: n_measure=140, n_burn=60, n_seeds=8, master_seed=42, n_boot=2000
+
+--- Messung Upsilon(T,L) (Seed-Mittel +- SEM) ---
+  L=12: T=0.5600:0.5368+-0.0035  T=0.5725:0.5323+-0.0052  T=0.5850:0.5159+-0.0042  T=0.5975:0.4938+-0.0077  T=0.6100:0.4879+-0.0059  T=0.6225:0.4772+-0.0041  T=0.6350:0.4413+-0.0053  T=0.6475:0.4236+-0.0127
+  L=24: T=0.5600:0.5330+-0.0047  T=0.5725:0.5116+-0.0045  T=0.5850:0.4938+-0.0062  T=0.5975:0.4726+-0.0046  T=0.6100:0.4467+-0.0075  T=0.6225:0.4167+-0.0055  T=0.6350:0.3912+-0.0088  T=0.6475:0.3571+-0.0101
+  L=48: T=0.5600:0.5151+-0.0035  T=0.5725:0.5042+-0.0032  T=0.5850:0.4757+-0.0046  T=0.5975:0.4413+-0.0087  T=0.6100:0.3958+-0.0064  T=0.6225:0.3414+-0.0086  T=0.6350:0.2624+-0.0099  T=0.6475:0.2326+-0.0131
+
+--- (A) Weber-Minnhagen Fixed-T-Fit chi^2(T) ---
+  T=0.5600: chi^2=7.4219e+02  C=-3.2156
+  T=0.5725: chi^2=4.5287e+02  C=-3.1916
+  T=0.5850: chi^2=6.8072e+01  C=-2.5451
+  T=0.5975: chi^2=4.2963e+00  C=-1.8673  <- argmin
+  T=0.6100: chi^2=5.7781e+01  C=-0.2638
+  T=0.6225: chi^2=1.8102e+02  C=+1.7517
+  T=0.6350: chi^2=2.6175e+02  C=+50.0000
+  T=0.6475: chi^2=2.4278e+02  C=+50.0000
+
+  T_BKT(WM-Fit) = 0.5964  vs 0.573: +4.08%  vs 0.576: +3.54%  CI[0.5942,0.5985]
+    Seed-Bootstrap: n_valid=2000/2000  boot_std=0.001062897224843396
+    Seed-Jackknife: mean=0.5963736818473818 se=0.0010861021145805168
+
+--- (B) Sandvik-Paar T_BKT(L,2L) (C-frei) + Seed-Bootstrap-CI ---
+  T_BKT(L=12,24) = 0.6014  vs 0.573: +4.95%  vs 0.576: +4.41%  CI[0.5989,0.6100]
+      Seed-Bootstrap: n_valid=2000/2000  boot_std=0.0022648207234478492  Jackknife: mean=0.6014311110521763 se=0.0015781751413498476
+  T_BKT(L=12,48) = 0.5968  vs 0.573: +4.15%  vs 0.576: +3.60%  CI[0.5904,0.5984]
+      Seed-Bootstrap: n_valid=2000/2000  boot_std=0.002388840626577499  Jackknife: mean=0.5964275561749645 se=0.003394812430826675
+  T_BKT(L=24,48) = 0.5917  vs 0.573: +3.27%  vs 0.576: +2.73%  CI[0.5871,0.5982]
+      Seed-Bootstrap: n_valid=2000/2000  boot_std=0.003432816970694649  Jackknife: mean=0.5919670636456316 se=0.004402744815744201
+
+--- Vergleich PHY031 v01 (kleine L, ohne CI) ---
+  PHY031 v01 groesstes Paar (12,24) = 0.595  (+3.90% vs 0.573)
+  PHY032 groesstes Paar (24,48) = 0.5917  vs 0.573: +3.27%  vs 0.576: +2.73%
+  PHY032 WM-Fit (alle L)            = 0.5964  vs 0.573: +4.08%  vs 0.576: +3.54%
+
+--- PASS-Gates ---
+  [PASS] PASS_ALIGNED_EXACT_THREE_QUARTERS
+  [PASS] PASS_LARGER_L_REDUCES_BIAS
+  [PASS] PASS_AT_LEAST_ONE_CI
+  [PASS] PASS_PAIRS_IN_PHYSICAL_BAND
+  OVERALL: PASS
+
+--- Caveats (Reifegrad-Ehrlichkeit) ---
+  - L bis 48 (lokal RAM-/zeit-limitiert; Referenz-Studien
+    nutzen L=48..192 bzw. 8..128). Rest-Bias ist erwartbar
+    finite-size, NICHT methodisch - ehrlich gegen BEIDE
+    Referenzen (0.573 / 0.576) ausgewiesen, nicht getunt.
+  - CI = Seed-Bootstrap (n_seeds-Replikate, Perzentil); es
+    erfasst die Seed-Streuung, NICHT den finite-size-Bias.
+  - Statistik bewusst lokal-vertretbar (Minuten-Budget,
+    8GB-RAM-PC); kein publikationsreifer Praezisionsanspruch.
