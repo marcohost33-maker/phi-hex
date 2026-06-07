@@ -58,21 +58,27 @@ def build_square_lattice(L):
     for x in range(L):
         for y in range(L):
             i = idx(x, y)
-            j = idx(x + 1, y); edges.append((min(i, j), max(i, j))); edge_disp.append((1.0, 0.0))
-            k = idx(x, y + 1); edges.append((min(i, k), max(i, k))); edge_disp.append((0.0, 1.0))
+            j = idx(x + 1, y)
+            edges.append((min(i, j), max(i, j)))
+            edge_disp.append((1.0, 0.0))
+            k = idx(x, y + 1)
+            edges.append((min(i, k), max(i, k)))
+            edge_disp.append((0.0, 1.0))
     return SquareLattice(L=L, edges=edges, edge_disp=edge_disp, n_nodes=n)
 
 
 def build_square_adjacency(lat):
     adj = [[] for _ in range(lat.n_nodes)]
     for i, j in lat.edges:
-        adj[i].append(j); adj[j].append(i)
+        adj[i].append(j)
+        adj[j].append(i)
     return adj
 
 
 def square_helicity_terms(theta, lat, direction=(1.0, 0.0)):
     ex, ey = direction
-    t1 = 0.0; sin_accum = 0.0
+    t1 = 0.0
+    sin_accum = 0.0
     for k, (i, j) in enumerate(lat.edges):
         dx, dy = lat.edge_disp[k]
         proj = ex * dx + ey * dy
@@ -100,8 +106,11 @@ class SquareResult:
 
 def measure_square(L, T, J=1.0, n_seeds=12, n_measure=600, n_burn=400,
                    master_seed=42):
-    lat = build_square_lattice(L); adj = build_square_adjacency(lat)
-    n = lat.n_nodes; beta = 1.0 / T; cfg = XYConfig(J=J, T=T)
+    lat = build_square_lattice(L)
+    adj = build_square_adjacency(lat)
+    n = lat.n_nodes
+    beta = 1.0 / T
+    cfg = XYConfig(J=J, T=T)
     ups = []
     for s in range(n_seeds):
         rng = make_rng(master_seed, stream=300 + s + 1000 * L)
@@ -111,7 +120,9 @@ def measure_square(L, T, J=1.0, n_seeds=12, n_measure=600, n_burn=400,
         t1s, sas = [], []
         for _ in range(n_measure):
             wolff_sweep(th, adj, beta, J, rng, target_flips=n)
-            a, b = square_helicity_terms(th, lat); t1s.append(a); sas.append(b)
+            a, b = square_helicity_terms(th, lat)
+            t1s.append(a)
+            sas.append(b)
         ups.append(square_helicity_from_ensemble(t1s, sas, cfg, n))
     arr = np.array(ups)
     return SquareResult(T=T, L=L, upsilon_mean=float(np.mean(arr)),
@@ -125,14 +136,17 @@ def sandvik_pair_tbkt(L, data_L, data_2L):
     Ts = sorted(set(data_L) & set(data_2L))
     diffs = []
     for T in Ts:
-        u1 = data_L[T].upsilon_mean; u2 = data_2L[T].upsilon_mean
+        u1 = data_L[T].upsilon_mean
+        u2 = data_2L[T].upsilon_mean
         R1 = math.pi * u1 / (2 * T) - 1.0
         R2 = math.pi * u2 / (2 * T) - 1.0
         if abs(R1) > 1e-6 and abs(R2) > 1e-6:
             diffs.append((T, (1.0 / R1 - 1.0 / R2) - (-2.0 * ln2)))
     for i in range(len(diffs) - 1):
-        T0, d0 = diffs[i]; T1, d1 = diffs[i + 1]
-        if d0 == 0: return T0
+        T0, d0 = diffs[i]
+        T1, d1 = diffs[i + 1]
+        if d0 == 0:
+            return T0
         if d0 * d1 < 0:
             return float(T0 + (T1 - T0) * (-d0) / (d1 - d0))
     return None
@@ -218,16 +232,25 @@ def run_phy028():
 if __name__ == "__main__":
     report = run_phy028()
     def clean(o):
-        if o is None: return None
-        if isinstance(o, (np.bool_, bool)): return bool(o)
-        if isinstance(o, (np.integer,)): return int(o)
+        if o is None:
+            return None
+        if isinstance(o, (np.bool_, bool)):
+            return bool(o)
+        if isinstance(o, (np.integer,)):
+            return int(o)
         if isinstance(o, (np.floating,)):
-            v = float(o); return v if math.isfinite(v) else None
-        if isinstance(o, float): return o if math.isfinite(o) else None
-        if isinstance(o, np.ndarray): return [clean(x) for x in o.tolist()]
-        if hasattr(o, "__dataclass_fields__"): return clean(asdict(o))
-        if isinstance(o, dict): return {str(k): clean(v) for k, v in o.items()}
-        if isinstance(o, (list, tuple)): return [clean(x) for x in o]
+            v = float(o)
+            return v if math.isfinite(v) else None
+        if isinstance(o, float):
+            return o if math.isfinite(o) else None
+        if isinstance(o, np.ndarray):
+            return [clean(x) for x in o.tolist()]
+        if hasattr(o, "__dataclass_fields__"):
+            return clean(asdict(o))
+        if isinstance(o, dict):
+            return {str(k): clean(v) for k, v in o.items()}
+        if isinstance(o, (list, tuple)):
+            return [clean(x) for x in o]
         return o
     print("\n--- JSON-Report ---")
     print(json.dumps(clean(report), indent=2, allow_nan=False))

@@ -1,6 +1,6 @@
 # Phi-Hex
 
-> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-07). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/. Testsuite 15/15 PASS (lokal verifiziert 2026-06-07; davon 13 schnelle Korrektheits-Gates jetzt blockierend in CI, 2 slow Mess-Laeufe lokal).
+> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-07). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/ (jetzt inkl. honeycomb, PHY031). Testsuite 23/23 PASS (lokal verifiziert 2026-06-07; davon 20 schnelle Korrektheits-Gates blockierend in CI, 3 slow Mess-Laeufe lokal).
 > **Lineage/Provenance:** siehe `SOURCES.md` (SHA-256 je Quelldatei) | **Lizenz:** Apache-2.0
 
 XY-Modell / BKT-Physik auf Dreiecks- und Honeycomb-Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Finite-Size-Scaling.
@@ -26,7 +26,7 @@ Wolff-Sampling auf dem Dreiecks-Torus, Nelson-Kosterlitz-Crossing
 | triangular | **1.4007 ± 0.0081** (Weber-Minnhagen-Log-Fit, v02) | 1.418 | Wolff + WM-Log-Korrektur, chi^2-Fit |
 | triangular | ~1.42 (v01-Schranken: L=19-Crossing 1.456; 1/lnL-Extrap. 1.382) | 1.418 | Wolff + NK-Crossing, FSS (konservativ) |
 | square | 0.893 (PHY028, V&V) | 0.893 | Sandvik-Paar (C-frei) |
-| honeycomb | nicht neu gemessen | 0.573 | offen |
+| honeycomb | **0.595** (PHY031, Sandvik-Paar L=12/24; +3.9%) | 0.573 | Wolff + Sandvik-Paar (C-frei) |
 
 **v02 (SOTA-Praezisierung, 2026-06-04):** Der Weber-Minnhagen-Log-Korrektur-Fit
 `Υ(T_BKT,L) = (2 T_BKT/π)·(1 + 1/(2 ln L + C))` (Weber & Minnhagen PRB 37,
@@ -45,8 +45,8 @@ diesen Mess-Stand ersetzt. Details in `CHANGELOG.md`.
 
 ## Kern
 
-- **Engine:** `src/260602 PHI HEX core v2 2 hardened.py` (Kern) + PHY024-030-Experiment-Serie
-- **Evidenz:** Selftest-Report + PHY025-030 Reports in `results/`; Testsuite in `tests/`; methodischer Audit (4 Responses) in `spec/`. Mess-Stand T_BKT(triangular) = 1.42 ± 0.04 (per-Site, 2026-06-04; Referenz 1.418).
+- **Engine:** `src/260602 PHI HEX core v2 2 hardened.py` (Kern) + PHY024-031-Experiment-Serie
+- **Evidenz:** Selftest-Report + PHY025-031 Reports in `results/`; Testsuite in `tests/`; methodischer Audit (4 Responses) in `spec/`. Mess-Stand T_BKT(triangular) = 1.42 ± 0.04 (per-Site, 2026-06-04; Referenz 1.418); T_BKT(honeycomb) = 0.595 (PHY031, 2026-06-07; Referenz 0.573).
 
 ## Struktur
 
@@ -65,10 +65,11 @@ Die Selftests laufen direkt in der Engine (`python <engine>.py`; Details im
 Engine-Header). Die Testsuite (numpy/scipy/pytest noetig):
 
 ```
-pytest                 # volle Suite (inkl. slow Mess-Lauf), 15/15 PASS
-pytest -m "not slow"   # nur schnelle Korrektheits-Gates (13, inkl. WM-Synthetik-Orakel) — CI-Gate
-python "src/260604 PHY030 triangular tbkt per-site v01.py"            # T_BKT-Schranken (konservativ)
-python "src/260604 PHY030 triangular tbkt per-site v02 wm-logfit.py"  # T_BKT Weber-Minnhagen-Log-Fit
+pytest                 # volle Suite (inkl. slow Mess-Lauf), 23/23 PASS
+pytest -m "not slow"   # nur schnelle Korrektheits-Gates (20, inkl. WM-/Sandvik-Synthetik-Orakel) — CI-Gate
+python "src/260604 PHY030 triangular tbkt per-site v01.py"            # T_BKT(tri)-Schranken (konservativ)
+python "src/260604 PHY030 triangular tbkt per-site v02 wm-logfit.py"  # T_BKT(tri) Weber-Minnhagen-Log-Fit
+python "src/260607 PHY031 honeycomb tbkt per-site v01.py"             # T_BKT(honeycomb) Wolff + Sandvik-Paar
 ```
 
 CI (`.github/workflows/ci.yml`) prueft drei blockierende Gates: Lint

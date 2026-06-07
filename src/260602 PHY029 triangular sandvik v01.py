@@ -43,8 +43,10 @@ def sandvik_pair(r1: int, r2: int, temps: list, cache: dict,
         if abs(R1) > 1e-6 and abs(R2) > 1e-6:
             diffs.append((T, (1.0 / R1 - 1.0 / R2) - target))
     for i in range(len(diffs) - 1):
-        T0, d0 = diffs[i]; T1, d1 = diffs[i + 1]
-        if d0 == 0: return T0
+        T0, d0 = diffs[i]
+        T1, d1 = diffs[i + 1]
+        if d0 == 0:
+            return T0
         if d0 * d1 < 0:
             return float(T0 + (T1 - T0) * (-d0) / (d1 - d0))
     return None
@@ -114,16 +116,25 @@ def run_phy029() -> dict[str, Any]:
 if __name__ == "__main__":
     report = run_phy029()
     def clean(o):
-        if o is None: return None
-        if isinstance(o, (np.bool_, bool)): return bool(o)
-        if isinstance(o, (np.integer,)): return int(o)
+        if o is None:
+            return None
+        if isinstance(o, (np.bool_, bool)):
+            return bool(o)
+        if isinstance(o, (np.integer,)):
+            return int(o)
         if isinstance(o, (np.floating,)):
-            v = float(o); return v if math.isfinite(v) else None
-        if isinstance(o, float): return o if math.isfinite(o) else None
-        if isinstance(o, np.ndarray): return [clean(x) for x in o.tolist()]
-        if hasattr(o, "__dataclass_fields__"): return clean(asdict(o))
-        if isinstance(o, dict): return {str(k): clean(v) for k, v in o.items()}
-        if isinstance(o, (list, tuple)): return [clean(x) for x in o]
+            v = float(o)
+            return v if math.isfinite(v) else None
+        if isinstance(o, float):
+            return o if math.isfinite(o) else None
+        if isinstance(o, np.ndarray):
+            return [clean(x) for x in o.tolist()]
+        if hasattr(o, "__dataclass_fields__"):
+            return clean(asdict(o))
+        if isinstance(o, dict):
+            return {str(k): clean(v) for k, v in o.items()}
+        if isinstance(o, (list, tuple)):
+            return [clean(x) for x in o]
         return o
     print("\n--- JSON-Report ---")
     print(json.dumps(clean(report), indent=2, allow_nan=False))

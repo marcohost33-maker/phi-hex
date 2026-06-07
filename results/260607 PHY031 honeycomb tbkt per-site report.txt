@@ -1,0 +1,37 @@
+PHY031 v01 - T_BKT(honeycomb) per-Site via Wolff + Sandvik-Paar
+Coworker Research / Coworkerz, 2026-06-07
+======================================================================
+
+Referenz T_BKT(honeycomb) = 0.573 J/k_B (arXiv:2501.07388)
+Per-Site-T=0-Grenzwert (exakt) = 0.75 J
+Gate A (perfekt ausgerichtet, T->0): Upsilon = 0.750000
+Wolff: n_measure=400, n_burn=300, n_seeds=8, master_seed=42
+Gitter L = [6, 12, 24]  (N = 2 L^2)
+T-Gitter = [0.56, 0.59, 0.62, 0.65, 0.68, 0.71]
+
+--- Messung Upsilon(T,L) ---
+  L= 6: T=0.56:0.5515+-0.0037  T=0.59:0.5276+-0.0032  T=0.62:0.5007+-0.0022  T=0.65:0.4683+-0.0040  T=0.68:0.4288+-0.0065  T=0.71:0.3855+-0.0062
+  L=12: T=0.56:0.5370+-0.0027  T=0.59:0.5043+-0.0028  T=0.62:0.4552+-0.0039  T=0.65:0.4039+-0.0068  T=0.68:0.3414+-0.0095  T=0.71:0.2658+-0.0112
+  L=24: T=0.56:0.5270+-0.0028  T=0.59:0.4828+-0.0035  T=0.62:0.4287+-0.0030  T=0.65:0.3140+-0.0053  T=0.68:0.2053+-0.0113  T=0.71:0.0789+-0.0103
+
+--- Per-L Nelson-Kosterlitz-Crossings ---
+  L=6: T_x = 0.6779  (Abw. +18.31%)
+  L=12: T_x = 0.6458  (Abw. +12.70%)
+  L=24: T_x = 0.6276  (Abw. +9.53%)
+
+--- Sandvik-Paar T_BKT(L,2L) (C-frei) ---
+  T_BKT(L=6_12) = 0.6020  (Abw. +5.06%)
+  T_BKT(L=12_24) = 0.5953  (Abw. +3.90%)
+
+--- PASS-Gates ---
+  [PASS] PASS_ALIGNED_EXACT_THREE_QUARTERS
+  [PASS] PASS_CROSSING_EXISTS
+  [PASS] PASS_CROSSING_IN_PHYSICAL_BAND
+  [PASS] PASS_PAIR_WITHIN_8PCT
+  OVERALL: PASS
+
+--- Caveats ---
+  - Kleine L (Honeycomb N=2L^2); finite-size Crossings driften
+    von oben gegen die Referenz. Sandvik-Paar ist C-frei,
+    aber bei kleinen L noch finite-size-behaftet.
+  - Statistik: bewusst kleines Seed-Budget (Minuten lokal).

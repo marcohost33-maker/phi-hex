@@ -148,16 +148,25 @@ def run_phy027() -> dict[str, Any]:
 if __name__ == "__main__":
     report = run_phy027()
     def clean(o):
-        if o is None: return None
-        if isinstance(o, (np.bool_, bool)): return bool(o)
-        if isinstance(o, (np.integer,)): return int(o)
+        if o is None:
+            return None
+        if isinstance(o, (np.bool_, bool)):
+            return bool(o)
+        if isinstance(o, (np.integer,)):
+            return int(o)
         if isinstance(o, (np.floating,)):
-            v = float(o); return v if math.isfinite(v) else None
-        if isinstance(o, float): return o if math.isfinite(o) else None
-        if isinstance(o, np.ndarray): return [clean(x) for x in o.tolist()]
-        if hasattr(o, "__dataclass_fields__"): return clean(asdict(o))
-        if isinstance(o, dict): return {str(k): clean(v) for k, v in o.items()}
-        if isinstance(o, (list, tuple)): return [clean(x) for x in o]
+            v = float(o)
+            return v if math.isfinite(v) else None
+        if isinstance(o, float):
+            return o if math.isfinite(o) else None
+        if isinstance(o, np.ndarray):
+            return [clean(x) for x in o.tolist()]
+        if hasattr(o, "__dataclass_fields__"):
+            return clean(asdict(o))
+        if isinstance(o, dict):
+            return {str(k): clean(v) for k, v in o.items()}
+        if isinstance(o, (list, tuple)):
+            return [clean(x) for x in o]
         return o
     print("\n--- JSON-Report ---")
     print(json.dumps(clean(report), indent=2, allow_nan=False))

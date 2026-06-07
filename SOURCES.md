@@ -35,3 +35,6 @@
 | 06D49F65483D2FEB | 2026-06-04 | results | repo-native (Gate-Evidenz PHY030 v02 WM-Log-Fit, deterministisch seed=42; KEINE Drive-Quelle) |
 | DDAB86BD905BD88F | 2026-06-04 17:42 | src | C:\Users\marco\repos-staging\phi-hex\src\260604 PHY030 triangular tbkt per-site v02 wm-logfit.py (v02b: Mutations-Guard als CI-Test + wm_form single-source, Equalita-Auflage) |
 | E48C1B736B0F58CB | 2026-06-04 17:41 | tests | C:\Users\marco\repos-staging\phi-hex\tests\test_tbkt_wm_logfit.py (v02b: Mutations-Guard als CI-Test + wm_form single-source, Equalita-Auflage) |
+| 13BCBD96960F233A | 2026-06-07 | src | repo-native (PHY031 T_BKT honeycomb per-Site v01; Wolff + Sandvik-Paar + NK-Crossing; Ref arXiv:2501.07388; KEINE Drive-Quelle) |
+| FE5B9AC917FF28AE | 2026-06-07 | results | repo-native (Gate-Evidenz PHY031 honeycomb, deterministisch seed=42; KEINE Drive-Quelle) |
+| 3FC5DB6EF124D21E | 2026-06-07 | tests | repo-native (Geometrie-Orakel Upsilon(0)=3/4 + Sandvik-Synthetik-Orakel + Smoke fuer PHY031; KEINE Drive-Quelle) |
