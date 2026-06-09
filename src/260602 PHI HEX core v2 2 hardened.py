@@ -325,6 +325,43 @@ def xy_langevin_step(theta: np.ndarray, adj: list[list[int]],
 # 3. BKT-Diagnostik: Helicity-Modulus mit Nelson-Kosterlitz-Sprung
 # ============================================================================
 
+def _edge_arrays(lattice: Any
+                 ) -> tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    """Gibt (edge_i, edge_j, disp) als numpy-Arrays fuer die Vektorisierung.
+
+    Cacht das Ergebnis auf dem Gitter-Objekt (`_phx_edge_cache`), da die
+    Kanten/Verschiebungen waehrend eines Mess-Laufs konstant sind und
+    `helicity_terms` pro Messung aufgerufen wird (Hot-Loop). Der Cache wird
+    neu gebaut, wenn sich die Kantenzahl aendert (Robustheit). Gitter-
+    agnostisch: funktioniert fuer jedes Objekt mit `.edges` (+ optional
+    `.edge_disp`), also Triangular- wie Honeycomb-Gitter.
+
+    `disp` ist None, falls keine (oder inkonsistente) edge_disp vorliegt;
+    dann faellt `helicity_terms` auf die rohe Positionsdifferenz zurueck.
+    """
+    edges = lattice.edges
+    cache = getattr(lattice, "_phx_edge_cache", None)
+    if cache is not None and cache[0].shape[0] == len(edges):
+        return cache
+    if edges:
+        ij = np.asarray(edges, dtype=np.intp)
+        edge_i, edge_j = ij[:, 0], ij[:, 1]
+    else:
+        edge_i = np.empty(0, dtype=np.intp)
+        edge_j = np.empty(0, dtype=np.intp)
+    edge_disp = getattr(lattice, "edge_disp", None)
+    if edge_disp is not None and len(edge_disp) == len(edges):
+        disp = np.asarray(edge_disp, dtype=float).reshape(len(edges), 2)
+    else:
+        disp = None
+    cache = (edge_i, edge_j, disp)
+    try:
+        lattice._phx_edge_cache = cache
+    except (AttributeError, TypeError):
+        pass  # frozen/slots-Gitter: ohne Cache, weiterhin korrekt
+    return cache
+
+
 def helicity_terms(theta: np.ndarray, lattice: TriangularLattice,
                    pos: list[tuple[float, float]],
                    direction: tuple[float, float] = (1.0, 0.0)
@@ -343,23 +380,29 @@ def helicity_terms(theta: np.ndarray, lattice: TriangularLattice,
     Nutzt lattice.edge_disp (minimum-image Bond-Vektoren), damit gewrappte
     Torus-Kanten den korrekten naechste-Nachbar-Vektor verwenden und nicht
     die rohe Koordinatendifferenz.
+
+    Vektorisiert (numpy) ueber alle Kanten - mathematisch identisch zur
+    fruehen skalaren Schleife (nur Gleitkomma-Summationsreihenfolge, ~1e-13
+    relativ), aber Groessenordnungen schneller im Mess-Hot-Loop (Wolff-
+    Sampling ruft das pro Messung auf). Aequivalenz ist als CI-Gate
+    abgesichert (tests/test_core_vectorization.py).
     """
     ex, ey = direction
     norm = math.hypot(ex, ey)
     ex, ey = ex / norm, ey / norm
-    t1 = 0.0
-    sin_accum = 0.0
-    use_disp = len(lattice.edge_disp) == len(lattice.edges)
-    for k, (i, j) in enumerate(lattice.edges):
-        if use_disp:
-            dx, dy = lattice.edge_disp[k]
-        else:
-            dx = pos[j][0] - pos[i][0]
-            dy = pos[j][1] - pos[i][1]
-        proj = ex * dx + ey * dy
-        dtheta = theta[i] - theta[j]
-        t1 += math.cos(dtheta) * proj * proj
-        sin_accum += math.sin(dtheta) * proj
+    edge_i, edge_j, disp = _edge_arrays(lattice)
+    if edge_i.shape[0] == 0:
+        return 0.0, 0.0
+    theta = np.asarray(theta, dtype=float)
+    if disp is not None:
+        proj = disp[:, 0] * ex + disp[:, 1] * ey
+    else:
+        pa = np.asarray(pos, dtype=float)
+        proj = (pa[edge_j, 0] - pa[edge_i, 0]) * ex \
+            + (pa[edge_j, 1] - pa[edge_i, 1]) * ey
+    dtheta = theta[edge_i] - theta[edge_j]
+    t1 = float(np.dot(np.cos(dtheta) * proj, proj))
+    sin_accum = float(np.dot(np.sin(dtheta), proj))
     return t1, sin_accum
 
 
@@ -606,8 +649,12 @@ def cliff_delta(a: np.ndarray, b: np.ndarray) -> dict[str, Any]:
     <0.28 klein, <0.43 mittel, sonst gross.
     """
     na, nb = len(a), len(b)
-    gt = sum(1 for x in a for y in b if x > y)
-    lt = sum(1 for x in a for y in b if x < y)
+    # Vektorisiert (numpy-Broadcast); bit-identisch zur fruehen O(na*nb)-
+    # Doppelschleife, da nur ganzzahlige Paar-Vergleiche gezaehlt werden.
+    av = np.asarray(a).reshape(-1, 1)
+    bv = np.asarray(b).reshape(1, -1)
+    gt = int(np.count_nonzero(av > bv))
+    lt = int(np.count_nonzero(av < bv))
     delta = (gt - lt) / (na * nb)
     ad = abs(delta)
     mag = ("negligible" if ad < 0.11 else "small" if ad < 0.28
