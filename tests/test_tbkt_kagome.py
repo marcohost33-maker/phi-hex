@@ -109,6 +109,17 @@ def test_kagome_no_self_loops_and_directions_match_pos():
         assert best < 1e-9, (a, b, (dx, dy), (rawx, rawy), best)
 
 
+def test_kagome_invalid_L_raises():
+    """L < 1 muss hart fehlern statt still ein leeres Gitter zu liefern.
+
+    Schliesst den von Equalita gemeldeten Silent-Edge (build_kagome_lattice(-3)
+    -> 27 Knoten, 0 Bonds) gegen das Silent-Failure-Gate.
+    """
+    for bad in (0, -1, -3):
+        with pytest.raises(ValueError):
+            build_kagome_lattice(bad)
+
+
 # ---------------------------------------------------------------------------
 # (b) Sandvik-Paar-Orakel (Estimator-Verdrahtung, C-frei)
 # ---------------------------------------------------------------------------

@@ -142,6 +142,9 @@ def build_kagome_lattice(L: int) -> KagomeLattice:
     Konsistenz (dtheta_ab <-> Projektion auf delta_ab) ist damit exakt
     erfuellt, ohne min/max-Umsortierung (wie HoneycombLattice in PHY031).
     """
+    if L < 1:
+        raise ValueError(f"L muss >= 1 sein (Kagome-Gitter), erhalten: {L}")
+
     def sidx(i: int, j: int, k: int) -> int:
         return 3 * ((i % L) * L + (j % L)) + k
 
