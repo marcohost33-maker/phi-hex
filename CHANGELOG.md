@@ -3,6 +3,48 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-06-09] PHY033 — kagome T_BKT (AP-3): per-Site Wolff + WM-Log-Fit + Sandvik-Paar + Seed-Bootstrap-CI
+
+Schliesst die im README/CHANGELOG als offen markierte Luecke **T_BKT(kagome)**
+(AP-3 der phi-hex-Gitter-Serie). Das Kagome-Gitter (eckenteilende Dreiecke,
+z=4, 3 Sites/Einheitszelle) reiht sich konsistent zwischen Honeycomb (z=3,
+~0.573) und Triangular (z=6, ~1.418) ein. Keine Aenderung am Kern-Physik-Code;
+die WM-Fit- (PHY030 v02) und Seed-Bootstrap-Maschinerie (PHY032) werden 1:1
+gitter-/methoden-agnostisch wiederverwendet (kein Reinvent).
+
+### Added
+- `src/260609 PHY033 kagome tbkt per-site v01.py`:
+  - **Kagome-Torus** (`build_kagome_lattice`): N=3L^2 Knoten, 6L^2 Bonds (=2N),
+    jeder Knoten exakt z=4; Bravais a1=(2,0)/a2=(1,sqrt3), 3-atomige Basis;
+    6 distinkte unit-length-Bonds je Zelle (algebraisch + im Geometrie-Gate
+    verifiziert). **Per-Site-T=0-Orakel Upsilon(0) = 1 J EXAKT** (Gate A,
+    gemessen 1.000000), groessen-unabhaengig.
+  - **T_BKT** via (A) Weber-Minnhagen Fixed-T-Log-Fit + (B) C-freie
+    Sandvik-Paar-Schaetzung, beide mit einheitlich propagiertem
+    **Seed-Bootstrap-CI** (+ Jackknife). L-Set **(12, 24, 36)**, N bis 3888
+    (8GB-RAM-PC). Eigener RNG-Stream-Praefix (500+...), keine Kollision mit
+    Honeycomb (400+...).
+- `results/260609 PHY033 kagome tbkt per-site report.txt`: Gate-Evidenz,
+  deterministisch (master_seed=42, n_seeds=6, n_measure=120, n_boot=2000),
+  Laufzeit ~511s lokal.
+- `tests/test_tbkt_kagome.py` (+9 schnelle, +1 slow): Geometrie-Orakel
+  (Upsilon(0)=1, z=4, unit bonds, min-image-Bond-Konsistenz), Sandvik-Synthetik-
+  Orakel (rekonstruiert T_true), Bandplausibilitaet (0.573<0.825<1.418),
+  Smoke (Mini-Wolff -> NK-Crossing im Band).
+
+### Mess-Ergebnis (ehrlich, NICHT auf Referenz getunt)
+- **WM-Log-Fit: T_BKT(kagome) = 0.8479, CI[0.8414, 0.8507] -> +2.78% vs 0.825.**
+- Sandvik-Paar (24,36): 0.8377, CI[0.8273, 0.8650] -> +1.54%; (12,36): 0.8410.
+- Per-L NK-Crossings driften von oben (L=12: 0.8899 -> L=36: 0.8671) gegen die
+  Referenz — erwartetes finite-size-Verhalten.
+- **Caveat:** L bis 36 (lokal RAM-/zeit-limitiert; Referenz nutzt L=48..192).
+  Die Referenz 0.825 ist selbst ein "rough estimate" (arXiv:2501.07388, Tab. 1).
+  Rest-Bias ist erwartbar finite-size, NICHT methodisch.
+
+### Verifiziert
+- `pytest -m "not slow"` 38/38 PASS, volle Suite 43/43 (lokal 2026-06-09).
+- `ruff check src` clean.
+
 ## [2026-06-07] PHY032 — honeycomb WM-Log-Fit + groessere L (AP-1) + einheitliche Seed-Bootstrap-CI (AP-2)
 
 Schliesst die zwei im Audit (`Vero/Meta/AUDITS/2026-06-07_phi-hex-welle`)
