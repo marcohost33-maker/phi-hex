@@ -325,6 +325,52 @@ def xy_langevin_step(theta: np.ndarray, adj: list[list[int]],
 # 3. BKT-Diagnostik: Helicity-Modulus mit Nelson-Kosterlitz-Sprung
 # ============================================================================
 
+def _edge_arrays(lattice: Any
+                 ) -> tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    """Gibt (edge_i, edge_j, disp) als numpy-Arrays fuer die Vektorisierung.
+
+    Cacht das Ergebnis auf dem Gitter-Objekt (`_phx_edge_cache`), da die
+    Kanten/Verschiebungen waehrend eines Mess-Laufs konstant sind und
+    `helicity_terms` pro Messung aufgerufen wird (Hot-Loop). Der Cache wird
+    neu gebaut, wenn sich die Kantenzahl aendert (Robustheit). Gitter-
+    agnostisch: funktioniert fuer jedes Objekt mit `.edges` (+ optional
+    `.edge_disp`), also Triangular- wie Honeycomb-Gitter.
+
+    `disp` ist None, falls keine (oder inkonsistente) edge_disp vorliegt;
+    dann faellt `helicity_terms` auf die rohe Positionsdifferenz zurueck.
+    """
+    edges = lattice.edges
+    edge_disp = getattr(lattice, "edge_disp", None)
+    cache = getattr(lattice, "_phx_edge_cache", None)
+    if cache is not None:
+        c_edges, c_disp, arrays = cache
+        # Identitaets-basierte Invalidierung: der Cache haelt Referenzen auf
+        # die GENAUEN Listen-Objekte. Wird `edges` oder `edge_disp` ersetzt
+        # bzw. umverdrahtet (neues Listen-Objekt) - auch bei gleicher Laenge -
+        # greift `is` nicht mehr und die Arrays werden neu gebaut. Verhindert
+        # stale-Cache-Messungen am alten Gitter (Codex-Review P2, 2026-06-10).
+        # Das Festhalten der Referenzen schliesst zudem id()-Wiederverwendung
+        # nach GC aus.
+        if c_edges is edges and c_disp is edge_disp:
+            return arrays
+    if edges:
+        ij = np.asarray(edges, dtype=np.intp)
+        edge_i, edge_j = ij[:, 0], ij[:, 1]
+    else:
+        edge_i = np.empty(0, dtype=np.intp)
+        edge_j = np.empty(0, dtype=np.intp)
+    if edge_disp is not None and len(edge_disp) == len(edges):
+        disp = np.asarray(edge_disp, dtype=float).reshape(len(edges), 2)
+    else:
+        disp = None
+    arrays = (edge_i, edge_j, disp)
+    try:
+        lattice._phx_edge_cache = (edges, edge_disp, arrays)
+    except (AttributeError, TypeError):
+        pass  # frozen/slots-Gitter: ohne Cache, weiterhin korrekt
+    return arrays
+
+
 def helicity_terms(theta: np.ndarray, lattice: TriangularLattice,
                    pos: list[tuple[float, float]],
                    direction: tuple[float, float] = (1.0, 0.0)
@@ -343,23 +389,29 @@ def helicity_terms(theta: np.ndarray, lattice: TriangularLattice,
     Nutzt lattice.edge_disp (minimum-image Bond-Vektoren), damit gewrappte
     Torus-Kanten den korrekten naechste-Nachbar-Vektor verwenden und nicht
     die rohe Koordinatendifferenz.
+
+    Vektorisiert (numpy) ueber alle Kanten - mathematisch identisch zur
+    fruehen skalaren Schleife (nur Gleitkomma-Summationsreihenfolge, ~1e-13
+    relativ), aber Groessenordnungen schneller im Mess-Hot-Loop (Wolff-
+    Sampling ruft das pro Messung auf). Aequivalenz ist als CI-Gate
+    abgesichert (tests/test_core_vectorization.py).
     """
     ex, ey = direction
     norm = math.hypot(ex, ey)
     ex, ey = ex / norm, ey / norm
-    t1 = 0.0
-    sin_accum = 0.0
-    use_disp = len(lattice.edge_disp) == len(lattice.edges)
-    for k, (i, j) in enumerate(lattice.edges):
-        if use_disp:
-            dx, dy = lattice.edge_disp[k]
-        else:
-            dx = pos[j][0] - pos[i][0]
-            dy = pos[j][1] - pos[i][1]
-        proj = ex * dx + ey * dy
-        dtheta = theta[i] - theta[j]
-        t1 += math.cos(dtheta) * proj * proj
-        sin_accum += math.sin(dtheta) * proj
+    edge_i, edge_j, disp = _edge_arrays(lattice)
+    if edge_i.shape[0] == 0:
+        return 0.0, 0.0
+    theta = np.asarray(theta, dtype=float)
+    if disp is not None:
+        proj = disp[:, 0] * ex + disp[:, 1] * ey
+    else:
+        pa = np.asarray(pos, dtype=float)
+        proj = (pa[edge_j, 0] - pa[edge_i, 0]) * ex \
+            + (pa[edge_j, 1] - pa[edge_i, 1]) * ey
+    dtheta = theta[edge_i] - theta[edge_j]
+    t1 = float(np.dot(np.cos(dtheta) * proj, proj))
+    sin_accum = float(np.dot(np.sin(dtheta), proj))
     return t1, sin_accum
 
 
@@ -606,8 +658,19 @@ def cliff_delta(a: np.ndarray, b: np.ndarray) -> dict[str, Any]:
     <0.28 klein, <0.43 mittel, sonst gross.
     """
     na, nb = len(a), len(b)
-    gt = sum(1 for x in a for y in b if x > y)
-    lt = sum(1 for x in a for y in b if x < y)
+    # Sortier-/Rang-basiert: O((na+nb) log nb) Zeit, O(nb) Speicher. Bit-
+    # identisch zur fruehen O(na*nb)-Doppelschleife (nur ganzzahlige strikte
+    # Paar-Vergleiche), aber OHNE die na*nb-Vergleichsmatrix zu materialisieren
+    # - die wuerde bei grossen Stichproben den Speicher sprengen (z.B. 2x50k
+    # -> ~2.5 GB je Temporary). Codex-Review P2, 2026-06-10.
+    av = np.asarray(a, dtype=float)
+    b_sorted = np.sort(np.asarray(b, dtype=float))
+    # Pro x in a: #{y in b : y < x} (strict) summiert = Zahl der (x>y)-Paare;
+    # #{y : y <= x} summiert -> (x<y)-Paare = na*nb - sum(#{y<=x}). Gleichstaende
+    # zaehlen - wie in der strikten Doppelschleife - weder zu gt noch zu lt.
+    gt = int(np.searchsorted(b_sorted, av, side="left").sum())
+    le = int(np.searchsorted(b_sorted, av, side="right").sum())
+    lt = na * nb - le
     delta = (gt - lt) / (na * nb)
     ad = abs(delta)
     mag = ("negligible" if ad < 0.11 else "small" if ad < 0.28

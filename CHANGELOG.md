@@ -3,6 +3,32 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-06-09] Kern-Performance — vektorisierte Mess-Hotspots (physik-invariant)
+
+Reine Performance-Optimierung des Kernmoduls (`phi_hex_core_v2`). **Keine
+Aenderung an Physik, Konvention oder Mess-Stand.** Die fruehen skalaren
+Python-Schleifen der beiden heissesten Mess-Pfade sind durch aequivalente
+numpy-Vektorisierung ersetzt. Aequivalenz ist als blockierendes CI-Gate
+festgepinnt (`tests/test_core_vectorization.py`, +8 Tests).
+
+### Changed
+- `helicity_terms` vektorisiert (gecachte Kanten-Index-/Verschiebungs-Arrays
+  auf dem Gitter-Objekt, gitter-agnostisch -> Triangular **und** Honeycomb).
+  Dieser Pfad wird im Wolff-Sampling **pro Messung** aufgerufen und dominiert
+  die Laufzeit der grossen Laeufe (PHY030/031/032). Gemessen **~9x** schneller
+  am honeycomb-Hot-Loop (L=24/48). Mathematisch identisch zur Schleife; die
+  Differenz ist reine Gleitkomma-Summationsreihenfolge (~1e-13 relativ),
+  unterhalb jeder berichteten Stelle -> bestehende Gate-Logs in `results/`
+  bleiben gueltige Evidenz.
+- `cliff_delta` vektorisiert (numpy-Broadcast statt O(na*nb)-Doppelschleife).
+  **Bit-identisch** zur fruehen Form (nur ganzzahlige Paar-Vergleiche).
+
+### Added
+- `tests/test_core_vectorization.py`: Aequivalenz-Gates gegen eine
+  unabhaengige in-test skalare Referenz (helicity_terms: rtol 1e-10 ueber
+  Triangular/Honeycomb + Messrichtungen + Cache-Konsistenz; cliff_delta:
+  bit-identisch + Gleichstand/Extrem-Faelle). Eine Vorzeichen-/Index-Mutation
+  bricht das Gate.
 ## [2026-06-09] PHY033 — kagome T_BKT (AP-3): per-Site Wolff + WM-Log-Fit + Sandvik-Paar + Seed-Bootstrap-CI
 
 Schliesst die im README/CHANGELOG als offen markierte Luecke **T_BKT(kagome)**
