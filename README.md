@@ -1,6 +1,6 @@
 # Phi-Hex
 
-> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-07). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/ (jetzt inkl. honeycomb WM-Log-Fit + Seed-Bootstrap-CI, PHY032). Testsuite 33/33 PASS (lokal verifiziert 2026-06-07; davon 29 schnelle Korrektheits-Gates blockierend in CI, 4 slow Mess-Laeufe lokal).
+> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-09). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/ (jetzt inkl. honeycomb WM-Log-Fit + Seed-Bootstrap-CI PHY032 + kagome PHY033). Testsuite 43/43 PASS (lokal verifiziert 2026-06-09; davon 38 schnelle Korrektheits-Gates blockierend in CI, 5 slow Mess-Laeufe lokal).
 > **Lineage/Provenance:** siehe `SOURCES.md` (SHA-256 je Quelldatei) | **Lizenz:** Apache-2.0
 
 XY-Modell / BKT-Physik auf Dreiecks- und Honeycomb-Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Finite-Size-Scaling.
@@ -28,6 +28,7 @@ Wolff-Sampling auf dem Dreiecks-Torus, Nelson-Kosterlitz-Crossing
 | square | 0.893 (PHY028, V&V) | 0.893 (arXiv:2501.07388) | Sandvik-Paar (C-frei) |
 | honeycomb | **PHY032 (s.u.)** Sandvik-Paar(24,48) + WM-Log-Fit, beide mit Seed-Bootstrap-CI | 0.573 (arXiv:2501.07388) UND 0.576(3) (arXiv:2406.12076) | Wolff + WM-Fit + Sandvik-Paar |
 | honeycomb | **0.595** (PHY031 v01, Sandvik-Paar L=12/24; +3.9% vs 0.573) — superseded durch PHY032 (groesseres L) | 0.573 / 0.576(3) | Wolff + Sandvik-Paar (C-frei) |
+| kagome | **0.8479 ± 0.005 (WM-Log-Fit, CI[0.8414,0.8507]; +2.78%)** · Sandvik-Paar(24,36) 0.8377 (+1.54%) — PHY033, beide mit Seed-Bootstrap-CI | 0.825 (arXiv:2501.07388, "rough estimate") | Wolff + WM-Fit + Sandvik-Paar (per-Site, z=4, Υ(0)=1 exakt) |
 
 > **Honeycomb-Referenz: bewusst BEIDE Literaturwerte (kein Kanon gekuert).**
 > Die Abweichung wird gegen **0.573** (arXiv:2501.07388, multi-lattice MC) UND
@@ -100,12 +101,13 @@ Die Selftests laufen direkt in der Engine (`python <engine>.py`; Details im
 Engine-Header). Die Testsuite (numpy/scipy/pytest noetig):
 
 ```
-pytest                 # volle Suite (inkl. slow Mess-Laeufe), 33/33 PASS
-pytest -m "not slow"   # nur schnelle Korrektheits-Gates (29, inkl. WM-/Sandvik-/Bootstrap-Orakel) — CI-Gate
+pytest                 # volle Suite (inkl. slow Mess-Laeufe), 43/43 PASS
+pytest -m "not slow"   # nur schnelle Korrektheits-Gates (38, inkl. WM-/Sandvik-/Bootstrap-Orakel) — CI-Gate
 python "src/260604 PHY030 triangular tbkt per-site v01.py"            # T_BKT(tri)-Schranken (konservativ)
 python "src/260604 PHY030 triangular tbkt per-site v02 wm-logfit.py"  # T_BKT(tri) Weber-Minnhagen-Log-Fit
 python "src/260607 PHY031 honeycomb tbkt per-site v01.py"             # T_BKT(honeycomb) Wolff + Sandvik-Paar (kleine L)
 python "src/260607 PHY032 honeycomb wm-logfit bootstrap v01.py"       # T_BKT(honeycomb) WM-Log-Fit + groessere L + Seed-Bootstrap-CI (~24 min lokal)
+python "src/260609 PHY033 kagome tbkt per-site v01.py"               # T_BKT(kagome) Wolff + WM-Log-Fit + Sandvik-Paar + Seed-Bootstrap-CI (~9 min lokal)
 ```
 
 CI (`.github/workflows/ci.yml`) prueft drei blockierende Gates: Lint

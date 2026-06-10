@@ -41,3 +41,6 @@
 | 5B21C39787765E78 | 2026-06-07 | src | repo-native (PHY032 honeycomb WM-Log-Fit + groessere L (AP-1) + Seed-Bootstrap/Jackknife-CI (AP-2); WM-Fit-Kern 1:1 aus PHY030 v02; Ref arXiv:2501.07388 + arXiv:2406.12076; KEINE Drive-Quelle) |
 | FE09590499875FF7 | 2026-06-07 | results | repo-native (Gate-Evidenz PHY032 honeycomb, deterministisch seed=42, n_boot=2000 seed=42; KEINE Drive-Quelle) |
 | D78B3D2C8DBB1A4D | 2026-06-07 | tests | repo-native (Bootstrap-/Jackknife-Orakel + Estimator-Verdrahtung + Repro-gegen-PHY031 fuer PHY032; KEINE Drive-Quelle) |
+| 34E2DBB28702618D | 2026-06-09 | src | repo-native (PHY033 T_BKT kagome per-Site v01; Kagome-Torus z=4 N=3L^2 Upsilon(0)=1 exakt; WM-Log-Fit (A) + Sandvik-Paar (B) + Seed-Bootstrap-CI; WM-/Bootstrap-Kern 1:1 aus PHY030 v02 + PHY032; Ref arXiv:2501.07388 Tab.1; KEINE Drive-Quelle) |
+| 804F71EFAE465181 | 2026-06-09 | results | repo-native (Gate-Evidenz PHY033 kagome, deterministisch master_seed=42 n_seeds=6 n_measure=120 n_boot=2000; KEINE Drive-Quelle) |
+| 401D99A49ABAB6ED | 2026-06-09 | tests | repo-native (Geometrie-Orakel Upsilon(0)=1 + z=4 + min-image-Bond-Konsistenz + Sandvik-Synthetik-Orakel + Smoke fuer PHY033; KEINE Drive-Quelle) |
