@@ -99,6 +99,27 @@ def test_helicity_terms_cache_consistency():
         assert helicity_terms(theta, lat, pos) == first
 
 
+def test_helicity_terms_cache_invalidates_on_rewire():
+    """Wird die Kantenliste ersetzt (Umverdrahtung), misst der Kern das NEUE
+    Gitter - kein stale Cache (Codex-Review P2). Vergleich gegen skalar."""
+    lat = build_triangular_lattice(radius=3, periodic=True)
+    pos = [axial_to_xy(a) for a in lat.ax_of]
+    theta = _random_theta(lat.n_nodes, 13)
+    helicity_terms(theta, lat, pos)  # primt den Cache
+
+    # Gleiche KANTENZAHL, aber rewired (zwei Bonds umgehaengt) + neues
+    # edge_disp-Objekt: identitaets-basierte Invalidierung muss greifen.
+    new_edges = list(lat.edges)
+    new_edges[0], new_edges[1] = new_edges[1], new_edges[0]
+    lat.edges = new_edges
+    lat.edge_disp = [lat.edge_disp[1], lat.edge_disp[0], *lat.edge_disp[2:]]
+    assert len(lat.edges) == len(lat.edge_disp)
+
+    v = helicity_terms(theta, lat, pos)
+    s = _helicity_terms_scalar(theta, lat, pos)
+    assert_allclose(v, s, rtol=1e-10, atol=1e-12)
+
+
 def _cliff_delta_scalar(a, b):
     na, nb = len(a), len(b)
     gt = sum(1 for x in a for y in b if x > y)

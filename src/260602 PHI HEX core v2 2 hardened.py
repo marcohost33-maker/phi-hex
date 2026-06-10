@@ -340,26 +340,35 @@ def _edge_arrays(lattice: Any
     dann faellt `helicity_terms` auf die rohe Positionsdifferenz zurueck.
     """
     edges = lattice.edges
+    edge_disp = getattr(lattice, "edge_disp", None)
     cache = getattr(lattice, "_phx_edge_cache", None)
-    if cache is not None and cache[0].shape[0] == len(edges):
-        return cache
+    if cache is not None:
+        c_edges, c_disp, arrays = cache
+        # Identitaets-basierte Invalidierung: der Cache haelt Referenzen auf
+        # die GENAUEN Listen-Objekte. Wird `edges` oder `edge_disp` ersetzt
+        # bzw. umverdrahtet (neues Listen-Objekt) - auch bei gleicher Laenge -
+        # greift `is` nicht mehr und die Arrays werden neu gebaut. Verhindert
+        # stale-Cache-Messungen am alten Gitter (Codex-Review P2, 2026-06-10).
+        # Das Festhalten der Referenzen schliesst zudem id()-Wiederverwendung
+        # nach GC aus.
+        if c_edges is edges and c_disp is edge_disp:
+            return arrays
     if edges:
         ij = np.asarray(edges, dtype=np.intp)
         edge_i, edge_j = ij[:, 0], ij[:, 1]
     else:
         edge_i = np.empty(0, dtype=np.intp)
         edge_j = np.empty(0, dtype=np.intp)
-    edge_disp = getattr(lattice, "edge_disp", None)
     if edge_disp is not None and len(edge_disp) == len(edges):
         disp = np.asarray(edge_disp, dtype=float).reshape(len(edges), 2)
     else:
         disp = None
-    cache = (edge_i, edge_j, disp)
+    arrays = (edge_i, edge_j, disp)
     try:
-        lattice._phx_edge_cache = cache
+        lattice._phx_edge_cache = (edges, edge_disp, arrays)
     except (AttributeError, TypeError):
         pass  # frozen/slots-Gitter: ohne Cache, weiterhin korrekt
-    return cache
+    return arrays
 
 
 def helicity_terms(theta: np.ndarray, lattice: TriangularLattice,
@@ -649,12 +658,19 @@ def cliff_delta(a: np.ndarray, b: np.ndarray) -> dict[str, Any]:
     <0.28 klein, <0.43 mittel, sonst gross.
     """
     na, nb = len(a), len(b)
-    # Vektorisiert (numpy-Broadcast); bit-identisch zur fruehen O(na*nb)-
-    # Doppelschleife, da nur ganzzahlige Paar-Vergleiche gezaehlt werden.
-    av = np.asarray(a).reshape(-1, 1)
-    bv = np.asarray(b).reshape(1, -1)
-    gt = int(np.count_nonzero(av > bv))
-    lt = int(np.count_nonzero(av < bv))
+    # Sortier-/Rang-basiert: O((na+nb) log nb) Zeit, O(nb) Speicher. Bit-
+    # identisch zur fruehen O(na*nb)-Doppelschleife (nur ganzzahlige strikte
+    # Paar-Vergleiche), aber OHNE die na*nb-Vergleichsmatrix zu materialisieren
+    # - die wuerde bei grossen Stichproben den Speicher sprengen (z.B. 2x50k
+    # -> ~2.5 GB je Temporary). Codex-Review P2, 2026-06-10.
+    av = np.asarray(a, dtype=float)
+    b_sorted = np.sort(np.asarray(b, dtype=float))
+    # Pro x in a: #{y in b : y < x} (strict) summiert = Zahl der (x>y)-Paare;
+    # #{y : y <= x} summiert -> (x<y)-Paare = na*nb - sum(#{y<=x}). Gleichstaende
+    # zaehlen - wie in der strikten Doppelschleife - weder zu gt noch zu lt.
+    gt = int(np.searchsorted(b_sorted, av, side="left").sum())
+    le = int(np.searchsorted(b_sorted, av, side="right").sum())
+    lt = na * nb - le
     delta = (gt - lt) / (na * nb)
     ad = abs(delta)
     mag = ("negligible" if ad < 0.11 else "small" if ad < 0.28
