@@ -144,3 +144,27 @@ def test_cliff_delta_ties_and_extremes():
         "cliff_delta"] == 1.0
     assert cliff_delta(np.array([1.0, 2.0]), np.array([5.0, 6.0]))[
         "cliff_delta"] == -1.0
+
+
+def test_cliff_delta_nan_inf_match_scalar():
+    """NaN/inf-Treue: bit-identisch zur strikten Doppelschleife (jeder
+    NaN-Vergleich False; inf vergleicht normal). Regression gegen den
+    Sortier-Rewrite (Selbst-Audit 2026-06-11)."""
+    nan, inf = float("nan"), float("inf")
+    cases = [
+        ([1.0, nan, 3.0], [0.0, 2.0]),
+        ([1.0, 3.0], [0.0, nan, 2.0]),
+        ([nan, nan], [1.0, 2.0]),
+        ([1.0, inf, 3.0], [0.0, 2.0, inf]),
+        ([inf, -inf, 1.0], [0.0, nan, inf]),
+    ]
+    for a, b in cases:
+        a, b = np.array(a), np.array(b)
+        assert cliff_delta(a, b)["cliff_delta"] == _cliff_delta_scalar(a, b), (
+            a, b)
+
+
+def test_cliff_delta_empty_is_safe():
+    """Leere Stichprobe: kein ZeroDivision, neutrales Ergebnis."""
+    out = cliff_delta(np.array([]), np.array([1.0, 2.0]))
+    assert out["cliff_delta"] == 0.0 and out["vargha_delaney_A"] == 0.5

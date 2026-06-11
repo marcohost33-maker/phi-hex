@@ -657,20 +657,28 @@ def cliff_delta(a: np.ndarray, b: np.ndarray) -> dict[str, Any]:
     Negibility-Schwellen (Vargha-Delaney): |d|<0.11 vernachlaessigbar,
     <0.28 klein, <0.43 mittel, sonst gross.
     """
-    na, nb = len(a), len(b)
+    av_all = np.asarray(a, dtype=float)
+    bv_all = np.asarray(b, dtype=float)
+    na, nb = av_all.size, bv_all.size
+    if na == 0 or nb == 0:
+        return {"cliff_delta": 0.0, "vargha_delaney_A": 0.5,
+                "magnitude": "negligible"}
     # Sortier-/Rang-basiert: O((na+nb) log nb) Zeit, O(nb) Speicher. Bit-
     # identisch zur fruehen O(na*nb)-Doppelschleife (nur ganzzahlige strikte
     # Paar-Vergleiche), aber OHNE die na*nb-Vergleichsmatrix zu materialisieren
     # - die wuerde bei grossen Stichproben den Speicher sprengen (z.B. 2x50k
     # -> ~2.5 GB je Temporary). Codex-Review P2, 2026-06-10.
-    av = np.asarray(a, dtype=float)
-    b_sorted = np.sort(np.asarray(b, dtype=float))
-    # Pro x in a: #{y in b : y < x} (strict) summiert = Zahl der (x>y)-Paare;
-    # #{y : y <= x} summiert -> (x<y)-Paare = na*nb - sum(#{y<=x}). Gleichstaende
-    # zaehlen - wie in der strikten Doppelschleife - weder zu gt noch zu lt.
-    gt = int(np.searchsorted(b_sorted, av, side="left").sum())
-    le = int(np.searchsorted(b_sorted, av, side="right").sum())
-    lt = na * nb - le
+    # NaN-Treue: in der strikten Doppelschleife ist JEDER NaN-Vergleich False,
+    # NaN-Werte tragen also weder zu gt noch zu lt bei (der Nenner na*nb bleibt
+    # aber die volle Stichprobe). Wir filtern daher NUR NaN (inf bleibt drin und
+    # vergleicht wie in Python: inf>finite=True), sonst waeren NaN-Eingaben
+    # stillschweigend verfaelscht (Selbst-Audit 2026-06-11).
+    av = av_all[~np.isnan(av_all)]
+    b_sorted = np.sort(bv_all[~np.isnan(bv_all)])
+    nbf = b_sorted.size
+    gt = int(np.searchsorted(b_sorted, av, side="left").sum())   # y < x
+    le = int(np.searchsorted(b_sorted, av, side="right").sum())  # y <= x
+    lt = av.size * nbf - le                                      # y > x
     delta = (gt - lt) / (na * nb)
     ad = abs(delta)
     mag = ("negligible" if ad < 0.11 else "small" if ad < 0.28
