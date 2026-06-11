@@ -1,6 +1,6 @@
 # Phi-Hex
 
-> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-09). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/ (jetzt inkl. honeycomb WM-Log-Fit + Seed-Bootstrap-CI PHY032 + kagome PHY033). Testsuite 43/43 PASS (lokal verifiziert 2026-06-09; davon 38 schnelle Korrektheits-Gates blockierend in CI, 5 slow Mess-Laeufe lokal).
+> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-09). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/ (jetzt inkl. honeycomb WM-Log-Fit + Seed-Bootstrap-CI PHY032 + kagome PHY033). Testsuite 53/53 PASS (lokal verifiziert 2026-06-11; davon 48 schnelle Korrektheits-Gates blockierend in CI, 5 slow Mess-Laeufe lokal; inkl. Kern-Vektorisierungs-Aequivalenz-Gates).
 > **Lineage/Provenance:** siehe `SOURCES.md` (SHA-256 je Quelldatei) | **Lizenz:** Apache-2.0
 
 XY-Modell / BKT-Physik auf Dreiecks- und Honeycomb-Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Finite-Size-Scaling.
@@ -101,8 +101,8 @@ Die Selftests laufen direkt in der Engine (`python <engine>.py`; Details im
 Engine-Header). Die Testsuite (numpy/scipy/pytest noetig):
 
 ```
-pytest                 # volle Suite (inkl. slow Mess-Laeufe), 43/43 PASS
-pytest -m "not slow"   # nur schnelle Korrektheits-Gates (38, inkl. WM-/Sandvik-/Bootstrap-Orakel) — CI-Gate
+pytest                 # volle Suite (inkl. slow Mess-Laeufe), 53/53 PASS
+pytest -m "not slow"   # nur schnelle Korrektheits-Gates (48, inkl. WM-/Sandvik-/Bootstrap-/Vektorisierungs-Orakel) — CI-Gate
 python "src/260604 PHY030 triangular tbkt per-site v01.py"            # T_BKT(tri)-Schranken (konservativ)
 python "src/260604 PHY030 triangular tbkt per-site v02 wm-logfit.py"  # T_BKT(tri) Weber-Minnhagen-Log-Fit
 python "src/260607 PHY031 honeycomb tbkt per-site v01.py"             # T_BKT(honeycomb) Wolff + Sandvik-Paar (kleine L)

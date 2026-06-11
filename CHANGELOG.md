@@ -3,6 +3,32 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-06-11] Selbst-Audit-Haertung — cliff_delta NaN-Treue + Doku-Abgleich
+
+Folge-Haertung nach Selbst-Review der Vektorisierungs-Welle (2026-06-09).
+Behebt eine beim Sortier-Rewrite von `cliff_delta` eingeschleppte
+Korrektheits-Luecke und gleicht stale Doku-Zaehler ab. **Keine Aenderung an
+Physik, Konvention oder Mess-Stand.**
+
+### Fixed
+- `cliff_delta`: NaN-Treue wiederhergestellt. Der Sortier-/`searchsorted`-Pfad
+  zaehlte NaN-Eingaben falsch (NaN sortiert ans Ende -> als groesster Wert
+  mitgezaehlt), waehrend die fruehe strikte Doppelschleife jeden NaN-Vergleich
+  als False behandelt (NaN traegt weder zu gt noch zu lt bei). Fix: NUR NaN aus
+  den Paar-Zaehlungen filtern (inf bleibt drin und vergleicht normal), Nenner
+  na*nb bleibt die volle Stichprobe -> wieder **bit-identisch** zur Doppel-
+  schleife in ALLEN Faellen (NaN/inf/Gleichstand). Plus Guard fuer leere
+  Stichprobe (kein ZeroDivision). Verifiziert per neuem Regressions-Gate
+  `test_cliff_delta_nan_inf_match_scalar` (+ `_empty_is_safe`).
+
+### Docs
+- README/CHANGELOG-Zaehler aktualisiert (Testsuite **53/53**: 48 schnelle Gates
+  + 5 slow) und die CHANGELOG-Beschreibung des `cliff_delta`-Rewrites auf den
+  tatsaechlich gemergten Sortier-/Speicher-sicheren Stand korrigiert (war
+  irrefuehrend als "numpy-Broadcast" beschrieben).
+- BKT-Referenzkonstanten gegen Literatur web-rueckverifiziert (arXiv:2501.07388):
+  honeycomb 0.573, kagome 0.825 (rough estimate) bestaetigt.
+
 ## [2026-06-09] Kern-Performance — vektorisierte Mess-Hotspots (physik-invariant)
 
 Reine Performance-Optimierung des Kernmoduls (`phi_hex_core_v2`). **Keine
@@ -19,16 +45,21 @@ festgepinnt (`tests/test_core_vectorization.py`, +8 Tests).
   am honeycomb-Hot-Loop (L=24/48). Mathematisch identisch zur Schleife; die
   Differenz ist reine Gleitkomma-Summationsreihenfolge (~1e-13 relativ),
   unterhalb jeder berichteten Stelle -> bestehende Gate-Logs in `results/`
-  bleiben gueltige Evidenz.
-- `cliff_delta` vektorisiert (numpy-Broadcast statt O(na*nb)-Doppelschleife).
-  **Bit-identisch** zur fruehen Form (nur ganzzahlige Paar-Vergleiche).
+  bleiben gueltige Evidenz. Cache identitaets-invalidiert (haelt Referenzen auf
+  die edges-/edge_disp-Listen; Umverdrahten baut die Arrays neu) - kein
+  stale-Cache (Codex-Review P2).
+- `cliff_delta` sortier-/rangbasiert (`np.searchsorted`, O((na+nb) log nb) Zeit,
+  O(nb) Speicher) statt O(na*nb)-Doppelschleife. **Bit-identisch** (nur
+  ganzzahlige strikte Paar-Vergleiche) und ohne die na*nb-Vergleichsmatrix zu
+  materialisieren (kein OOM bei grossen Stichproben; Codex-Review P2).
 
 ### Added
 - `tests/test_core_vectorization.py`: Aequivalenz-Gates gegen eine
   unabhaengige in-test skalare Referenz (helicity_terms: rtol 1e-10 ueber
-  Triangular/Honeycomb + Messrichtungen + Cache-Konsistenz; cliff_delta:
-  bit-identisch + Gleichstand/Extrem-Faelle). Eine Vorzeichen-/Index-Mutation
-  bricht das Gate.
+  Triangular/Honeycomb + Messrichtungen + Cache-Konsistenz + Rewire-
+  Invalidierung; cliff_delta: bit-identisch + Gleichstand/Extrem-Faelle).
+  Eine Vorzeichen-/Index-Mutation bricht das Gate.
+
 ## [2026-06-09] PHY033 — kagome T_BKT (AP-3): per-Site Wolff + WM-Log-Fit + Sandvik-Paar + Seed-Bootstrap-CI
 
 Schliesst die im README/CHANGELOG als offen markierte Luecke **T_BKT(kagome)**
