@@ -1,6 +1,6 @@
 # Phi-Hex
 
-> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-09). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/ (jetzt inkl. honeycomb WM-Log-Fit + Seed-Bootstrap-CI PHY032 + kagome PHY033). Testsuite 53/53 PASS (lokal verifiziert 2026-06-11; davon 48 schnelle Korrektheits-Gates blockierend in CI, 5 slow Mess-Laeufe lokal; inkl. Kern-Vektorisierungs-Aequivalenz-Gates).
+> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-11). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/ (jetzt inkl. honeycomb WM-Log-Fit + Seed-Bootstrap-CI PHY032 + kagome PHY033). Testsuite 53/53 PASS (lokal verifiziert 2026-06-11; davon 48 schnelle Korrektheits-Gates blockierend in CI, 5 slow Mess-Laeufe lokal; inkl. Kern-Vektorisierungs-Aequivalenz-Gates).
 > **Lineage/Provenance:** siehe `SOURCES.md` (SHA-256 je Quelldatei) | **Lizenz:** Apache-2.0
 
 XY-Modell / BKT-Physik auf Dreiecks- und Honeycomb-Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Finite-Size-Scaling.
@@ -81,8 +81,8 @@ diesen Mess-Stand ersetzt. Details in `CHANGELOG.md`.
 
 ## Kern
 
-- **Engine:** `src/260602 PHI HEX core v2 2 hardened.py` (Kern) + PHY024-032-Experiment-Serie
-- **Evidenz:** Selftest-Report + PHY025-031 Reports in `results/`; Testsuite in `tests/`; methodischer Audit (4 Responses) in `spec/`. Mess-Stand T_BKT(triangular) = 1.42 ± 0.04 (per-Site, 2026-06-04; Referenz 1.418); T_BKT(honeycomb) = 0.595 (PHY031, 2026-06-07; Referenz 0.573).
+- **Engine:** `src/260602 PHI HEX core v2 2 hardened.py` (Kern) + PHY024-033-Experiment-Serie
+- **Evidenz:** Selftest-Report + PHY025-033 Reports in `results/`; Testsuite in `tests/`; methodischer Audit (4 Responses) in `spec/`. Mess-Stand T_BKT(triangular) = 1.42 ± 0.04 (per-Site, 2026-06-04; Referenz 1.418); T_BKT(honeycomb) = 0.5917 CI[0.587, 0.598] (PHY032 groesstes L, Sandvik-Paar (24,48), 2026-06-07; Referenzen 0.573 / 0.576(3)) — supersedet PHY031 v01 (0.595); T_BKT(kagome) = 0.8479 CI[0.8414, 0.8507] (PHY033 WM-Log-Fit, 2026-06-09; Referenz 0.825 "rough estimate").
 
 ## Struktur
 
