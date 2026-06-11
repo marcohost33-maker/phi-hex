@@ -7,8 +7,9 @@ Format lose an Keep-a-Changelog angelehnt.
 
 Folge-Haertung nach Selbst-Review der Vektorisierungs-Welle (2026-06-09).
 Behebt eine beim Sortier-Rewrite von `cliff_delta` eingeschleppte
-Korrektheits-Luecke und gleicht stale Doku-Zaehler ab. **Keine Aenderung an
-Physik, Konvention oder Mess-Stand.**
+Korrektheits-Luecke und gleicht stale Doku-Zaehler sowie die README-Mess-Stand-
+Kurzfassung an die bereits korrekten Detailtabellen an. **Keine Aenderung an
+Physik, Konvention oder gemessenen Werten** — nur Doku-Konsistenz.
 
 ### Fixed
 - `cliff_delta`: NaN-Treue wiederhergestellt. Der Sortier-/`searchsorted`-Pfad
@@ -27,7 +28,14 @@ Physik, Konvention oder Mess-Stand.**
   tatsaechlich gemergten Sortier-/Speicher-sicheren Stand korrigiert (war
   irrefuehrend als "numpy-Broadcast" beschrieben).
 - BKT-Referenzkonstanten gegen Literatur web-rueckverifiziert (arXiv:2501.07388):
-  honeycomb 0.573, kagome 0.825 (rough estimate) bestaetigt.
+  square 0.89290(5), honeycomb 0.573, kagome 0.825 (rough estimate) bestaetigt.
+- README-Mess-Stand-Zusammenfassung (Abschnitt "Evidenz") auf die maßgeblichen
+  Best-Schaetzungen angeglichen: honeycomb **0.5917** CI[0.587,0.598] (PHY032
+  groesstes L, supersedet die alte PHY031-Zahl 0.595) und kagome **0.8479**
+  CI[0.8414,0.8507] (PHY033) ergaenzt; Report-Range PHY025-031 -> PHY025-033,
+  Experiment-Serie PHY024-032 -> PHY024-033, "letzte Haertung" -> 2026-06-11.
+  Die detaillierten PHY032/PHY033-Tabellen waren bereits korrekt; nur die
+  Kurzfassung hinkte hinterher.
 
 ## [2026-06-09] Kern-Performance — vektorisierte Mess-Hotspots (physik-invariant)
 
