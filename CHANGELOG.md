@@ -3,6 +3,40 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-06-11] PHY035 — honeycomb dichte L-Leiter: falsifiziert die PHY034-Lesart (Negativ-Result)
+
+Praezisions-Follow-up zu PHY034 - und ehrliche Selbst-Falsifikation. PHY034
+extrapolierte mit NUR 2 Paaren (2-Punkt). PHY035 misst frisch auf der dichten
+Leiter L=8/12/16/24/32 (drei verschachtelte Verdopplungspaare; dank Kern-
+Vektorisierung ~3 min lokal) und macht damit eine ECHTE >=3-Punkt-Extrapolation.
+
+### Added
+- `src/260611 PHY035 honeycomb hks dense ladder v01.py`: Wolff-Messung
+  (phy032-Pipeline 1:1) + C-eliminierte Paare + OLS-Extrapolation (phy034-
+  Primitive) + EIGENES Seed-Bootstrap-CI des Extrapolations-Werts.
+  - **Befund (NEGATIV):** die drei Paare (8,16)/(12,24)/(16,32) liegen FLACH
+    bei ~0.597-0.601 - keine saubere Drift gegen 0.573. Die >=3-Punkt-
+    Extrapolation ergibt ~0.605 (CI[0.577,0.616]), OBERHALB der Referenzen.
+    => PHY034 (0.574) war NICHT robust: das Ergebnis hing allein am Paar
+    (24,48) (groesstes L, hier nicht in der Leiter). Bei L<=32 zeigt honeycomb
+    KEINE belastbare Konvergenz; das deckt sich mit HKS (L=48..192 noetig).
+  - **Cross-Check:** L=12/24 teilen den RNG-Vertrag mit PHY032 -> T(12,24)=
+    0.6014 bit-identisch reproduziert (Mess-Pipeline-Integritaet).
+  - OVERALL=PASS bedeutet hier ANALYSE-INTEGRITAET (Gate A exakt, 3 Paare
+    endlich, PHY032-Repro, CI berechnet) - die Physik-Hypothese "clean
+    convergence" ist bewusst KEIN Build-Breaker und als FAIL-Finding ehrlich
+    dokumentiert (AGENTS.md: Negativ-Results sind Buerger erster Klasse).
+- `tests/test_phy035_hks_dense_ladder.py` (+4 Gates, davon 1 slow): Geometrie-
+  Orakel (Υ(0)=0.75 exakt), Extrapolations-Wiring (synthetische WM-Daten ->
+  t_true exakt), Paar-Wiring, Mini-Wolff-Smoke.
+- `results/260611 PHY035 honeycomb hks dense ladder report.txt`: Gate-Log mit
+  vollem Υ(T,L)-Gitter + ehrlichem Negativ-Befund.
+
+### Changed
+- README/CHANGELOG: PHY034-Befund von "belegt/konsistent" auf "suggestiv, nur
+  2-Punkt, durch PHY035 als nicht robust widerlegt" getempert (Lineage-
+  Ehrlichkeit; PHY034 selbst war bereits als Konsistenz-Check caveated).
+
 ## [2026-06-11] PHY034 — honeycomb T_BKT: HKS-L->inf-Extrapolation (Methoden-Haertung)
 
 Schliesst die in PHY032 als "erwartbar finite-size, NICHT methodisch" NUR

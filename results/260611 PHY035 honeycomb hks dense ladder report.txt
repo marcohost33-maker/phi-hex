@@ -1,0 +1,67 @@
+PHY035 v01 - honeycomb T_BKT: HKS-L->inf-Extrapolation auf
+            DICHTER L-Leiter (Praezisions-Follow-up zu PHY034)
+Selbst-Audit / Coworkerz, 2026-06-11
+========================================================================
+
+Leiter L = [8, 12, 16, 24, 32]  (N = 2 L^2)
+Verschachtelte Verdopplungspaare: [(8, 16), (12, 24), (16, 32)]
+T-Gitter = [0.56, 0.5725, 0.585, 0.5975, 0.61, 0.6225, 0.635, 0.6475]
+Wolff: n_seeds=8, n_measure=140, n_burn=60, master_seed=42
+Methodik: arXiv:1302.2900 (HKS); Referenzen 0.573 (arXiv:2501.07388) / 0.576+-0.003 (arXiv:2406.12076)
+Gate A (T->0, per-Site exakt 0.75 J): gemessen 0.750000
+Laufzeit: 166.0s (dank Kern-Vektorisierung lokal machbar)
+
+--- Messung Upsilon(T,L) (Seed-Mittel +- SEM) ---
+  L=8: T=0.5600:0.5382+-0.0027  T=0.5725:0.5274+-0.0066  T=0.5850:0.5226+-0.0032  T=0.5975:0.5092+-0.0039  T=0.6100:0.4903+-0.0106  T=0.6225:0.4778+-0.0084  T=0.6350:0.4642+-0.0081  T=0.6475:0.4541+-0.0112
+  L=12: T=0.5600:0.5368+-0.0035  T=0.5725:0.5323+-0.0052  T=0.5850:0.5159+-0.0042  T=0.5975:0.4938+-0.0077  T=0.6100:0.4879+-0.0059  T=0.6225:0.4772+-0.0041  T=0.6350:0.4413+-0.0053  T=0.6475:0.4236+-0.0127
+  L=16: T=0.5600:0.5309+-0.0040  T=0.5725:0.4963+-0.0081  T=0.5850:0.4999+-0.0037  T=0.5975:0.4671+-0.0058  T=0.6100:0.4630+-0.0076  T=0.6225:0.4413+-0.0087  T=0.6350:0.4078+-0.0151  T=0.6475:0.3751+-0.0103
+  L=24: T=0.5600:0.5330+-0.0047  T=0.5725:0.5116+-0.0045  T=0.5850:0.4938+-0.0062  T=0.5975:0.4726+-0.0046  T=0.6100:0.4467+-0.0075  T=0.6225:0.4167+-0.0055  T=0.6350:0.3912+-0.0088  T=0.6475:0.3571+-0.0101
+  L=32: T=0.5600:0.5211+-0.0023  T=0.5725:0.5078+-0.0027  T=0.5850:0.4862+-0.0068  T=0.5975:0.4585+-0.0068  T=0.6100:0.4206+-0.0096  T=0.6225:0.3867+-0.0092  T=0.6350:0.3450+-0.0146  T=0.6475:0.2946+-0.0230
+
+--- C-eliminierte Verdopplungspaare (+ Seed-Bootstrap-CI) ---
+  T_BKT(8,16) = 0.5969  CI[0.5922,0.6123]  +4.17% / +3.63%  [Lc(geom)=11.31, u=1/(lnLc)^2=0.1699]
+  T_BKT(12,24) = 0.6014  CI[0.5989,0.6100]  +4.95% / +4.41%  [Lc(geom)=16.97, u=1/(lnLc)^2=0.1247]
+  T_BKT(16,32) = 0.5993  CI[0.5935,0.6020]  +4.59% / +4.04%  [Lc(geom)=22.63, u=1/(lnLc)^2=0.1028]
+
+--- HKS-L->inf-Extrapolation (>=3 Punkte, OLS in u=1/(lnLc)^2) ---
+  T_BKT(L->inf) [PRIMAER p=2, geom] = 0.6052  +5.61% / +5.06%
+    Seed-Bootstrap: CI[0.5771,0.6158] boot_std=0.0110 n_valid=2000/2000
+    Seed-Jackknife: mean=0.6037 se=0.0139
+  Methoden-Systematik (Variablenwahl, 9 Varianten) = [0.6028, 0.6122]
+
+--- BEFUND (NEGATIV/NUANCIERT - falsifiziert die PHY034-Lesart) ---
+  Paar-Folge faellt mit L Richtung Referenz?  NEIN
+  Extrapolation reduziert Offset?            NEIN
+  Bootstrap-CI deckt 0.573/0.576?            NEIN
+
+  Die drei Verdopplungspaare (8,16)/(12,24)/(16,32) liegen FLACH
+  bei ~0.597-0.601 - KEINE saubere Drift gegen 0.573. Die echte
+  >=3-Punkt-Extrapolation ergibt ~0.605, OBERHALB der Referenzen.
+  => Die PHY034-2-Punkt-Lesart (0.574) war NICHT robust: sie hing
+  allein am Paar (24,48)=0.5917 (groesstes L, hier nicht in der
+  Leiter). Bei L<=32 zeigt honeycomb KEINE belastbare Konvergenz
+  zur Referenz. Das deckt sich mit der HKS-Erfahrung, dass dafuer
+  L=48..192 noetig sind (lokal nicht erreichbar).
+  EHRLICHE Schlussfolgerung: der +3%-Offset ist PLAUSIBEL finite-
+  size (das groesste verfuegbare Paar (24,48) und die Literatur
+  stuetzen es), aber mit den lokal vertretbaren L NICHT beweisbar.
+  PHY034 ist damit auf 'suggestiv, nicht belegt' zu lesen.
+
+--- PASS-Gates (ANALYSE-INTEGRITAET, nicht Physik-Hypothese) ---
+  [PASS] PASS_ALIGNED_EXACT_THREE_QUARTERS
+  [PASS] PASS_THREE_PAIRS_FINITE
+  [PASS] PASS_REPRODUCES_PHY032_PAIR_12_24
+  [PASS] PASS_BOOTSTRAP_CI_COMPUTED
+  OVERALL: PASS  (= Analyse lief korrekt + dokumentiert das Negativ-Ergebnis
+   ehrlich; die Physik-Hypothese 'clean convergence' ist NICHT
+   bestaetigt und absichtlich KEIN Build-Breaker.)
+
+--- Caveats (Reifegrad-Ehrlichkeit) ---
+  - L bis 32 (lokal Minuten-Budget); Referenz-Studien nutzen
+    L=48..192. Das Bootstrap-CI erfasst die Seed-Streuung, NICHT
+    den finite-size-Bias.
+  - L=8/16 tragen sichtbares Rauschen (8 Seeds); die Aussage ist
+    qualitativ (keine robuste Konvergenz), nicht ein neuer Punkt-
+    schaetzer fuer T_BKT.
+  - Naechster echter Schritt waere L>=48 mit mehr Seeds - jenseits
+    des lokalen Budgets; ehrlich als offen ausgewiesen.

@@ -29,6 +29,8 @@ _MODULE_FILES = {
     "phy033_kagome": "260609 PHY033 kagome tbkt per-site v01.py",
     "phy034_hks_extrapolation":
         "260611 PHY034 honeycomb hks extrapolation v01.py",
+    "phy035_hks_dense_ladder":
+        "260611 PHY035 honeycomb hks dense ladder v01.py",
 }
 
 
