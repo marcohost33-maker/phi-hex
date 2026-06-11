@@ -3,6 +3,41 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-06-11] PHY034 — honeycomb T_BKT: HKS-L->inf-Extrapolation (Methoden-Haertung)
+
+Schliesst die in PHY032 als "erwartbar finite-size, NICHT methodisch" NUR
+BEHAUPTETE Luecke und testet sie. Web-recherchiert + gegen-recherchiert:
+Hsieh-Kao-Sandvik (J. Stat. Mech. (2013) P09001, arXiv:1302.2900) zeigen, dass
+die C-eliminierte Paar-Schaetzung T_BKT(L1,L2) selbst noch eine sub-leading
+logarithmische Drift traegt und zum thermodynamischen Limes extrapoliert werden
+MUSS ("sub-leading logarithmic corrections have significant effects; previous
+works underestimated T_BKT"). PHY032 lieferte die Paare ohne diesen Schritt.
+
+### Added
+- `src/260611 PHY034 honeycomb hks extrapolation v01.py`: rein analytische
+  Re-Analyse der committed PHY032-Daten (KEIN neuer Monte-Carlo-Lauf,
+  deterministisch). Reproduziert die PHY032-Paar-Schaetzer (0.6014/0.5917/
+  0.5968) und extrapoliert die Verdopplungspaare (12,24)/(24,48) linear in der
+  BKT-Variablen u=1/(ln Lc)^p zum Intercept L->inf.
+  - **Befund:** im HKS-Standard (p=2, geom. Mittel) ergibt sich
+    T_BKT = **0.5741** (+0.19% vs 0.573 / -0.33% vs 0.576) — der scheinbare
+    +3%-Offset der kleinen L ist damit quantitativ als sub-leading-log-
+    Finite-Size-Artefakt belegt, konsistent mit BEIDEN Referenzen
+    (0.573 arXiv:2501.07388; 0.576(3) arXiv:2406.12076).
+  - Ehrliche Doppel-Unsicherheit: Methoden-Systematik (Variablenwahl)
+    [0.547, 0.583] + statistische 95%-CI [0.553, 0.595] (MC-Propagation der
+    per-Paar Seed-Bootstrap-Streuung; die 2-Punkt-Extrapolation VERSTAERKT
+    den Paar-Fehler ~3x — ehrlich ausgewiesen).
+  - Caveat: nur 2 Verdopplungspaare -> Konsistenz-Check, KEINE Praezision;
+    dichtere L-Leiter (>=3 Paare) ist der Praezisions-Follow-up (dank
+    Kern-Vektorisierung guenstig).
+- `tests/test_phy034_hks_extrapolation.py` (+12 Gates): Drift-Guard (embedded
+  Gitter == committed PHY032-Report, Zeichen-genau geparst), Extrapolations-
+  Orakel (rein quadratische Drift -> exakte Rekonstruktion; kubische Rest ->
+  Bias-Reduktion), OLS-Intercept, statistische CI (deterministisch + Hebel),
+  Befund-Gates (Primaer im Referenzband, Offset reduziert, Band/CI decken Ref).
+- `results/260611 PHY034 honeycomb hks extrapolation report.txt`: Gate-Log.
+
 ## [2026-06-11] Selbst-Audit-Haertung — cliff_delta NaN-Treue + Doku-Abgleich
 
 Folge-Haertung nach Selbst-Review der Vektorisierungs-Welle (2026-06-09).

@@ -27,6 +27,8 @@ _MODULE_FILES = {
     "phy032_honeycomb_wm_bootstrap":
         "260607 PHY032 honeycomb wm-logfit bootstrap v01.py",
     "phy033_kagome": "260609 PHY033 kagome tbkt per-site v01.py",
+    "phy034_hks_extrapolation":
+        "260611 PHY034 honeycomb hks extrapolation v01.py",
 }
 
 
