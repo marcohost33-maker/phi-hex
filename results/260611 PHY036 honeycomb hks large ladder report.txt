@@ -1,0 +1,40 @@
+PHY036 v01 - honeycomb T_BKT: HKS-Extrapolation auf GROESSERER
+            L-Leiter (L bis 64; Konvergenz-Test ueber PHY035)
+Selbst-Audit / Coworkerz, 2026-06-11
+========================================================================
+
+Leiter L = [16, 24, 32, 48, 64]  (N = 2 L^2, groesstes N = 8192)
+Verschachtelte Verdopplungspaare: [(16, 32), (24, 48), (32, 64)]
+T-Gitter = [0.56, 0.5725, 0.585, 0.5975, 0.61, 0.6225, 0.635, 0.6475]
+Wolff: n_seeds=8, n_measure=140, n_burn=60, master_seed=42
+Gate A (T->0 exakt 0.75 J): gemessen 0.750000
+Laufzeit: 649.6s
+
+--- Messung Upsilon(T,L) (Seed-Mittel +- SEM) ---
+  L=16: T=0.5600:0.5309+-0.0040  T=0.5725:0.4963+-0.0081  T=0.5850:0.4999+-0.0037  T=0.5975:0.4671+-0.0058  T=0.6100:0.4630+-0.0076  T=0.6225:0.4413+-0.0087  T=0.6350:0.4078+-0.0151  T=0.6475:0.3751+-0.0103
+  L=24: T=0.5600:0.5330+-0.0047  T=0.5725:0.5116+-0.0045  T=0.5850:0.4938+-0.0062  T=0.5975:0.4726+-0.0046  T=0.6100:0.4467+-0.0075  T=0.6225:0.4167+-0.0055  T=0.6350:0.3912+-0.0088  T=0.6475:0.3571+-0.0101
+  L=32: T=0.5600:0.5211+-0.0023  T=0.5725:0.5078+-0.0027  T=0.5850:0.4862+-0.0068  T=0.5975:0.4585+-0.0068  T=0.6100:0.4206+-0.0096  T=0.6225:0.3867+-0.0092  T=0.6350:0.3450+-0.0146  T=0.6475:0.2946+-0.0230
+  L=48: T=0.5600:0.5151+-0.0035  T=0.5725:0.5042+-0.0032  T=0.5850:0.4757+-0.0046  T=0.5975:0.4413+-0.0087  T=0.6100:0.3958+-0.0064  T=0.6225:0.3414+-0.0086  T=0.6350:0.2624+-0.0099  T=0.6475:0.2326+-0.0131
+  L=64: T=0.5600:0.5220+-0.0041  T=0.5725:0.4962+-0.0039  T=0.5850:0.4803+-0.0038  T=0.5975:0.4555+-0.0061  T=0.6100:0.3784+-0.0175  T=0.6225:0.3462+-0.0106  T=0.6350:0.2488+-0.0165  T=0.6475:0.1513+-0.0208
+
+--- C-eliminierte Verdopplungspaare (+ Seed-Bootstrap-CI) ---
+  T_BKT(16,32) = 0.5993  CI[0.5935,0.6020]  +4.59%/+4.04%  [Lc(geom)=22.63]
+  T_BKT(24,48) = 0.5917  CI[0.5871,0.5982]  +3.27%/+2.73%  [Lc(geom)=33.94]
+  T_BKT(32,64) = 0.6178  CI[0.5975,0.6350]  +7.81%/+7.25%  [Lc(geom)=45.25]
+
+--- HKS-L->inf-Extrapolation (3 Punkte, OLS in u=1/(lnLc)^2) ---
+  T_BKT(L->inf) = 0.6388  +11.49%/+10.91%
+    Seed-Bootstrap: CI[0.5877,0.6839] boot_std=0.0261
+
+--- BEFUND ---
+  Paar-Folge faellt mit L Richtung Referenz? NEIN
+  Extrapolation im Referenzband [0.573,0.576]?  NEIN
+  (Interpretation im PR/README; PHY036 erweitert PHY035 auf L=64.
+   OVERALL=PASS = Analyse-Integritaet, NICHT die Physik-Hypothese.)
+
+--- PASS-Gates (Analyse-Integritaet) ---
+  [PASS] PASS_ALIGNED_EXACT_THREE_QUARTERS
+  [PASS] PASS_THREE_PAIRS_FINITE
+  [PASS] PASS_REPRODUCES_PHY032_PAIR_24_48
+  [PASS] PASS_BOOTSTRAP_CI_COMPUTED
+  OVERALL: PASS

@@ -3,6 +3,140 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-06-12] PHY038 — honeycomb Hochstatistik: es ist KEIN Statistik-Problem
+
+Hochstatistik-Versuch der HKS-Aufloesung (L<=64, n_seeds=16, n_measure=240,
+n_burn=120 vs PHY036 8/140/60; ~32 min) + Methoden-Spec.
+
+### Added
+- `src/260612 PHY038 honeycomb hks highstat v01.py` + `tests/test_phy038_*.py`
+  (+2 Konfig-/Geometrie-Gates) + Gate-Log in `results/`.
+  - **Befund (definitiv):** verdoppelte Statistik aendert das (32,64)-Paar NICHT
+    (0.6181 vs 0.6178 bei 8 Seeds), CI nicht enger. Der hohe (32,64)-Wert ist
+    also KEIN Rausch-Artefakt; die Paare bleiben nicht-monoton (0.597/0.594/
+    0.618), Extrapolation 0.647 (+13%). => honeycomb-Nicht-Aufloesbarkeit ist
+    ein METHODEN-/finite-size-Limit, KEIN Statistik-Problem. Mehr Seeds/Sweeps
+    loesen es nicht; noetig waeren L>=96..192 UND feineres T-Gitter (HPC).
+- `spec/260612 PHI HEX hks tbkt extrapolation method v01.md`: Methoden-Spec
+  (Vertrags-Quelle) fuer den wiederverwendbaren gitter-agnostischen HKS-Apparat
+  + ehrliche Bilanz der ganzen PHY034-038-Serie.
+
+### Fixed (Compliance)
+- `SOURCES.md` (append-only) um die in PHY034-037 + PR#6 ausgelassenen
+  repo-native Eintraege ergaenzt (src/tests/results je Experiment, echtes
+  SHA-256-16) - SHA-First-/Lineage-Regel (AGENTS.md) nachgezogen.
+
+## [2026-06-11] PHY037 — HKS-Extrapolation gitter-uebergreifend (ehrliche Methoden-Bilanz)
+
+Generalisiert den HKS-Apparat (arXiv:1302.2900) auf honeycomb/kagome/triangular
+und zieht die ehrliche Bilanz, WO die C-eliminierte Paar-Extrapolation aus kleinen
+L sauber konvergiert - und wo nicht.
+
+### Added
+- `src/260611 PHY037 hks multilattice extrapolation v01.py`: parst die
+  committed "T_BKT(L=a,b)"-Paar-Zeilen der PHY030/032/033-Reports ZUR LAUFZEIT
+  (single source of truth, kein eingebettetes Daten-Duplikat) und extrapoliert
+  je Gitter u=1/(ln Lc)^2 -> L->inf.
+  - **Befund (ehrlich, nicht getunt):** kagome 0.8236 (−0.17% vs 0.825) SAUBER;
+    honeycomb 0.5747 (−0.23% vs 0.576) SAUBER, aber NUR mit L=48 (ohne L=48
+    kippt es, s. PHY035); triangular 1.4591 (+2.90% vs 1.418) UEBERSCHIESST -
+    hier ist das BLANKE groesste Paar (1.3888) naeher an der Referenz. =>
+    Klein-L-Paar-Extrapolation ist gitter-abhaengig + empfindlich auf das
+    groesste enthaltene L, KEIN universelles Wundermittel (deckt sich mit HKS:
+    L=48..192 noetig).
+- `tests/test_phy037_hks_multilattice.py` (+5 Gates): Drift-Guard (geparste
+  Paare == committed Reports), Extrapolations-Regression (Werte gepinnt),
+  Methoden-Verdikt (honeycomb/kagome SAUBER, triangular UEBERSCHIESST), Wiring.
+- `results/260611 PHY037 hks multilattice extrapolation report.txt`: Gate-Log.
+
+### Added (Mess-Apparat)
+- `src/260611 PHY036 honeycomb hks large ladder v01.py`: groessere Leiter
+  L=16/24/32/48/64 (drei verschachtelte Paare bis (32,64); dank Vektorisierung
+  L=64/N=8192 in ~11 min lokal), reine Wiederverwendung der parametrisierten
+  PHY035-Bausteine. `tests/test_phy036_*.py` (+2 Konfig-/Geometrie-Gates).
+  - **Befund (NEGATIV, entscheidend):** groesseres L STABILISIERT NICHT - es
+    verschlechtert. Das (32,64)-Paar springt auf 0.6178 (CI[0.598,0.635];
+    L=64 ist bei 8 Seeds rausch-dominiert), die Extrapolation ergibt 0.639
+    (+11.5%). Der Limes WANDERT mit dem L-Set: 0.574 (L<=48) -> 0.605 (L<=32)
+    -> 0.639 (L<=64). Cross-Check: (24,48)=0.5917 bit-identisch zu PHY032.
+  - **Korrekte Schlussfolgerung der ganzen PHY034-037-Serie:** honeycomb-T_BKT
+    ist aus lokal vertretbarer MC NICHT robust extrapolierbar; ehrlichster
+    Stand bleibt der Roh-Paar-Wert ~0.59 (L≈48, +3% ueber Literatur, innerhalb
+    finite-size). Belastbar braucht L>=48..192 MIT hoher Seed-Statistik.
+  - `results/260611 PHY036 honeycomb hks large ladder report.txt`: Gate-Log.
+- PHY035-Bausteine (`measure_cube`/`pair_estimates`/`make_hks_extrap_estimator`)
+  um Keyword-Parameter `ladder`/`pairs`/`t_grid` erweitert (rueckwaerts-
+  kompatibel; Defaults unveraendert) -> PHY036 reuse ohne Duplikat.
+
+## [2026-06-11] PHY035 — honeycomb dichte L-Leiter: falsifiziert die PHY034-Lesart (Negativ-Result)
+
+Praezisions-Follow-up zu PHY034 - und ehrliche Selbst-Falsifikation. PHY034
+extrapolierte mit NUR 2 Paaren (2-Punkt). PHY035 misst frisch auf der dichten
+Leiter L=8/12/16/24/32 (drei verschachtelte Verdopplungspaare; dank Kern-
+Vektorisierung ~3 min lokal) und macht damit eine ECHTE >=3-Punkt-Extrapolation.
+
+### Added
+- `src/260611 PHY035 honeycomb hks dense ladder v01.py`: Wolff-Messung
+  (phy032-Pipeline 1:1) + C-eliminierte Paare + OLS-Extrapolation (phy034-
+  Primitive) + EIGENES Seed-Bootstrap-CI des Extrapolations-Werts.
+  - **Befund (NEGATIV):** die drei Paare (8,16)/(12,24)/(16,32) liegen FLACH
+    bei ~0.597-0.601 - keine saubere Drift gegen 0.573. Die >=3-Punkt-
+    Extrapolation ergibt ~0.605 (CI[0.577,0.616]), OBERHALB der Referenzen.
+    => PHY034 (0.574) war NICHT robust: das Ergebnis hing allein am Paar
+    (24,48) (groesstes L, hier nicht in der Leiter). Bei L<=32 zeigt honeycomb
+    KEINE belastbare Konvergenz; das deckt sich mit HKS (L=48..192 noetig).
+  - **Cross-Check:** L=12/24 teilen den RNG-Vertrag mit PHY032 -> T(12,24)=
+    0.6014 bit-identisch reproduziert (Mess-Pipeline-Integritaet).
+  - OVERALL=PASS bedeutet hier ANALYSE-INTEGRITAET (Gate A exakt, 3 Paare
+    endlich, PHY032-Repro, CI berechnet) - die Physik-Hypothese "clean
+    convergence" ist bewusst KEIN Build-Breaker und als FAIL-Finding ehrlich
+    dokumentiert (AGENTS.md: Negativ-Results sind Buerger erster Klasse).
+- `tests/test_phy035_hks_dense_ladder.py` (+4 Gates, davon 1 slow): Geometrie-
+  Orakel (Υ(0)=0.75 exakt), Extrapolations-Wiring (synthetische WM-Daten ->
+  t_true exakt), Paar-Wiring, Mini-Wolff-Smoke.
+- `results/260611 PHY035 honeycomb hks dense ladder report.txt`: Gate-Log mit
+  vollem Υ(T,L)-Gitter + ehrlichem Negativ-Befund.
+
+### Changed
+- README/CHANGELOG: PHY034-Befund von "belegt/konsistent" auf "suggestiv, nur
+  2-Punkt, durch PHY035 als nicht robust widerlegt" getempert (Lineage-
+  Ehrlichkeit; PHY034 selbst war bereits als Konsistenz-Check caveated).
+
+## [2026-06-11] PHY034 — honeycomb T_BKT: HKS-L->inf-Extrapolation (Methoden-Haertung)
+
+Schliesst die in PHY032 als "erwartbar finite-size, NICHT methodisch" NUR
+BEHAUPTETE Luecke und testet sie. Web-recherchiert + gegen-recherchiert:
+Hsieh-Kao-Sandvik (J. Stat. Mech. (2013) P09001, arXiv:1302.2900) zeigen, dass
+die C-eliminierte Paar-Schaetzung T_BKT(L1,L2) selbst noch eine sub-leading
+logarithmische Drift traegt und zum thermodynamischen Limes extrapoliert werden
+MUSS ("sub-leading logarithmic corrections have significant effects; previous
+works underestimated T_BKT"). PHY032 lieferte die Paare ohne diesen Schritt.
+
+### Added
+- `src/260611 PHY034 honeycomb hks extrapolation v01.py`: rein analytische
+  Re-Analyse der committed PHY032-Daten (KEIN neuer Monte-Carlo-Lauf,
+  deterministisch). Reproduziert die PHY032-Paar-Schaetzer (0.6014/0.5917/
+  0.5968) und extrapoliert die Verdopplungspaare (12,24)/(24,48) linear in der
+  BKT-Variablen u=1/(ln Lc)^p zum Intercept L->inf.
+  - **Befund:** im HKS-Standard (p=2, geom. Mittel) ergibt sich
+    T_BKT = **0.5741** (+0.19% vs 0.573 / -0.33% vs 0.576) — der scheinbare
+    +3%-Offset der kleinen L ist damit quantitativ als sub-leading-log-
+    Finite-Size-Artefakt belegt, konsistent mit BEIDEN Referenzen
+    (0.573 arXiv:2501.07388; 0.576(3) arXiv:2406.12076).
+  - Ehrliche Doppel-Unsicherheit: Methoden-Systematik (Variablenwahl)
+    [0.547, 0.583] + statistische 95%-CI [0.553, 0.595] (MC-Propagation der
+    per-Paar Seed-Bootstrap-Streuung; die 2-Punkt-Extrapolation VERSTAERKT
+    den Paar-Fehler ~3x — ehrlich ausgewiesen).
+  - Caveat: nur 2 Verdopplungspaare -> Konsistenz-Check, KEINE Praezision;
+    dichtere L-Leiter (>=3 Paare) ist der Praezisions-Follow-up (dank
+    Kern-Vektorisierung guenstig).
+- `tests/test_phy034_hks_extrapolation.py` (+12 Gates): Drift-Guard (embedded
+  Gitter == committed PHY032-Report, Zeichen-genau geparst), Extrapolations-
+  Orakel (rein quadratische Drift -> exakte Rekonstruktion; kubische Rest ->
+  Bias-Reduktion), OLS-Intercept, statistische CI (deterministisch + Hebel),
+  Befund-Gates (Primaer im Referenzband, Offset reduziert, Band/CI decken Ref).
+- `results/260611 PHY034 honeycomb hks extrapolation report.txt`: Gate-Log.
+
 ## [2026-06-11] Selbst-Audit-Haertung — cliff_delta NaN-Treue + Doku-Abgleich
 
 Folge-Haertung nach Selbst-Review der Vektorisierungs-Welle (2026-06-09).

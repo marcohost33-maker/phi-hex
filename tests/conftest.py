@@ -27,6 +27,16 @@ _MODULE_FILES = {
     "phy032_honeycomb_wm_bootstrap":
         "260607 PHY032 honeycomb wm-logfit bootstrap v01.py",
     "phy033_kagome": "260609 PHY033 kagome tbkt per-site v01.py",
+    "phy034_hks_extrapolation":
+        "260611 PHY034 honeycomb hks extrapolation v01.py",
+    "phy035_hks_dense_ladder":
+        "260611 PHY035 honeycomb hks dense ladder v01.py",
+    "phy036_hks_large_ladder":
+        "260611 PHY036 honeycomb hks large ladder v01.py",
+    "phy037_hks_multilattice":
+        "260611 PHY037 hks multilattice extrapolation v01.py",
+    "phy038_hks_highstat":
+        "260612 PHY038 honeycomb hks highstat v01.py",
 }
 
 

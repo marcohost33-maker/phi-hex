@@ -1,0 +1,55 @@
+PHY037 v01 - HKS-L->inf-Extrapolation GITTER-UEBERGREIFEND
+            (honeycomb / kagome / triangular)
+Selbst-Audit / Coworkerz, 2026-06-11
+========================================================================
+
+Methode: C-eliminierte Paar-Schaetzer (committed Reports) linear
+  in u=1/(ln Lc)^2 (geom. Mittel) zum Intercept L->inf (HKS,
+  arXiv:1302.2900). Rein analytisch, kein neuer MC-Lauf.
+
+  Gitter        Extrap      Abw  bestes Paar      Abw      Systematik-Band    Verdikt
+  honeycomb     0.5747   -0.23%       0.5917   +2.73%      [0.5526,0.5854]     SAUBER
+  kagome        0.8236   -0.17%       0.8377   +1.54%      [0.8053,0.8334]     SAUBER
+  triangular    1.4591   +2.90%       1.3888   -2.06%      [1.4109,1.5371] UEBERSCHIESST
+
+--- honeycomb (refs 0.573, 0.576) ---
+  Paar(12,24) = 0.6014  [Lc(geom)=16.97]
+  Paar(12,48) = 0.5968  [Lc(geom)=24.00]
+  Paar(24,48) = 0.5917  [Lc(geom)=33.94]
+  -> L->inf (p=2,geom) = 0.5747  (-0.23% vs 0.576)
+
+--- kagome (refs 0.825) ---
+  Paar(12,24) = 0.8437  [Lc(geom)=16.97]
+  Paar(12,36) = 0.8410  [Lc(geom)=20.78]
+  Paar(24,36) = 0.8377  [Lc(geom)=29.39]
+  -> L->inf (p=2,geom) = 0.8236  (-0.17% vs 0.825)
+
+--- triangular (refs 1.418) ---
+  Paar(9,13) = 1.3663  [Lc(geom)=10.82]
+  Paar(9,19) = 1.3852  [Lc(geom)=13.08]
+  Paar(13,19) = 1.3888  [Lc(geom)=15.72]
+  -> L->inf (p=2,geom) = 1.4591  (+2.90% vs 1.418)
+
+--- BEFUND (ehrliche Methoden-Bilanz) ---
+  kagome:    Paare fallen monoton -> Extrap ~ref. SAUBER.
+  honeycomb: Paare fallen (NUR mit L=48) -> Extrap ~ref. SAUBER,
+             aber fragil (ohne L=48 kippt es, s. PHY035).
+  triangular: Paare STEIGEN bei L<=19 -> Extrap UEBERSCHIESST ueber
+             1.418; das blanke groesste Paar ist hier naeher an ref.
+  => Klein-L-Paar-Extrapolation ist gitter-abhaengig + empfindlich
+  auf das groesste enthaltene L - KEIN universelles Wundermittel
+  (deckt sich mit HKS: L=48..192 noetig). Das blanke groesste Paar
+  bleibt eine konkurrenzfaehige konservative Schranke.
+
+--- PASS-Gates (Analyse-Integritaet + robuster kagome-Positiv) ---
+  [PASS] PASS_DRIFT_GUARD_PAIRS_MATCH_REPORTS
+  [PASS] PASS_THREE_PAIRS_PER_LATTICE
+  [PASS] PASS_ALL_EXTRAPOLATIONS_FINITE
+  [PASS] PASS_KAGOME_CONVERGES_TO_REF
+  OVERALL: PASS
+
+--- Caveats ---
+  - triangular/honeycomb-Extrapolationen aus <=3 kleinen L sind
+    sub-leading-log-limitiert (ehrlich; vgl. PHY030/032-Caveats).
+  - 'SAUBER/UEBERSCHIESST' ist eine qualitative Methoden-Aussage,
+    kein neuer Praezisions-Punktschaetzer fuer T_BKT.
