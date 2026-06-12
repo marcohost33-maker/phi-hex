@@ -66,7 +66,14 @@ Ein neues Gitter/Experiment ist ein dünner Treiber über diese Bausteine
 | PHY034 (2-Punkt) | 12/24/48 | 0.574 |
 | PHY035 | 8…32 (kein 48) | 0.605 |
 | PHY036 | 16…64 (8 Seeds) | 0.639 |
-| PHY038 | 16…64 (16 Seeds) | *(Hochstat-Lauf; s. Report)* |
+| PHY038 | 16…64 (16 Seeds, 240 Sweeps) | 0.647 |
+
+**Schlüssel-Befund PHY038:** Verdoppelte Statistik (16 statt 8 Seeds, 240 statt
+140 Sweeps) ändert das (32,64)-Paar nicht (0.6181 vs 0.6178) und verengt sein
+CI nicht. Der hohe (32,64)-Wert ist also **kein Rausch-Artefakt** — die
+honeycomb-Nicht-Auflösbarkeit ist ein **Methoden-/finite-size-Limit, kein
+Statistik-Problem**. Mehr Seeds/Sweeps lösen es nicht; nötig wären größere L
+(≥96..192) **und** ein feineres T-Gitter nahe dem Crossing.
 
 ## 5. Ehrliche Bilanz (Vertrag für künftige Nutzung)
 

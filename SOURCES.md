@@ -59,3 +59,5 @@
 | D32968FD72F1908A | 2026-06-11 | results | repo-native (Gate-Evidenz PHY037 cross-lattice, rein analytisch; KEINE Drive-Quelle) |
 | 8F399CBCE7B28559 | 2026-06-12 | src | repo-native (PHY038 Hochstatistik-HKS honeycomb L<=64 n_seeds=16 n_measure=240; KEINE Drive-Quelle) |
 | D650EC6A5A08AADC | 2026-06-12 | spec | repo-native (Methoden-Spec HKS-T_BKT-Extrapolation + ehrliche Bilanz PHY034-038; Methodik arXiv:1302.2900; KEINE Drive-Quelle) |
+| C33EC2394742673D | 2026-06-12 | tests | repo-native (Konfig-/Geometrie-Gate fuer PHY038 Hochstatistik; KEINE Drive-Quelle) |
+| 0F892A187F181AF1 | 2026-06-12 | results | repo-native (Gate-Evidenz PHY038 honeycomb L<=64 n_seeds=16 n_measure=240, master_seed=42; KEINE Drive-Quelle) |

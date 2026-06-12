@@ -1,0 +1,45 @@
+PHY038 v01 - honeycomb T_BKT: HOCHSTATISTIK-HKS (L bis 64,
+            n_seeds=16, n_measure=240, n_burn=120; vs PHY036: 8/140/60)
+Selbst-Audit / Coworkerz, 2026-06-12
+========================================================================
+
+Leiter L = [16, 24, 32, 48, 64]  Paare [(16, 32), (24, 48), (32, 64)]
+T-Gitter = [0.56, 0.5725, 0.585, 0.5975, 0.61, 0.6225, 0.635, 0.6475]  master_seed=42
+Gate A (T->0 exakt 0.75 J): 0.750000
+Laufzeit: 1937.7s
+
+--- Messung Upsilon(T,L) (Seed-Mittel +- SEM) ---
+  L=16: T=0.5600:0.5328+-0.0019  T=0.5725:0.5137+-0.0034  T=0.5850:0.5029+-0.0019  T=0.5975:0.4859+-0.0030  T=0.6100:0.4630+-0.0038  T=0.6225:0.4464+-0.0043  T=0.6350:0.4100+-0.0071  T=0.6475:0.3818+-0.0071
+  L=24: T=0.5600:0.5281+-0.0020  T=0.5725:0.5113+-0.0027  T=0.5850:0.4870+-0.0036  T=0.5975:0.4757+-0.0032  T=0.6100:0.4379+-0.0046  T=0.6225:0.4007+-0.0067  T=0.6350:0.3692+-0.0055  T=0.6475:0.3390+-0.0080
+  L=32: T=0.5600:0.5215+-0.0022  T=0.5725:0.5076+-0.0018  T=0.5850:0.4849+-0.0032  T=0.5975:0.4563+-0.0028  T=0.6100:0.4331+-0.0048  T=0.6225:0.3903+-0.0069  T=0.6350:0.3483+-0.0059  T=0.6475:0.2831+-0.0065
+  L=48: T=0.5600:0.5202+-0.0021  T=0.5725:0.5026+-0.0022  T=0.5850:0.4751+-0.0028  T=0.5975:0.4469+-0.0056  T=0.6100:0.4178+-0.0030  T=0.6225:0.3500+-0.0077  T=0.6350:0.2867+-0.0086  T=0.6475:0.2134+-0.0084
+  L=64: T=0.5600:0.5202+-0.0015  T=0.5725:0.4972+-0.0028  T=0.5850:0.4748+-0.0026  T=0.5975:0.4456+-0.0045  T=0.6100:0.3845+-0.0062  T=0.6225:0.3189+-0.0073  T=0.6350:0.2479+-0.0099  T=0.6475:0.1646+-0.0073
+
+--- C-eliminierte Verdopplungspaare (+ Seed-Bootstrap-CI) ---
+  T_BKT(16,32) = 0.5972  CI[0.5941,0.5992]  [Lc=22.6]
+  T_BKT(24,48) = 0.5943  CI[0.5900,0.5994]  [Lc=33.9]
+  T_BKT(32,64) = 0.6181  CI[0.5956,0.6349]  [Lc=45.3]
+  (PHY036-Vergleich (32,64): 0.6178 bei 8 Seeds)
+
+--- HKS-L->inf-Extrapolation (3 Punkte, u=1/(lnLc)^2) ---
+  T_BKT(L->inf) = 0.6467  +12.86%/+12.27%
+    Seed-Bootstrap: CI[0.5911,0.6889] boot_std=0.0297
+  (PHY036 8-Seed-Extrapolation war 0.6388)
+
+--- BEFUND ---
+  Extrapolation im Referenzband [0.573,0.576]? NEIN
+  Naeher an Referenz als PHY036 (8 Seeds)?      NEIN
+  (32,64)-CI-Breite: 0.0393 (PHY036: ~0.0375)
+  Interpretation im PR/README. OVERALL=PASS = Analyse-Integritaet
+  (Gate A, Paare endlich, CI berechnet), NICHT Physik-Hypothese.
+
+--- PASS-Gates ---
+  [PASS] PASS_ALIGNED_EXACT_THREE_QUARTERS
+  [PASS] PASS_THREE_PAIRS_FINITE
+  [PASS] PASS_BOOTSTRAP_CI_COMPUTED
+  OVERALL: PASS
+
+--- Caveats ---
+  - 16 Seeds / L=64 sind weiterhin WEIT unter Publikationsniveau
+    (dort L=48..192, tausende Messungen). Lokaler Best-Effort.
+  - Reiner Statistik-Hebel ueber PHY036; gleiche Methode/Leiter.

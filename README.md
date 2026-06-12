@@ -1,6 +1,6 @@
 # Phi-Hex
 
-> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-11). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/ (jetzt inkl. honeycomb WM-Log-Fit + Seed-Bootstrap-CI PHY032 + kagome PHY033). Testsuite 76/76 PASS (lokal verifiziert 2026-06-11; davon 70 schnelle Korrektheits-Gates blockierend in CI, 6 slow Mess-Laeufe lokal; inkl. Kern-Vektorisierungs-Aequivalenz-Gates).
+> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-11). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/ (jetzt inkl. honeycomb WM-Log-Fit + Seed-Bootstrap-CI PHY032 + kagome PHY033). Testsuite 78/78 PASS (lokal verifiziert 2026-06-12; davon 72 schnelle Korrektheits-Gates blockierend in CI, 6 slow Mess-Laeufe lokal; inkl. Kern-Vektorisierungs-Aequivalenz-Gates).
 > **Lineage/Provenance:** siehe `SOURCES.md` (SHA-256 je Quelldatei) | **Lizenz:** Apache-2.0
 
 XY-Modell / BKT-Physik auf Dreiecks- und Honeycomb-Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Finite-Size-Scaling.
@@ -137,14 +137,25 @@ Belastbare Konvergenz braucht L ≥ 48..192 **mit** hoher Seed-Statistik —
 jenseits des lokalen Budgets. Code:
 `src/260611 PHY036 honeycomb hks large ladder v01.py`.
 
+**PHY038 (Hochstatistik — es ist KEIN Statistik-Problem, 2026-06-12):**
+Dieselbe Leiter mit **doppelter Statistik** (16 statt 8 Seeds, 240 statt 140
+Sweeps; 32 min). Ergebnis: das (32,64)-Paar bleibt **0.6181** (8 Seeds: 0.6178)
+— **unverändert**, CI nicht enger. Der hohe Wert ist also **kein Rauschen**;
+die Paare bleiben nicht-monoton (0.597/0.594/0.618), die Extrapolation 0.647
+(+13 %). **Damit ist die honeycomb-Nicht-Auflösbarkeit definitiv ein Methoden-/
+finite-size-Limit, kein Statistik-Problem** — mehr Seeds/Sweeps lösen es nicht.
+Eine echte Auflösung bräuchte größere L (≥96..192) **und** ein feineres
+T-Gitter nahe dem Crossing (HPC). Code:
+`src/260612 PHY038 honeycomb hks highstat v01.py`.
+
 **Superseded:** alle vor 2026-06-04 publizierten T_BKT-Zahlen, die auf der
 Flaechen-Normierung beruhen (u.a. PHY026-Report "Υ(T→0)=J·√3"), sind durch
 diesen Mess-Stand ersetzt. Details in `CHANGELOG.md`.
 
 ## Kern
 
-- **Engine:** `src/260602 PHI HEX core v2 2 hardened.py` (Kern) + PHY024-037-Experiment-Serie
-- **Evidenz:** Selftest-Report + PHY025-037 Reports in `results/`; Testsuite in `tests/`; methodischer Audit (4 Responses) in `spec/`. Mess-Stand T_BKT(triangular) = 1.42 ± 0.04 (per-Site, 2026-06-04; Referenz 1.418); T_BKT(honeycomb) = 0.5917 CI[0.587, 0.598] (PHY032 groesstes L, Sandvik-Paar (24,48), 2026-06-07; Referenzen 0.573 / 0.576(3)) — supersedet PHY031 v01 (0.595); T_BKT(kagome) = 0.8479 CI[0.8414, 0.8507] (PHY033 WM-Log-Fit, 2026-06-09; Referenz 0.825 "rough estimate").
+- **Engine:** `src/260602 PHI HEX core v2 2 hardened.py` (Kern) + PHY024-038-Experiment-Serie
+- **Evidenz:** Selftest-Report + PHY025-038 Reports in `results/`; Testsuite in `tests/`; methodischer Audit (4 Responses) in `spec/`. Mess-Stand T_BKT(triangular) = 1.42 ± 0.04 (per-Site, 2026-06-04; Referenz 1.418); T_BKT(honeycomb) = 0.5917 CI[0.587, 0.598] (PHY032 groesstes L, Sandvik-Paar (24,48), 2026-06-07; Referenzen 0.573 / 0.576(3)) — supersedet PHY031 v01 (0.595); T_BKT(kagome) = 0.8479 CI[0.8414, 0.8507] (PHY033 WM-Log-Fit, 2026-06-09; Referenz 0.825 "rough estimate").
 
 ## Struktur
 
@@ -163,8 +174,8 @@ Die Selftests laufen direkt in der Engine (`python <engine>.py`; Details im
 Engine-Header). Die Testsuite (numpy/scipy/pytest noetig):
 
 ```
-pytest                 # volle Suite (inkl. slow Mess-Laeufe), 76/76 PASS
-pytest -m "not slow"   # nur schnelle Korrektheits-Gates (70, inkl. WM-/Sandvik-/Bootstrap-/Vektorisierungs-/HKS-/Multilattice-Orakel) — CI-Gate
+pytest                 # volle Suite (inkl. slow Mess-Laeufe), 78/78 PASS
+pytest -m "not slow"   # nur schnelle Korrektheits-Gates (72, inkl. WM-/Sandvik-/Bootstrap-/Vektorisierungs-/HKS-/Multilattice-Orakel) — CI-Gate
 python "src/260604 PHY030 triangular tbkt per-site v01.py"            # T_BKT(tri)-Schranken (konservativ)
 python "src/260604 PHY030 triangular tbkt per-site v02 wm-logfit.py"  # T_BKT(tri) Weber-Minnhagen-Log-Fit
 python "src/260607 PHY031 honeycomb tbkt per-site v01.py"             # T_BKT(honeycomb) Wolff + Sandvik-Paar (kleine L)

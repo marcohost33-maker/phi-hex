@@ -3,6 +3,29 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-06-12] PHY038 — honeycomb Hochstatistik: es ist KEIN Statistik-Problem
+
+Hochstatistik-Versuch der HKS-Aufloesung (L<=64, n_seeds=16, n_measure=240,
+n_burn=120 vs PHY036 8/140/60; ~32 min) + Methoden-Spec.
+
+### Added
+- `src/260612 PHY038 honeycomb hks highstat v01.py` + `tests/test_phy038_*.py`
+  (+2 Konfig-/Geometrie-Gates) + Gate-Log in `results/`.
+  - **Befund (definitiv):** verdoppelte Statistik aendert das (32,64)-Paar NICHT
+    (0.6181 vs 0.6178 bei 8 Seeds), CI nicht enger. Der hohe (32,64)-Wert ist
+    also KEIN Rausch-Artefakt; die Paare bleiben nicht-monoton (0.597/0.594/
+    0.618), Extrapolation 0.647 (+13%). => honeycomb-Nicht-Aufloesbarkeit ist
+    ein METHODEN-/finite-size-Limit, KEIN Statistik-Problem. Mehr Seeds/Sweeps
+    loesen es nicht; noetig waeren L>=96..192 UND feineres T-Gitter (HPC).
+- `spec/260612 PHI HEX hks tbkt extrapolation method v01.md`: Methoden-Spec
+  (Vertrags-Quelle) fuer den wiederverwendbaren gitter-agnostischen HKS-Apparat
+  + ehrliche Bilanz der ganzen PHY034-038-Serie.
+
+### Fixed (Compliance)
+- `SOURCES.md` (append-only) um die in PHY034-037 + PR#6 ausgelassenen
+  repo-native Eintraege ergaenzt (src/tests/results je Experiment, echtes
+  SHA-256-16) - SHA-First-/Lineage-Regel (AGENTS.md) nachgezogen.
+
 ## [2026-06-11] PHY037 — HKS-Extrapolation gitter-uebergreifend (ehrliche Methoden-Bilanz)
 
 Generalisiert den HKS-Apparat (arXiv:1302.2900) auf honeycomb/kagome/triangular

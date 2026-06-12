@@ -35,6 +35,8 @@ _MODULE_FILES = {
         "260611 PHY036 honeycomb hks large ladder v01.py",
     "phy037_hks_multilattice":
         "260611 PHY037 hks multilattice extrapolation v01.py",
+    "phy038_hks_highstat":
+        "260612 PHY038 honeycomb hks highstat v01.py",
 }
 
 
