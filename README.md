@@ -119,8 +119,23 @@ auf ~0.605), **überschießt** aber für triangular bei sehr kleinem L (≤19), 
 das blanke größte Paar näher an der Referenz liegt. Die Methode ist also
 gitter-abhängig und empfindlich auf das größte enthaltene L — **kein
 universelles Wundermittel** (deckt sich mit HKS: L=48..192 nötig). Code:
-`src/260611 PHY037 hks multilattice extrapolation v01.py`. Der größere-L-Lauf
-(PHY036, L bis 64) prüft die honeycomb-Stabilisierung separat.
+`src/260611 PHY037 hks multilattice extrapolation v01.py`.
+
+**PHY036 (größere Leiter L bis 64 — L hilft NICHT, 2026-06-11):** Frische
+Wolff-Messung L = 16/24/32/48/64 (N bis 8192; ~11 min lokal dank
+Vektorisierung). Ergebnis: das **größere L stabilisiert die honeycomb-
+Extrapolation NICHT — es verschlechtert sie**. Das (32,64)-Paar springt auf
+0.6178 mit breitem CI[0.598,0.635] (L=64 ist bei 8 Seeds **rausch-dominiert**,
+sichtbar an Υ(L=64) nahe T_BKT). Die ≥3-Punkt-Extrapolation ergibt **0.639**
+(+11.5 %). Damit **wandert** der Extrapolations-Limes mit dem L-Set:
+**0.574** (PHY032, L≤48) → **0.605** (PHY035, L≤32) → **0.639** (PHY036, L≤64).
+Cross-Check intakt: (24,48) reproduziert PHY032s 0.5917 bit-identisch.
+**Korrekte Schlussfolgerung:** Honeycomb-T_BKT ist aus der lokal vertretbaren
+MC-Statistik **nicht robust extrapolierbar**; die ehrlichste Aussage bleibt der
+Roh-Paar-Stand ~0.59 (L≈48, +3 % über Literatur, innerhalb finite-size).
+Belastbare Konvergenz braucht L ≥ 48..192 **mit** hoher Seed-Statistik —
+jenseits des lokalen Budgets. Code:
+`src/260611 PHY036 honeycomb hks large ladder v01.py`.
 
 **Superseded:** alle vor 2026-06-04 publizierten T_BKT-Zahlen, die auf der
 Flaechen-Normierung beruhen (u.a. PHY026-Report "Υ(T→0)=J·√3"), sind durch

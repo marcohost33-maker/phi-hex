@@ -29,9 +29,18 @@ L sauber konvergiert - und wo nicht.
 ### Added (Mess-Apparat)
 - `src/260611 PHY036 honeycomb hks large ladder v01.py`: groessere Leiter
   L=16/24/32/48/64 (drei verschachtelte Paare bis (32,64); dank Vektorisierung
-  L=64/N=8192 lokal vertretbar), reine Wiederverwendung der parametrisierten
-  PHY035-Bausteine. Klaert, ob L>=48 die Konvergenz stabilisiert (Lauf-Evidenz
-  separat). `tests/test_phy036_*.py` (+2 Konfig-/Geometrie-Gates).
+  L=64/N=8192 in ~11 min lokal), reine Wiederverwendung der parametrisierten
+  PHY035-Bausteine. `tests/test_phy036_*.py` (+2 Konfig-/Geometrie-Gates).
+  - **Befund (NEGATIV, entscheidend):** groesseres L STABILISIERT NICHT - es
+    verschlechtert. Das (32,64)-Paar springt auf 0.6178 (CI[0.598,0.635];
+    L=64 ist bei 8 Seeds rausch-dominiert), die Extrapolation ergibt 0.639
+    (+11.5%). Der Limes WANDERT mit dem L-Set: 0.574 (L<=48) -> 0.605 (L<=32)
+    -> 0.639 (L<=64). Cross-Check: (24,48)=0.5917 bit-identisch zu PHY032.
+  - **Korrekte Schlussfolgerung der ganzen PHY034-037-Serie:** honeycomb-T_BKT
+    ist aus lokal vertretbarer MC NICHT robust extrapolierbar; ehrlichster
+    Stand bleibt der Roh-Paar-Wert ~0.59 (L≈48, +3% ueber Literatur, innerhalb
+    finite-size). Belastbar braucht L>=48..192 MIT hoher Seed-Statistik.
+  - `results/260611 PHY036 honeycomb hks large ladder report.txt`: Gate-Log.
 - PHY035-Bausteine (`measure_cube`/`pair_estimates`/`make_hks_extrap_estimator`)
   um Keyword-Parameter `ladder`/`pairs`/`t_grid` erweitert (rueckwaerts-
   kompatibel; Defaults unveraendert) -> PHY036 reuse ohne Duplikat.
