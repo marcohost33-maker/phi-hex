@@ -3,6 +3,39 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-06-11] PHY037 — HKS-Extrapolation gitter-uebergreifend (ehrliche Methoden-Bilanz)
+
+Generalisiert den HKS-Apparat (arXiv:1302.2900) auf honeycomb/kagome/triangular
+und zieht die ehrliche Bilanz, WO die C-eliminierte Paar-Extrapolation aus kleinen
+L sauber konvergiert - und wo nicht.
+
+### Added
+- `src/260611 PHY037 hks multilattice extrapolation v01.py`: parst die
+  committed "T_BKT(L=a,b)"-Paar-Zeilen der PHY030/032/033-Reports ZUR LAUFZEIT
+  (single source of truth, kein eingebettetes Daten-Duplikat) und extrapoliert
+  je Gitter u=1/(ln Lc)^2 -> L->inf.
+  - **Befund (ehrlich, nicht getunt):** kagome 0.8236 (−0.17% vs 0.825) SAUBER;
+    honeycomb 0.5747 (−0.23% vs 0.576) SAUBER, aber NUR mit L=48 (ohne L=48
+    kippt es, s. PHY035); triangular 1.4591 (+2.90% vs 1.418) UEBERSCHIESST -
+    hier ist das BLANKE groesste Paar (1.3888) naeher an der Referenz. =>
+    Klein-L-Paar-Extrapolation ist gitter-abhaengig + empfindlich auf das
+    groesste enthaltene L, KEIN universelles Wundermittel (deckt sich mit HKS:
+    L=48..192 noetig).
+- `tests/test_phy037_hks_multilattice.py` (+5 Gates): Drift-Guard (geparste
+  Paare == committed Reports), Extrapolations-Regression (Werte gepinnt),
+  Methoden-Verdikt (honeycomb/kagome SAUBER, triangular UEBERSCHIESST), Wiring.
+- `results/260611 PHY037 hks multilattice extrapolation report.txt`: Gate-Log.
+
+### Added (Mess-Apparat)
+- `src/260611 PHY036 honeycomb hks large ladder v01.py`: groessere Leiter
+  L=16/24/32/48/64 (drei verschachtelte Paare bis (32,64); dank Vektorisierung
+  L=64/N=8192 lokal vertretbar), reine Wiederverwendung der parametrisierten
+  PHY035-Bausteine. Klaert, ob L>=48 die Konvergenz stabilisiert (Lauf-Evidenz
+  separat). `tests/test_phy036_*.py` (+2 Konfig-/Geometrie-Gates).
+- PHY035-Bausteine (`measure_cube`/`pair_estimates`/`make_hks_extrap_estimator`)
+  um Keyword-Parameter `ladder`/`pairs`/`t_grid` erweitert (rueckwaerts-
+  kompatibel; Defaults unveraendert) -> PHY036 reuse ohne Duplikat.
+
 ## [2026-06-11] PHY035 — honeycomb dichte L-Leiter: falsifiziert die PHY034-Lesart (Negativ-Result)
 
 Praezisions-Follow-up zu PHY034 - und ehrliche Selbst-Falsifikation. PHY034

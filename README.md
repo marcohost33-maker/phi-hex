@@ -1,6 +1,6 @@
 # Phi-Hex
 
-> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-11). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/ (jetzt inkl. honeycomb WM-Log-Fit + Seed-Bootstrap-CI PHY032 + kagome PHY033). Testsuite 69/69 PASS (lokal verifiziert 2026-06-11; davon 63 schnelle Korrektheits-Gates blockierend in CI, 6 slow Mess-Laeufe lokal; inkl. Kern-Vektorisierungs-Aequivalenz-Gates).
+> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-11). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/ (jetzt inkl. honeycomb WM-Log-Fit + Seed-Bootstrap-CI PHY032 + kagome PHY033). Testsuite 76/76 PASS (lokal verifiziert 2026-06-11; davon 70 schnelle Korrektheits-Gates blockierend in CI, 6 slow Mess-Laeufe lokal; inkl. Kern-Vektorisierungs-Aequivalenz-Gates).
 > **Lineage/Provenance:** siehe `SOURCES.md` (SHA-256 je Quelldatei) | **Lizenz:** Apache-2.0
 
 XY-Modell / BKT-Physik auf Dreiecks- und Honeycomb-Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Finite-Size-Scaling.
@@ -103,14 +103,33 @@ braucht L ≥ 48..192 (HKS), jenseits des lokalen Budgets. Negativ-Result, ehrli
 ausgewiesen. Code: `src/260611 PHY035 honeycomb hks dense ladder v01.py`,
 Evidenz: `results/260611 PHY035 honeycomb hks dense ladder report.txt`.
 
+**PHY037 (HKS gitter-übergreifend — ehrliche Methoden-Bilanz, 2026-06-11):**
+Derselbe HKS-Apparat, uniform auf die committed Paar-Schätzer aller drei Gitter
+angewandt (zur Laufzeit aus den PHY030/032/033-Reports geparst):
+
+| Gitter | Paare (L) | L→∞-Extrap (p=2,geom) | bestes Paar | Verdikt |
+|---|---|---|---|---|
+| kagome | 12/24/36 | **0.8236** (−0.17% vs 0.825) | 0.8377 (+1.54%) | **sauber** |
+| honeycomb | 12/24/48 | **0.5747** (−0.23% vs 0.576) | 0.5917 (+2.73%) | **sauber** (nur mit L=48) |
+| triangular | 9/13/19 | **1.4591** (+2.90% vs 1.418) | 1.3888 (−2.06%) | **überschießt** |
+
+**Befund:** Die Klein-L-Paar-Extrapolation konvergiert sauber für kagome und
+honeycomb (letzteres **nur** wenn L=48 enthalten ist — PHY035 ohne L=48 kippt
+auf ~0.605), **überschießt** aber für triangular bei sehr kleinem L (≤19), wo
+das blanke größte Paar näher an der Referenz liegt. Die Methode ist also
+gitter-abhängig und empfindlich auf das größte enthaltene L — **kein
+universelles Wundermittel** (deckt sich mit HKS: L=48..192 nötig). Code:
+`src/260611 PHY037 hks multilattice extrapolation v01.py`. Der größere-L-Lauf
+(PHY036, L bis 64) prüft die honeycomb-Stabilisierung separat.
+
 **Superseded:** alle vor 2026-06-04 publizierten T_BKT-Zahlen, die auf der
 Flaechen-Normierung beruhen (u.a. PHY026-Report "Υ(T→0)=J·√3"), sind durch
 diesen Mess-Stand ersetzt. Details in `CHANGELOG.md`.
 
 ## Kern
 
-- **Engine:** `src/260602 PHI HEX core v2 2 hardened.py` (Kern) + PHY024-035-Experiment-Serie
-- **Evidenz:** Selftest-Report + PHY025-035 Reports in `results/`; Testsuite in `tests/`; methodischer Audit (4 Responses) in `spec/`. Mess-Stand T_BKT(triangular) = 1.42 ± 0.04 (per-Site, 2026-06-04; Referenz 1.418); T_BKT(honeycomb) = 0.5917 CI[0.587, 0.598] (PHY032 groesstes L, Sandvik-Paar (24,48), 2026-06-07; Referenzen 0.573 / 0.576(3)) — supersedet PHY031 v01 (0.595); T_BKT(kagome) = 0.8479 CI[0.8414, 0.8507] (PHY033 WM-Log-Fit, 2026-06-09; Referenz 0.825 "rough estimate").
+- **Engine:** `src/260602 PHI HEX core v2 2 hardened.py` (Kern) + PHY024-037-Experiment-Serie
+- **Evidenz:** Selftest-Report + PHY025-037 Reports in `results/`; Testsuite in `tests/`; methodischer Audit (4 Responses) in `spec/`. Mess-Stand T_BKT(triangular) = 1.42 ± 0.04 (per-Site, 2026-06-04; Referenz 1.418); T_BKT(honeycomb) = 0.5917 CI[0.587, 0.598] (PHY032 groesstes L, Sandvik-Paar (24,48), 2026-06-07; Referenzen 0.573 / 0.576(3)) — supersedet PHY031 v01 (0.595); T_BKT(kagome) = 0.8479 CI[0.8414, 0.8507] (PHY033 WM-Log-Fit, 2026-06-09; Referenz 0.825 "rough estimate").
 
 ## Struktur
 
@@ -129,8 +148,8 @@ Die Selftests laufen direkt in der Engine (`python <engine>.py`; Details im
 Engine-Header). Die Testsuite (numpy/scipy/pytest noetig):
 
 ```
-pytest                 # volle Suite (inkl. slow Mess-Laeufe), 69/69 PASS
-pytest -m "not slow"   # nur schnelle Korrektheits-Gates (63, inkl. WM-/Sandvik-/Bootstrap-/Vektorisierungs-/HKS-Orakel) — CI-Gate
+pytest                 # volle Suite (inkl. slow Mess-Laeufe), 76/76 PASS
+pytest -m "not slow"   # nur schnelle Korrektheits-Gates (70, inkl. WM-/Sandvik-/Bootstrap-/Vektorisierungs-/HKS-/Multilattice-Orakel) — CI-Gate
 python "src/260604 PHY030 triangular tbkt per-site v01.py"            # T_BKT(tri)-Schranken (konservativ)
 python "src/260604 PHY030 triangular tbkt per-site v02 wm-logfit.py"  # T_BKT(tri) Weber-Minnhagen-Log-Fit
 python "src/260607 PHY031 honeycomb tbkt per-site v01.py"             # T_BKT(honeycomb) Wolff + Sandvik-Paar (kleine L)

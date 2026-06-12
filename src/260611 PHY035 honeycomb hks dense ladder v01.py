@@ -84,16 +84,17 @@ T_GRID = (0.56, 0.5725, 0.585, 0.5975, 0.61, 0.6225, 0.635, 0.6475)
 # 1. Messung (per-Seed-Upsilon-Wuerfel ueber die dichte Leiter)
 # ============================================================================
 
-def measure_cube(n_seeds=8, n_measure=140, n_burn=60, master_seed=42):
+def measure_cube(n_seeds=8, n_measure=140, n_burn=60, master_seed=42,
+                 ladder=LADDER, t_grid=T_GRID):
     """per_seed_cube[L][T] = Liste der per-Seed-Upsilon-Werte + mean/sem-Gitter."""
     cube = {}
     means = {}
     sems = {}
-    for L in LADDER:
+    for L in ladder:
         cube[L] = {}
         means[L] = {}
         sems[L] = {}
-        for T in T_GRID:
+        for T in t_grid:
             r = measure_honeycomb_seedwise(
                 L, T, n_seeds=n_seeds, n_measure=n_measure, n_burn=n_burn,
                 master_seed=master_seed)
@@ -107,27 +108,28 @@ def measure_cube(n_seeds=8, n_measure=140, n_burn=60, master_seed=42):
 # 2. Paare + HKS-Extrapolation (>=3 Punkte) als Bootstrap-Estimator
 # ============================================================================
 
-def pair_estimates(means, pairs=DOUBLING_PAIRS):
+def pair_estimates(means, pairs=DOUBLING_PAIRS, t_grid=T_GRID):
     out = {}
-    sem = [1e-4] * len(T_GRID)
+    sem = [1e-4] * len(t_grid)
     for (l1, l2) in pairs:
-        ups1 = [means[l1][T] for T in T_GRID]
-        ups2 = [means[l2][T] for T in T_GRID]
+        ups1 = [means[l1][T] for T in t_grid]
+        ups2 = [means[l2][T] for T in t_grid]
         out[(l1, l2)] = tbkt_pair_C_eliminated(
-            list(T_GRID), ups1, sem, l1, ups2, sem, l2)
+            list(t_grid), ups1, sem, l1, ups2, sem, l2)
     return out
 
 
-def make_hks_extrap_estimator(pairs=DOUBLING_PAIRS, size_mode="geom", power=2):
+def make_hks_extrap_estimator(pairs=DOUBLING_PAIRS, size_mode="geom", power=2,
+                              t_grid=T_GRID):
     """Bootstrap-Estimator: means_LT -> L->inf-Intercept der Paar-Schaetzer."""
     def est(means_lt):
         us, ts = [], []
-        sem = [1e-4] * len(T_GRID)
+        sem = [1e-4] * len(t_grid)
         for (l1, l2) in pairs:
-            ups1 = [means_lt[l1][T] for T in T_GRID]
-            ups2 = [means_lt[l2][T] for T in T_GRID]
+            ups1 = [means_lt[l1][T] for T in t_grid]
+            ups2 = [means_lt[l2][T] for T in t_grid]
             tp = tbkt_pair_C_eliminated(
-                list(T_GRID), ups1, sem, l1, ups2, sem, l2)
+                list(t_grid), ups1, sem, l1, ups2, sem, l2)
             if tp is None:
                 return None
             us.append(log_variable(char_size(l1, l2, size_mode), power))
