@@ -44,3 +44,18 @@
 | 34E2DBB28702618D | 2026-06-09 | src | repo-native (PHY033 T_BKT kagome per-Site v01; Kagome-Torus z=4 N=3L^2 Upsilon(0)=1 exakt; WM-Log-Fit (A) + Sandvik-Paar (B) + Seed-Bootstrap-CI; WM-/Bootstrap-Kern 1:1 aus PHY030 v02 + PHY032; Ref arXiv:2501.07388 Tab.1; KEINE Drive-Quelle) |
 | 804F71EFAE465181 | 2026-06-09 | results | repo-native (Gate-Evidenz PHY033 kagome, deterministisch master_seed=42 n_seeds=6 n_measure=120 n_boot=2000; KEINE Drive-Quelle) |
 | 401D99A49ABAB6ED | 2026-06-09 | tests | repo-native (Geometrie-Orakel Upsilon(0)=1 + z=4 + min-image-Bond-Konsistenz + Sandvik-Synthetik-Orakel + Smoke fuer PHY033; KEINE Drive-Quelle) |
+| CCFD1E49185C9870 | 2026-06-09 | tests | repo-native (Aequivalenz-Gates Kern-Vektorisierung helicity_terms/cliff_delta + NaN-Treue; KEINE Drive-Quelle) |
+| 850FE6BDE487D9A0 | 2026-06-11 | src | repo-native (PHY034 HKS-L->inf-Extrapolation honeycomb, analytisch auf PHY032-Daten; Methodik arXiv:1302.2900; KEINE Drive-Quelle) |
+| 668F47E9BF792C82 | 2026-06-11 | tests | repo-native (Drift-Guard + Extrapolations-Orakel + statistische CI fuer PHY034; KEINE Drive-Quelle) |
+| 46A227ECF9E12BF6 | 2026-06-11 | results | repo-native (Gate-Evidenz PHY034, deterministisch, kein RNG; KEINE Drive-Quelle) |
+| C844CFC0CB04570C | 2026-06-11 | src | repo-native (PHY035 dichte L-Leiter L<=32, Negativ-Result falsifiziert PHY034-2-Punkt-Lesart; KEINE Drive-Quelle) |
+| A59183B16D6D14BC | 2026-06-11 | tests | repo-native (Geometrie-/Wiring-Orakel + Mini-Wolff-Smoke fuer PHY035; KEINE Drive-Quelle) |
+| 012BFCFFB42C651A | 2026-06-11 | results | repo-native (Gate-Evidenz PHY035 honeycomb L<=32, master_seed=42 n_seeds=8; KEINE Drive-Quelle) |
+| BD12CE379D11DBFA | 2026-06-11 | src | repo-native (PHY036 grosse L-Leiter L<=64; Negativ-Result: L stabilisiert nicht; KEINE Drive-Quelle) |
+| FF45D3E4B9CD2856 | 2026-06-11 | tests | repo-native (Konfig-/Geometrie-Gate fuer PHY036; KEINE Drive-Quelle) |
+| 69A368C9BC0BD68F | 2026-06-11 | results | repo-native (Gate-Evidenz PHY036 honeycomb L<=64, master_seed=42 n_seeds=8; KEINE Drive-Quelle) |
+| 745FCCA7CE50410C | 2026-06-11 | src | repo-native (PHY037 HKS gitter-uebergreifend, parst committed PHY030/032/033-Reports; KEINE Drive-Quelle) |
+| 439A3C595DFE3014 | 2026-06-11 | tests | repo-native (Drift-Guard + Regressions-Pins + Verdikt-Gate fuer PHY037; KEINE Drive-Quelle) |
+| D32968FD72F1908A | 2026-06-11 | results | repo-native (Gate-Evidenz PHY037 cross-lattice, rein analytisch; KEINE Drive-Quelle) |
+| 8F399CBCE7B28559 | 2026-06-12 | src | repo-native (PHY038 Hochstatistik-HKS honeycomb L<=64 n_seeds=16 n_measure=240; KEINE Drive-Quelle) |
+| D650EC6A5A08AADC | 2026-06-12 | spec | repo-native (Methoden-Spec HKS-T_BKT-Extrapolation + ehrliche Bilanz PHY034-038; Methodik arXiv:1302.2900; KEINE Drive-Quelle) |
