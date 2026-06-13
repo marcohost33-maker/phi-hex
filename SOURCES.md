@@ -61,3 +61,11 @@
 | D650EC6A5A08AADC | 2026-06-12 | spec | repo-native (Methoden-Spec HKS-T_BKT-Extrapolation + ehrliche Bilanz PHY034-038; Methodik arXiv:1302.2900; KEINE Drive-Quelle) |
 | C33EC2394742673D | 2026-06-12 | tests | repo-native (Konfig-/Geometrie-Gate fuer PHY038 Hochstatistik; KEINE Drive-Quelle) |
 | 0F892A187F181AF1 | 2026-06-12 | results | repo-native (Gate-Evidenz PHY038 honeycomb L<=64 n_seeds=16 n_measure=240, master_seed=42; KEINE Drive-Quelle) |
+
+## Referenz-Konfidenz (append-only)
+
+| Referenz | Wert | Quelle(n) | Konfidenz | Notiz |
+|---|---|---|---|---|
+| T_BKT(kagome), reines XY | 0.825 | arXiv:2501.07388 (= publ. J.Phys.A 2025, doi:10.1088/1751-8121/ada988) | **SINGLE-SOURCE / mittel** | Web-Recherche 2026-06-13: KEINE unabhaengige Zweit-Berechnung des reinen XY-Kagome-T_BKT gefunden. XY-VBEG-Kagome (Physica A 2018, S0378437118303406) ist ein ANDERES Modell, nicht vergleichbar. Wert ist zudem ein selbst-deklarierter "rough estimate" (L=48..192). Plausibel via z=4 zwischen Honeycomb 0.573 und Triangular 1.418, aber nicht 2.-Quellen-gestuetzt. Code: `REF_KAGOME_CONFIDENCE` in PHY033. |
+| T_BKT(honeycomb), reines XY | 0.573 | arXiv:2501.07388 + arXiv:2406.12076 | **corroborated** | Honeycomb hat eine dedizierte Zweitquelle (2406.12076, umfassende MC-Analyse) → staerker belegt als kagome. |
+| T_BKT(triangular), reines XY | 1.418 | arXiv:2501.07388 | single-source | Wie kagome aus derselben Multi-Lattice-Linie; keine separate Zweitquelle erfasst. |
