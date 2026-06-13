@@ -65,6 +65,14 @@ _SRC = Path(__file__).resolve().parent
 
 REF_KAGOME = 0.825        # arXiv:2501.07388 (Tab. 1, "rough estimate")
 REF_KAGOME_SOURCE = "arXiv:2501.07388"
+# CONFIDENCE: SINGLE-SOURCE. Der Referenzwert 0.825 stammt aus EINER Forschungs-
+# linie (arXiv:2501.07388, publiziert als J.Phys.A (2025) doi:10.1088/1751-8121/ada988).
+# Web-Recherche 2026-06-13 fand KEINE unabhaengige Zweit-Berechnung des reinen
+# XY-Kagome-T_BKT; die XY-VBEG-Kagome-Studie (Physica A 2018, S0378437118303406)
+# ist ein ANDERES Modell. Wert ist zudem ein selbst-deklarierter "rough estimate".
+# Konfidenz daher MITTEL: plausibel (liegt per z=4 zwischen Honeycomb 0.573 und
+# Triangular 1.418), aber NICHT durch eine 2. Quelle gestuetzt. Siehe SOURCES.md.
+REF_KAGOME_CONFIDENCE = "single-source"  # {single-source|corroborated}; s. Kommentar oben
 SW_LIMIT_KAGOME = 1.0     # per-Site-T=0-Spinwellen-Grenzwert (exakt, z=4)
 
 
