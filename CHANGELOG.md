@@ -3,6 +3,36 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-06-16] PHY039 — 4.-Ordnungs-Helicity-Modul (Minnhagen-Kim): validierte Observable, aber unter Wolff noise-limited
+
+Web-recherchierte Best-Practice-Antwort auf das honeycomb-Limit (PHY034-038):
+die dedizierte Referenz arXiv:2406.12076 (T_BKT=0.576(3)) bestimmt T_BKT mit der
+ZWEITEN UND VIERTEN Ordnung des Helicity-Modulus als Ordnungsparameter — die
+einzige im Repo bisher ungenutzte Observable. PHY039 implementiert, validiert
+und bilanziert sie ehrlich.
+
+### Added
+- `src/260616 PHY039 fourth-order helicity modulus v01.py` +
+  `tests/test_phy039_fourth_order_modulus.py` (+5 schnelle Gates, +1 slow) +
+  Gate-Log `results/260616 PHY039 … report.txt`.
+  - **Estimator (arXiv-unabhaengig):** der 4.-Ordnungs-Modul Υ₄ = F⁽⁴⁾/N wird
+    aus Erst-Prinzipien (Faà-di-Bruno-Kumulanten von F(Δ)) hergeleitet und
+    durch ein numerisches ORAKEL (4. Ableitung der exakten freien Energie auf
+    einer fixen Stichprobe) auf **Maschinengenauigkeit** (rel-Fehler ~1e-8)
+    bestaetigt. Methode: Minnhagen & Kim, PRB 67, 172509 (2003), cond-mat/0304226.
+  - **Selbst-Falsifikation am Goldstandard** (square, T_BKT=0.89290(5)): der
+    negative N·Υ₄-Dip (Minnhagen-Kim-Signatur des Sprungs) EXISTIERT und
+    vertieft sich mit L. ABER seine Lage konvergiert unter Wolff NICHT sauber:
+    L=16 trifft 0.8901 (−0.31%), doch L=8 UND L=24 schieben das argmin an den
+    Gitterrand (>0.95) — der Treffer ist rausch-/finite-size-dominiert, KEIN
+    Praezisionsgewinn ggue. der 2.-Ordnungs-Paar-Methode.
+  - **Korrekte naechste Stufe (Vertrag):** nicht „mehr L / mehr Seeds"
+    (PHY036/038 falsifiziert), sondern ein ANDERER Sampler — **Wang-Landau /
+    multikanonisch** (+ Simulated Annealing), wie 2406.12076. PHY039 liefert die
+    validierte Observable; der entropische Sampler ist der fehlende Baustein.
+- `spec/260616 PHI HEX fourth-order helicity modulus method v01.md`: Methoden-
+  Spec (Vertrags-Quelle) — Herleitung, Orakel-Gate, ehrliche Bilanz, API.
+
 ## [2026-06-12] PHY038 — honeycomb Hochstatistik: es ist KEIN Statistik-Problem
 
 Hochstatistik-Versuch der HKS-Aufloesung (L<=64, n_seeds=16, n_measure=240,

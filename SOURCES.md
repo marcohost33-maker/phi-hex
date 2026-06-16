@@ -61,6 +61,10 @@
 | D650EC6A5A08AADC | 2026-06-12 | spec | repo-native (Methoden-Spec HKS-T_BKT-Extrapolation + ehrliche Bilanz PHY034-038; Methodik arXiv:1302.2900; KEINE Drive-Quelle) |
 | C33EC2394742673D | 2026-06-12 | tests | repo-native (Konfig-/Geometrie-Gate fuer PHY038 Hochstatistik; KEINE Drive-Quelle) |
 | 0F892A187F181AF1 | 2026-06-12 | results | repo-native (Gate-Evidenz PHY038 honeycomb L<=64 n_seeds=16 n_measure=240, master_seed=42; KEINE Drive-Quelle) |
+| 76E11AAF96595EA6 | 2026-06-16 | src | repo-native (PHY039 4.-Ordnungs-Helicity-Modul Y4=F^(4)/N; Erst-Prinzipien-Herleitung + numerisches Orakel; Methode Minnhagen&Kim PRB 67,172509(2003)=cond-mat/0304226; Best-Practice-Ref arXiv:2406.12076; KEINE Drive-Quelle) |
+| C78EFC95A9501F93 | 2026-06-16 | tests | repo-native (Estimator-Orakel-Gate (4. Ableitung exakte freie Energie) + reduced/full-Aequivalenz + Wiring + Dip-Scheitel-Gate fuer PHY039; KEINE Drive-Quelle) |
+| 0C56953B89615AF7 | 2026-06-16 | results | repo-native (Gate-Evidenz PHY039 square-Goldstandard, master_seed=42 n_seeds=12 n_measure=1500 L in {8,16,24}; KEINE Drive-Quelle) |
+| 122DE4C21FD8A434 | 2026-06-16 | spec | repo-native (Methoden-Spec 4.-Ordnungs-Helicity-Modul: Herleitung, Orakel, ehrliche Bilanz, Wang-Landau als naechste Stufe; KEINE Drive-Quelle) |
 
 ## Referenz-Konfidenz (append-only)
 
