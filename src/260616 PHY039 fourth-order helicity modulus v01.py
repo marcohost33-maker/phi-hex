@@ -226,13 +226,19 @@ class Y2Y4Result:
 def measure_square_y2y4(L: int, T: float, n_seeds: int = 12,
                         n_measure: int = 1500, n_burn: int = 500,
                         master_seed: int = 42) -> Y2Y4Result:
+    """Haertung ggue. v01-Erstmessung: der Helicity-Modul ist ein Tensor; auf
+    dem isotropen Quadratgitter sind Upsilon^xx und Upsilon^yy statistisch
+    aequivalent. Wir messen BEIDE Twist-Richtungen (a=dx und a=dy) je Konfig
+    und MITTELN - das halbiert die Varianz (~1/sqrt(2)) des rausch-dominierten
+    4.-Ordnungs-Kumulants ohne Bias (Direction-Averaging, Standard)."""
     lat = build_square_lattice(L)
     adj = build_square_adjacency(lat)
     n = lat.n_nodes
     beta = 1.0 / T
     edges = np.asarray(lat.edges)
     ei, ej = edges[:, 0], edges[:, 1]
-    a = np.array([dx for dx, dy in lat.edge_disp])   # Projektion auf x = dx
+    ax = np.array([dx for dx, dy in lat.edge_disp])   # Twist entlang x
+    ay = np.array([dy for dx, dy in lat.edge_disp])   # Twist entlang y
     cfg = XYConfig(J=1.0, T=T)
     y2s, y4s = [], []
     for sd in range(n_seeds):
@@ -240,20 +246,25 @@ def measure_square_y2y4(L: int, T: float, n_seeds: int = 12,
         th = rng.uniform(0, 2 * math.pi, n)
         for _ in range(n_burn):
             wolff_sweep(th, adj, beta, 1.0, rng, target_flips=n)
-        C, S, S3, C4, T1, SA = [], [], [], [], [], []
+        Cx, Sx, S3x, C4x = [], [], [], []
+        Cy, Sy, S3y, C4y = [], [], [], []
+        T1, SA = [], []
         for _ in range(n_measure):
             wolff_sweep(th, adj, beta, 1.0, rng, target_flips=n)
-            c, s, s3, c4 = bond_aggregates(th, ei, ej, a)
-            C.append(c)
-            S.append(s)
-            S3.append(s3)
-            C4.append(c4)
-            T1.append(c)        # = t1 (Wiring-Gate gegen bestehende Helicity)
-            SA.append(s)        # = sin_accum
-        # Upsilon_2 1:1 wie bestehend (reduced) zur Quervalidierung der Wiring:
-        y2_ref = square_helicity_from_ensemble(T1, SA, cfg, n)
-        y2s.append(y2_ref)
-        y4s.append(fourth_order_F(C, S, S3, C4, beta))   # = N*Upsilon_4
+            cx, sx, s3x, c4x = bond_aggregates(th, ei, ej, ax)
+            cy, sy, s3y, c4y = bond_aggregates(th, ei, ej, ay)
+            for lst, val in ((Cx, cx), (Sx, sx), (S3x, s3x), (C4x, c4x),
+                             (Cy, cy), (Sy, sy), (S3y, s3y), (C4y, c4y)):
+                lst.append(val)
+            T1.append(cx)       # = t1 (Wiring-Gate gegen bestehende Helicity)
+            SA.append(sx)       # = sin_accum (x-Richtung)
+        # Upsilon_2: Mittel beider Richtungen; x-Zweig zusaetzlich 1:1 gegen die
+        # bestehende square-Helicity gegengeprueft (Wiring).
+        y2_x = square_helicity_from_ensemble(T1, SA, cfg, n)
+        y2_y = second_order_F(Cy, Sy, beta, reduced=True) / n   # = Schema
+        y2s.append(0.5 * (y2_x + y2_y))
+        y4s.append(0.5 * (fourth_order_F(Cx, Sx, S3x, C4x, beta)
+                          + fourth_order_F(Cy, Sy, S3y, C4y, beta)))
     y2 = np.array(y2s)
     y4 = np.array(y4s)
 

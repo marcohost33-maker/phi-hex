@@ -74,12 +74,13 @@ Validierung am Gitter mit hochpräzise bekanntem T_BKT = **0.89290(5)**
 | N·Υ₄-Dip vorhanden, mit L vertiefend | ja — **PASS** |
 
 **Befund (ehrlich):** Der negative Dip von N·Υ₄ EXISTIERT und vertieft sich mit
-L wie erwartet. ABER seine **Lage konvergiert unter Wolff nicht sauber**: L=16
-trifft 0.8901 (−0.31 %), doch L=8 **und** L=24 schieben das argmin an den
-Gitterrand (>0.95). Der L=16-Treffer ist also **nicht robust**, sondern
-rausch-/finite-size-dominiert (Dip ~15–25 % verrauscht). Der 4.-Ordnungs-
-Kumulant gewinnt **unter Wolff keine Präzision** gegenüber der 2.-Ordnungs-
-Paar-Methode.
+L wie erwartet. ABER seine **Lage konvergiert unter Wolff nicht sauber**:
+richtungsgemittelt (Härtung x+y, ~1/√2 Varianz) sitzt der L=16-Dip bei
+**0.9316 (+4.34 %, finite-size nach oben)**, während L=8 **und** L=24 das argmin
+an den Gitterrand schieben; die Lage ist zudem **mess-richtungs-sensitiv**
+(Einzel-x-Richtung gab 0.890). Der Dip ist also **nicht robust**, sondern
+rausch-/finite-size-dominiert. Der 4.-Ordnungs-Kumulant gewinnt **unter Wolff
+keine Präzision** gegenüber der 2.-Ordnungs-Paar-Methode.
 
 Das deckt sich exakt mit PHY036/038 (Limes wandert mit L; mehr Statistik heilt
 nicht) **und** erklärt, warum die Referenz 2406.12076 T_BKT gerade **mit

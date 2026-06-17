@@ -1,6 +1,6 @@
 # Phi-Hex
 
-> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-16). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/ (jetzt inkl. honeycomb WM-Log-Fit + Seed-Bootstrap-CI PHY032 + kagome PHY033 + 4.-Ordnungs-Helicity-Modul PHY039). Testsuite 84/84 PASS (lokal verifiziert 2026-06-16; davon 77 schnelle Korrektheits-Gates blockierend in CI, 7 slow Mess-Laeufe lokal; inkl. Kern-Vektorisierungs-Aequivalenz- + 4.-Ordnungs-Orakel-Gates).
+> **Status:** Forschungs-Repo (privat) | Aktive Forschungslinie (letzte Haertung 2026-06-17). Kern-Engine kompiliert; Selftest- + T_BKT-Mess-Evidenz in results/ (jetzt inkl. honeycomb WM-Log-Fit + Seed-Bootstrap-CI PHY032 + kagome PHY033 + 4.-Ordnungs-Helicity-Modul PHY039 + Wang-Landau-entropischer Sampler PHY040). Testsuite 90/90 PASS (lokal verifiziert 2026-06-17; davon 82 schnelle Korrektheits-Gates blockierend in CI, 8 slow Mess-Laeufe lokal; inkl. Kern-Vektorisierungs-Aequivalenz- + 4.-Ordnungs-Orakel- + Wang-Landau-Gates).
 > **Lineage/Provenance:** siehe `SOURCES.md` (SHA-256 je Quelldatei) | **Lizenz:** Apache-2.0
 
 XY-Modell / BKT-Physik auf Dreiecks- und Honeycomb-Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Finite-Size-Scaling.
@@ -159,8 +159,9 @@ Ableitung der exakten freien Energie auf fixer Stichprobe) auf
 **Maschinengenauigkeit** (rel-Fehler ~1e-8) — arXiv-unabhaengig. **Selbst-
 Falsifikation am Quadratgitter-Goldstandard** (T_BKT=0.89290): der negative
 N·Υ₄-Dip (Sprung-Signatur) existiert und vertieft sich mit L, aber seine Lage
-konvergiert unter Wolff **nicht sauber** (L=16 trifft 0.8901, doch L=8 UND L=24
-schieben das argmin an den Gitterrand) — **kein Praezisionsgewinn** ggue. der
+konvergiert unter Wolff **nicht sauber** (richtungsgemittelt: L=16-Dip bei
+0.9316 (+4.3%, finite-size nach oben), L=8 UND L=24 am Gitterrand; die Lage ist
+zudem mess-richtungs-sensitiv) — **kein Praezisionsgewinn** ggue. der
 2.-Ordnungs-Paar-Methode. **Korrekte naechste Stufe** (nicht mehr L/Seeds —
 PHY036/038 falsifiziert — sondern ein anderer Sampler): **Wang-Landau-
 entropisches Sampling** (+ Simulated Annealing), wie 2406.12076. PHY039 liefert
@@ -168,14 +169,31 @@ die validierte Observable; der entropische Sampler ist der fehlende Baustein.
 Code: `src/260616 PHY039 fourth-order helicity modulus v01.py`, Spec:
 `spec/260616 PHI HEX fourth-order helicity modulus method v01.md`.
 
+**PHY040 (Wang-Landau-entropischer Helicity-Modul — trennt Statistik- vom
+finite-size-Limit, 2026-06-16):** Liefert den in PHY039 benannten fehlenden
+Baustein — den **entropischen Sampler** (Wang-Landau, wie die honeycomb-Referenz
+arXiv:2406.12076; 1/t-Konvergenz nach Belardinelli & Pereyra). Aus **einem** Lauf
+je L folgen via kanonischer Rueckgewichtung der Zustandsdichte g(E) **glatte,
+rauschfreie** Υ₂(T)/Υ₄(T). Gegen-validiert an direktem Wolff (⟨E⟩(T), Υ₂(T)
+decken sich auf **<0.6%**). T_BKT (C-eliminierte Paare, square-Goldstandard
+0.89290): (12,16)=0.7923 (−11.3%) → **(16,24)=0.8365 (−6.3%)** — der Paar-
+Schaetzer unterschaetzt bei L≤24, aber der **Bias schrumpft monoton mit L**.
+**Schluessel-Befund:** das entropische Sampling entfernt das *statistische
+Rauschen* (PHY039-Limit — der Υ₄-Dip ist jetzt deterministisch glatt), **nicht**
+den *finite-size-Bias* (schrumpft mit L, braucht L≥32; vgl. PHY028 (16,32) <1%).
+Die zwei Limits sind damit **sauber getrennt** (deckt sich mit PHY037/038). Der
+gitter-agnostische API ist bereit fuer groessere L + den honeycomb-Follow-up.
+Code: `src/260616 PHY040 wang-landau entropic helicity v01.py`, Spec:
+`spec/260616 PHI HEX wang-landau entropic helicity method v01.md`.
+
 **Superseded:** alle vor 2026-06-04 publizierten T_BKT-Zahlen, die auf der
 Flaechen-Normierung beruhen (u.a. PHY026-Report "Υ(T→0)=J·√3"), sind durch
 diesen Mess-Stand ersetzt. Details in `CHANGELOG.md`.
 
 ## Kern
 
-- **Engine:** `src/260602 PHI HEX core v2 2 hardened.py` (Kern) + PHY024-039-Experiment-Serie
-- **Evidenz:** Selftest-Report + PHY025-039 Reports in `results/`; Testsuite in `tests/`; methodischer Audit (4 Responses) in `spec/`. Mess-Stand T_BKT(triangular) = 1.42 ± 0.04 (per-Site, 2026-06-04; Referenz 1.418); T_BKT(honeycomb) = 0.5917 CI[0.587, 0.598] (PHY032 groesstes L, Sandvik-Paar (24,48), 2026-06-07; Referenzen 0.573 / 0.576(3)) — supersedet PHY031 v01 (0.595); T_BKT(kagome) = 0.8479 CI[0.8414, 0.8507] (PHY033 WM-Log-Fit, 2026-06-09; Referenz 0.825 "rough estimate").
+- **Engine:** `src/260602 PHI HEX core v2 2 hardened.py` (Kern) + PHY024-040-Experiment-Serie
+- **Evidenz:** Selftest-Report + PHY025-040 Reports in `results/`; Testsuite in `tests/`; methodischer Audit (4 Responses) in `spec/`. Mess-Stand T_BKT(triangular) = 1.42 ± 0.04 (per-Site, 2026-06-04; Referenz 1.418); T_BKT(honeycomb) = 0.5917 CI[0.587, 0.598] (PHY032 groesstes L, Sandvik-Paar (24,48), 2026-06-07; Referenzen 0.573 / 0.576(3)) — supersedet PHY031 v01 (0.595); T_BKT(kagome) = 0.8479 CI[0.8414, 0.8507] (PHY033 WM-Log-Fit, 2026-06-09; Referenz 0.825 "rough estimate").
 
 ## Struktur
 
@@ -194,14 +212,15 @@ Die Selftests laufen direkt in der Engine (`python <engine>.py`; Details im
 Engine-Header). Die Testsuite (numpy/scipy/pytest noetig):
 
 ```
-pytest                 # volle Suite (inkl. slow Mess-Laeufe), 84/84 PASS
-pytest -m "not slow"   # nur schnelle Korrektheits-Gates (77, inkl. WM-/Sandvik-/Bootstrap-/Vektorisierungs-/HKS-/Multilattice-/4.-Ordnungs-Orakel) — CI-Gate
+pytest                 # volle Suite (inkl. slow Mess-Laeufe), 90/90 PASS
+pytest -m "not slow"   # nur schnelle Korrektheits-Gates (82, inkl. WM-/Sandvik-/Bootstrap-/Vektorisierungs-/HKS-/Multilattice-/4.-Ordnungs-/Wang-Landau-Orakel) — CI-Gate
 python "src/260604 PHY030 triangular tbkt per-site v01.py"            # T_BKT(tri)-Schranken (konservativ)
 python "src/260604 PHY030 triangular tbkt per-site v02 wm-logfit.py"  # T_BKT(tri) Weber-Minnhagen-Log-Fit
 python "src/260607 PHY031 honeycomb tbkt per-site v01.py"             # T_BKT(honeycomb) Wolff + Sandvik-Paar (kleine L)
 python "src/260607 PHY032 honeycomb wm-logfit bootstrap v01.py"       # T_BKT(honeycomb) WM-Log-Fit + groessere L + Seed-Bootstrap-CI (~24 min lokal)
 python "src/260609 PHY033 kagome tbkt per-site v01.py"               # T_BKT(kagome) Wolff + WM-Log-Fit + Sandvik-Paar + Seed-Bootstrap-CI (~9 min lokal)
-python "src/260616 PHY039 fourth-order helicity modulus v01.py"      # 4.-Ordnungs-Helicity-Modul: Estimator-Orakel + square-Goldstandard (~7 min lokal)
+python "src/260616 PHY039 fourth-order helicity modulus v01.py"      # 4.-Ordnungs-Helicity-Modul: Estimator-Orakel + square-Goldstandard (~14 min lokal)
+python "src/260616 PHY040 wang-landau entropic helicity v01.py"      # Wang-Landau-entropischer Sampler: glatte Upsilon_2/4(T) + T_BKT(square) (~45 min lokal)
 ```
 
 CI (`.github/workflows/ci.yml`) prueft drei blockierende Gates: Lint
