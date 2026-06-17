@@ -61,6 +61,17 @@
 | D650EC6A5A08AADC | 2026-06-12 | spec | repo-native (Methoden-Spec HKS-T_BKT-Extrapolation + ehrliche Bilanz PHY034-038; Methodik arXiv:1302.2900; KEINE Drive-Quelle) |
 | C33EC2394742673D | 2026-06-12 | tests | repo-native (Konfig-/Geometrie-Gate fuer PHY038 Hochstatistik; KEINE Drive-Quelle) |
 | 0F892A187F181AF1 | 2026-06-12 | results | repo-native (Gate-Evidenz PHY038 honeycomb L<=64 n_seeds=16 n_measure=240, master_seed=42; KEINE Drive-Quelle) |
+| 76E11AAF96595EA6 | 2026-06-16 | src | repo-native (PHY039 4.-Ordnungs-Helicity-Modul Y4=F^(4)/N; Erst-Prinzipien-Herleitung + numerisches Orakel; Methode Minnhagen&Kim PRB 67,172509(2003)=cond-mat/0304226; Best-Practice-Ref arXiv:2406.12076; KEINE Drive-Quelle) |
+| C78EFC95A9501F93 | 2026-06-16 | tests | repo-native (Estimator-Orakel-Gate (4. Ableitung exakte freie Energie) + reduced/full-Aequivalenz + Wiring + Dip-Scheitel-Gate fuer PHY039; KEINE Drive-Quelle) |
+| 0C56953B89615AF7 | 2026-06-16 | results | repo-native (Gate-Evidenz PHY039 square-Goldstandard, master_seed=42 n_seeds=12 n_measure=1500 L in {8,16,24}; KEINE Drive-Quelle) |
+| 122DE4C21FD8A434 | 2026-06-16 | spec | repo-native (Methoden-Spec 4.-Ordnungs-Helicity-Modul: Herleitung, Orakel, ehrliche Bilanz, Wang-Landau als naechste Stufe; KEINE Drive-Quelle) |
+| B5BC77D9F5166D0F | 2026-06-17 | src | repo-native (PHY039 v01b HAERTUNG: Direction-Averaging x+y (~1/sqrt(2) Varianz); supersedet 76E11AAF96595EA6; KEINE Drive-Quelle) |
+| 99DEED878B6A5BFA | 2026-06-17 | results | repo-native (Gate-Evidenz PHY039 v01b richtungsgemittelt, L=16-Dip 0.9316 +4.34%; supersedet 0C56953B89615AF7; master_seed=42; KEINE Drive-Quelle) |
+| 02F70F1743C58630 | 2026-06-17 | spec | repo-native (PHY039-Spec-Update: richtungsgemittelte Dip-Lage + Mess-Richtungs-Sensitivitaet; supersedet 122DE4C21FD8A434; KEINE Drive-Quelle) |
+| 1B36F10F747DBF6B | 2026-06-17 | src | repo-native (PHY040 Wang-Landau-entropischer Helicity-Modul; WL-g(E) (PRL 86,2050(2001)) + 1/t (B&P JCP 127,184105(2007)) + mikrokan. Produktion + kanon. Rueckgewichtung -> glatte Y2(T)/Y4(T); gegen Wolff validiert; KEINE Drive-Quelle) |
+| DCD917FC5ADB9F95 | 2026-06-17 | tests | repo-native (MC-freie Gates fuer PHY040: kanon. Rueckgewichtung (2-Niveau-Boltzmann), Y2/Y4-Verdrahtung, C-eliminiertes Paar auf synthetischen WM-Kurven; KEINE Drive-Quelle) |
+| E479797E546F20F0 | 2026-06-17 | results | repo-native (Gate-Evidenz PHY040 square-Goldstandard, seed=42, L in {12,16,24} lnf_final=2e-4 prod_sweeps=30000; OVERALL=PASS; KEINE Drive-Quelle) |
+| 36D9EB479546B785 | 2026-06-17 | spec | repo-native (Methoden-Spec Wang-Landau-entropischer Helicity: WL/1t, Produktionsphase, Rueckgewichtung, Statistik- vs finite-size-Limit-Trennung; KEINE Drive-Quelle) |
 
 ## Referenz-Konfidenz (append-only)
 

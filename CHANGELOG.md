@@ -3,6 +3,67 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-06-16] PHY040 — Wang-Landau-entropischer Helicity-Modul: trennt Statistik- vom finite-size-Limit
+
+Liefert den in PHY039 als „fehlender Baustein" benannten ENTROPISCHEN Sampler
+(Wang-Landau, wie die honeycomb-Referenz arXiv:2406.12076). Aus EINEM Lauf je L
+folgen GLATTE, rauschfreie Upsilon_2(T)/Upsilon_4(T).
+
+### Added
+- `src/260616 PHY040 wang-landau entropic helicity v01.py` +
+  `tests/test_phy040_wang_landau.py` (+5 schnelle MC-freie Gates, +1 slow) +
+  Gate-Log `results/260616 PHY040 … report.txt` (OVERALL=PASS).
+  - **Methode:** Wang-Landau-g(E) (Wang&Landau PRL 86,2050(2001)) mit
+    1/t-Konvergenz (Belardinelli&Pereyra JCP 127,184105(2007)), Energie auf das
+    BKT-Fenster beschraenkt; Produktionsphase sammelt MIKROKANONISCHE Helicity-
+    Aggregate <A>_E (beide Richtungen); kanonische Rueckgewichtung ->
+    Upsilon_2(T), Upsilon_4(T) fuer ALLE T aus EINEM Lauf.
+  - **Korrektheit (arXiv-unabhaengig):** WL-<E>(T) und WL-Upsilon_2(T) decken
+    sich mit direktem Wolff auf < 0.6 % (L=12, T in {0.80,0.893,1.00}).
+  - **T_BKT (C-eliminierte Paare, square-Goldstandard 0.89290):** (12,16)=0.7923
+    (−11.3 %), (12,24)=0.7925, (16,24)=0.8365 (−6.3 %) — der Paar-Schaetzer
+    unterschaetzt bei L<=24, aber der Bias SCHRUMPFT MONOTON mit L.
+  - **Schluessel-Befund:** das entropische Sampling entfernt das STATISTISCHE
+    Rauschen (PHY039-Limit: Upsilon_4-Dip jetzt deterministisch glatt), NICHT
+    den finite-size-BIAS (schrumpft mit L, braucht L>=32; vgl. PHY028 (16,32)
+    <1 %). Die zwei Limits sind damit sauber GETRENNT — Statistik-Limit geloest,
+    finite-size-Limit verbleibt (deckt sich mit PHY037/038).
+  - **Naechste Stufe:** der gitter-agnostische API (Adjazenz + Bond-
+    Projektionen) ist bereit fuer groessere L + den honeycomb-Follow-up.
+- `spec/260616 PHI HEX wang-landau entropic helicity method v01.md`: Methoden-
+  Spec (Vertrags-Quelle) — WL/1/t, Produktionsphase, Rueckgewichtung, Bilanz.
+
+## [2026-06-16] PHY039 — 4.-Ordnungs-Helicity-Modul (Minnhagen-Kim): validierte Observable, aber unter Wolff noise-limited
+
+Web-recherchierte Best-Practice-Antwort auf das honeycomb-Limit (PHY034-038):
+die dedizierte Referenz arXiv:2406.12076 (T_BKT=0.576(3)) bestimmt T_BKT mit der
+ZWEITEN UND VIERTEN Ordnung des Helicity-Modulus als Ordnungsparameter — die
+einzige im Repo bisher ungenutzte Observable. PHY039 implementiert, validiert
+und bilanziert sie ehrlich.
+
+### Added
+- `src/260616 PHY039 fourth-order helicity modulus v01.py` +
+  `tests/test_phy039_fourth_order_modulus.py` (+5 schnelle Gates, +1 slow) +
+  Gate-Log `results/260616 PHY039 … report.txt`.
+  - **Estimator (arXiv-unabhaengig):** der 4.-Ordnungs-Modul Υ₄ = F⁽⁴⁾/N wird
+    aus Erst-Prinzipien (Faà-di-Bruno-Kumulanten von F(Δ)) hergeleitet und
+    durch ein numerisches ORAKEL (4. Ableitung der exakten freien Energie auf
+    einer fixen Stichprobe) auf **Maschinengenauigkeit** (rel-Fehler ~1e-8)
+    bestaetigt. Methode: Minnhagen & Kim, PRB 67, 172509 (2003), cond-mat/0304226.
+  - **Selbst-Falsifikation am Goldstandard** (square, T_BKT=0.89290(5)): der
+    negative N·Υ₄-Dip (Minnhagen-Kim-Signatur des Sprungs) EXISTIERT und
+    vertieft sich mit L. ABER seine Lage konvergiert unter Wolff NICHT sauber:
+    richtungsgemittelt (Haertung: x+y, ~1/sqrt(2) Varianz) sitzt der L=16-Dip
+    bei 0.9316 (+4.34%, finite-size nach oben), L=8 UND L=24 am Gitterrand; die
+    Lage ist mess-richtungs-sensitiv (Einzel-x gab 0.890) — rausch-/finite-size-
+    dominiert, KEIN Praezisionsgewinn ggue. der 2.-Ordnungs-Paar-Methode.
+  - **Korrekte naechste Stufe (Vertrag):** nicht „mehr L / mehr Seeds"
+    (PHY036/038 falsifiziert), sondern ein ANDERER Sampler — **Wang-Landau /
+    multikanonisch** (+ Simulated Annealing), wie 2406.12076. PHY039 liefert die
+    validierte Observable; der entropische Sampler ist der fehlende Baustein.
+- `spec/260616 PHI HEX fourth-order helicity modulus method v01.md`: Methoden-
+  Spec (Vertrags-Quelle) — Herleitung, Orakel-Gate, ehrliche Bilanz, API.
+
 ## [2026-06-12] PHY038 — honeycomb Hochstatistik: es ist KEIN Statistik-Problem
 
 Hochstatistik-Versuch der HKS-Aufloesung (L<=64, n_seeds=16, n_measure=240,
