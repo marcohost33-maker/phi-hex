@@ -3,6 +3,26 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-06-19] Fixed — portable Engine-Imports (6 Module standalone lauffaehig)
+
+### Fixed
+- Sechs Module (`PHY026/027/028/029/039/040`) trugen historisch einen
+  hartkodierten Sandbox-Dev-Pfad `sys.path.insert(0, "/home/claude")`. Ausserhalb
+  der Sandbox brach damit das im README („Reproduzieren") dokumentierte
+  Standalone-Ausfuehren `python "src/<modul>.py"` mit
+  `ModuleNotFoundError: No module named 'phi_hex_core_v2'` (bzw.
+  `phy026_wolff_cluster`). Reproduziert auf Windows/py3.14.
+  - **Fix:** jedes Modul loest seine Engine-Abhaengigkeiten jetzt ueber den
+    bereits in `PHY030 v02`/`PHY031-033` etablierten portablen `_load`-Helfer auf
+    (`importlib.util.spec_from_file_location` relativ zu `Path(__file__)`,
+    Registrierung in `sys.modules`; handhabt die Leerzeichen in den Engine-
+    Dateinamen). Kein `sys.path`-Eingriff, kein Sandbox-Pfad mehr.
+  - **Reine Struktur-Aenderung, keine Physik beruehrt:** alle 82 schnellen
+    Korrektheits-Gates unveraendert PASS; Import-Phase aller 6 Module + Kern in
+    natuerlicher Reihenfolge OHNE conftest aufgeloest (`ALL-IMPORTS-OK`);
+    `ruff check src` + `compileall src` gruen; `PHY026` standalone OVERALL=PASS.
+  - **Kein neuer Mess-Stand**, keine Quelldaten/SOURCES.md beruehrt.
+
 ## [2026-06-16] PHY040 — Wang-Landau-entropischer Helicity-Modul: trennt Statistik- vom finite-size-Limit
 
 Liefert den in PHY039 als „fehlender Baustein" benannten ENTROPISCHEN Sampler
