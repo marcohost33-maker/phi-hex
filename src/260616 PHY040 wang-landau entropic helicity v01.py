@@ -52,13 +52,40 @@ import time
 import numpy as np
 from dataclasses import dataclass
 
+import importlib.util
 import sys
-sys.path.insert(0, "/home/claude")
-from phi_hex_core_v2 import XYConfig, make_rng  # noqa: E402
-from phy026_wolff_cluster import wolff_sweep  # noqa: E402
-from phy028_square_validation import (  # noqa: E402
-    build_square_lattice, build_square_adjacency,
-    square_helicity_terms, square_helicity_from_ensemble)
+from pathlib import Path
+
+_SRC = Path(__file__).resolve().parent
+
+
+def _load(name: str, filename: str):
+    """Portabler Loader (ersetzt hartkodierten /home/claude-Dev-Pfad).
+
+    spec_from_file_location relativ zu DIESER Datei -> Standalone-Lauf
+    (`python "src/..."`, README) funktioniert plattformunabhaengig.
+    Identisches Muster wie PHY030 v02 / PHY031-033.
+    """
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, _SRC / filename)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_core = _load("phi_hex_core_v2", "260602 PHI HEX core v2 2 hardened.py")
+_wolff = _load("phy026_wolff_cluster", "260602 PHY026 wolff cluster v01.py")
+_square = _load("phy028_square_validation",
+                "260602 PHY028 square validation v01.py")
+XYConfig = _core.XYConfig
+make_rng = _core.make_rng
+wolff_sweep = _wolff.wolff_sweep
+build_square_lattice = _square.build_square_lattice
+build_square_adjacency = _square.build_square_adjacency
+square_helicity_terms = _square.square_helicity_terms
+square_helicity_from_ensemble = _square.square_helicity_from_ensemble
 
 # Mikrokanonisch gesammelte Helicity-Basis-/Produkt-Groessen (pro Richtung).
 OBS = ["c", "s", "s3", "c4", "s2", "c2", "cs2", "s4", "ss3", "s3c", "cs"]

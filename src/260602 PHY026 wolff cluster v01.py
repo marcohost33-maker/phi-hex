@@ -40,13 +40,42 @@ import numpy as np
 from dataclasses import dataclass, asdict
 from typing import Any
 
+import importlib.util
 import sys
-sys.path.insert(0, "/home/claude")
-from phi_hex_core_v2 import (
-    build_triangular_lattice, build_adjacency, axial_to_xy,
-    XYConfig, xy_langevin_step, helicity_terms, helicity_from_ensemble,
-    nelson_kosterlitz_line, make_rng,
-)
+from pathlib import Path
+
+_SRC = Path(__file__).resolve().parent
+
+
+def _load(name: str, filename: str):
+    """Portabler Loader fuer die Engine-Dateien (Leerzeichen im Dateinamen).
+
+    Registriert die Datei unter ihrem sauberen Modulnamen in sys.modules
+    (importlib.util.spec_from_file_location relativ zu DIESER Datei). Ersetzt
+    den frueheren hartkodierten Dev-Pfad `sys.path.insert(0, "/home/claude")`,
+    der nur in der Sandbox griff und das im README dokumentierte Standalone-
+    Ausfuehren (`python "src/..."`) brach (ModuleNotFoundError). Identisches
+    Muster wie PHY030 v02 / PHY031-033.
+    """
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, _SRC / filename)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_core = _load("phi_hex_core_v2", "260602 PHI HEX core v2 2 hardened.py")
+build_triangular_lattice = _core.build_triangular_lattice
+build_adjacency = _core.build_adjacency
+axial_to_xy = _core.axial_to_xy
+XYConfig = _core.XYConfig
+xy_langevin_step = _core.xy_langevin_step
+helicity_terms = _core.helicity_terms
+helicity_from_ensemble = _core.helicity_from_ensemble
+nelson_kosterlitz_line = _core.nelson_kosterlitz_line
+make_rng = _core.make_rng
 
 
 # ============================================================================

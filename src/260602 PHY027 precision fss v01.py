@@ -33,9 +33,32 @@ import numpy as np
 from dataclasses import asdict
 from typing import Any, Optional
 
+import importlib.util
 import sys
-sys.path.insert(0, "/home/claude")
-from phy026_wolff_cluster import measure_helicity_wolff, WolffHelicityResult
+from pathlib import Path
+
+_SRC = Path(__file__).resolve().parent
+
+
+def _load(name: str, filename: str):
+    """Portabler Loader (ersetzt hartkodierten /home/claude-Dev-Pfad).
+
+    spec_from_file_location relativ zu DIESER Datei -> Standalone-Lauf
+    (`python "src/..."`, README) funktioniert plattformunabhaengig.
+    Identisches Muster wie PHY030 v02 / PHY031-033.
+    """
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, _SRC / filename)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_wolff = _load("phy026_wolff_cluster", "260602 PHY026 wolff cluster v01.py")
+measure_helicity_wolff = _wolff.measure_helicity_wolff
+WolffHelicityResult = _wolff.WolffHelicityResult
 
 
 def find_crossing(measurements: list[WolffHelicityResult]) -> Optional[float]:
