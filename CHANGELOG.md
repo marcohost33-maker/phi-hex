@@ -65,8 +65,10 @@ dabei gefundenen realen Konvergenz-Befund im PHY040-Phasenschema.
 
 ### Docs
 - README: Testzaehler-Drift behoben (Suite ist seit PR #15 nicht mehr 90,
-  sondern **108/108** = 99 schnelle + 9 slow; lokal verifiziert 2026-07-02),
-  PHY041-Abschnitt + Repro-Zeile ergaenzt, Serie PHY024-040 → PHY024-041.
+  sondern **112 gesammelt** = 103 schnelle + 9 slow; CI fuehrt `-m "not slow"`
+  aus → **103 passed, 9 deselected** [CI-verifiziert 2026-07-03], die 9 slow
+  lokal mit-slow verifiziert), PHY041-Abschnitt + Repro-Zeile ergaenzt,
+  Serie PHY024-040 → PHY024-041.
 
 ## [2026-06-19] Fixed — portable Engine-Imports (6 Module standalone lauffaehig)
 
