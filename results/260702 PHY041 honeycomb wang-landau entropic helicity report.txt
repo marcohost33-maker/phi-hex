@@ -1,0 +1,70 @@
+PHY041: Wang-Landau-entropischer Helicity-Modul - HONEYCOMB
+Coworker Research / Coworkerz, 2. Juli 2026
+Referenzkonventions-Haertung: 3. Juli 2026
+========================================================================
+
+STATUS
+------
+OVERALL: PASS fuer Pipeline-Integritaet.
+PHYSIK-BEFUND: FINDING, kein neuer unendlicher-L-T_BKT-Bestwert.
+
+Die alte Einzelanker-Auswertung wurde ersetzt durch ein Honeycomb-Referenzband
+nach `spec/260703 PHI HEX honeycomb reference conventions audit v01.md`.
+
+REFERENZBAND
+------------
+| Quelle | berichtete Groesse | T-Form fuer Vergleich | Kanal |
+|---|---:|---:|---|
+| arXiv:2501.07388 | T-Wert | 0.573 | Multi-Lattice |
+| arXiv:2406.14812 | T_BKT,H = 0.571(8) | 0.571 +/- 0.008 | Helicity |
+| arXiv:2406.14812 | T_BKT,H = 0.560(9) | 0.560 +/- 0.009 | NN/MC |
+| arXiv:2406.12076 | beta_BKT = 1.687(3) | 0.5928 +/- 0.0011 | Upsilon |
+| arXiv:2406.12076 | beta_BKT = 1.635(11) | 0.6116 +/- 0.0041 | Upsilon_4 |
+| arXiv:2406.12076 | beta_BKT = 1.724(2) | 0.5800 +/- 0.0007 | Binder |
+
+Konversion fuer beta-Angaben: T = 1 / beta; sigma_T = sigma_beta / beta^2.
+
+GATES
+-----
+[GATE A] aligned Upsilon_2(0) = 0.750000 (exakt 0.75) -> PASS
+[LEAK] max. Randgewicht ueber alle L, T: 1.63e-10 (Gate < 1e-3) -> PASS
+[VAL-A] WL vs frische Wolff-Referenz L=12: max |dE| <= 0.009, max |dY2| <= 0.010 -> PASS
+[VAL-B] WL vs committed PHY032-Messgitter L=12/24: 16/16 Punkte ok -> PASS
+[Y2] Upsilon_2(T) L=24 Kernfenster [0.54,0.66]: streng monoton+glatt=True -> PASS
+
+WL-LAUF
+-------
+L=12, N=288:  bins=186, wl_sweeps=100000, 1/t ab 23478, prod_sweeps=30000, covered=186/186
+L=16, N=512:  bins=282, wl_sweeps=100000, 1/t ab 45742, prod_sweeps=30000, covered=282/282
+L=24, N=1152: bins=512, wl_sweeps=100000, 1/t ab 59091, prod_sweeps=30000, covered=491/512
+Gesamtlaufzeit lokal: ca. 200s.
+
+T_BKT-PAARE AUF GLATTEN WL-UPSiLON_2-KURVEN
+-------------------------------------------
+| Paar | T_BKT | Lage im Referenzband |
+|---|---:|---|
+| (12,16) | 0.5951 | nahe Upsilon-beta-Konversion 0.5928; oberhalb Okabe/Jiang |
+| (12,24) | 0.6029 | zwischen Upsilon- und Upsilon_4-beta-Kanal |
+| (16,24) | 0.6087 | nahe Upsilon_4-beta-Kanal; kleines-L/FSS-sensitiv |
+
+KONSISTENZANKER
+---------------
+WL(12,24)=0.6029 reproduziert den Wolff-Paar-Stand PHY032 (12,24)=0.6014 auf ca. 0.0015. Das ist ein starker interner Konsistenzanker fuer den Estimator und die Pipeline, aber keine externe unendliche-L-Validierung.
+
+Y4-DIP
+------
+L=12: Dip bei T=0.6700 (am T-Gitterrand)
+L=16: Dip bei T=0.6700 (am T-Gitterrand)
+L=24: Dip bei T=0.6500 (im Fenster)
+
+INTERPRETATION
+--------------
+Die glatten WL-Kurven ersetzen Crossing-Rauschen durch deterministische Kurven.
+Der finite-size-Bias der kleinen Gitter bleibt. Deshalb ist PHY041 ein Apparat-/Pipeline-Befund und bereitet L=32/48 vor. Es ist kein neuer T_BKT-Bestwert.
+
+NAECHSTE STUFE
+--------------
+1. PR #18 bleibt Draft, bis Doku-Drift-Gate und CI gruen sind.
+2. L=32/48 mit demselben Kernel laufen lassen.
+3. Upsilon_2- und Upsilon_4-FSS getrennt auswerten.
+4. Mehrere g(E)-Walker nur als Systematik-Check, nicht als Ersatz fuer L-FSS.

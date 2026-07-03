@@ -3,6 +3,73 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-07-02] PHY041 — WL-entropischer Helicity-Modul auf HONEYCOMB (18x-Kernel, echte B&P-1/t-Phase, Auto-Fenster, Leak-Gate)
+
+Setzt den in der PHY040-Methoden-Spec (§6) vertraglich benannten
+honeycomb-Follow-up um — mit drei web-recherchierten Haertungen und einem
+dabei gefundenen realen Konvergenz-Befund im PHY040-Phasenschema.
+
+### Added
+- `src/260702 PHY041 honeycomb wang-landau entropic helicity v01.py` +
+  `tests/test_phy041_honeycomb_wl.py` (+7 schnelle MC-freie Gates, +1 slow) +
+  Gate-Log `results/260702 PHY041 … report.txt` (OVERALL=PASS, ~200s lokal).
+  - **Gitter-agnostischer Kernel:** WL-/Produktions-Walk auf (Adjazenz,
+    Kanten, Bond-Projektionen) statt square-Hardcode; skalar-optimiert
+    (Block-RNG je Sweep + math.cos statt numpy auf 3-Element-Slices):
+    **~18x schneller** (L=12/16/24 komplett in ~3.5 min; PHY040 square
+    brauchte ~45 min). Analyse-Mathematik (Rueckgewichtung, Υ₂/Υ₄,
+    C-eliminierte Paare) 1:1 aus PHY040 importiert (single source of truth).
+    Gates: lokale ΔE == volle Energie-Differenz; Aggregat-Orakel
+    Υ₂(0) = 3/4 J exakt (beide Richtungen, groessen-unabhaengig).
+  - **Echte 1/t-Phase (Belardinelli & Pereyra):** Halbierungen per
+    B&P-Kriterium „alle Bins besucht" (H_min ≥ 1) statt strikter Flachheit;
+    1/t-Wechsel am Halbierungs-Ereignis. **Selbst-Debug-Befund:** im
+    PHY040-Phasenschema waren die strikten Flachheits-Epochen so langsam,
+    dass lnf(t) nie 1/t erreichte — die 1/t-Politur griff NIE, der
+    Standard-WL-Saettigungsfehler blieb (auf honeycomb L=12 als
+    Walker-abhaengiger g(E)-Bias messbar: ~0.02 in ⟨E⟩/N, bis 0.06 in
+    Υ₂(0.65)). Mit echter Politur (lnf_final=1e-5): ⟨E⟩/N-Abweichung <0.009.
+    (PHY040s square-Resultate bleiben gueltig — dort gegen Wolff validiert;
+    der Befund erklaert aber dessen Walker-Sensitivitaet und ist fuer alle
+    Folge-Laeufe behoben.)
+  - **Auto-Energiefenster aus Wolff-Ankern** (T_lo=0.50/T_hi=0.70, Mittel ±
+    k·std, Minimal-Margen, Grundzustands-Floor-Guard −1.5+0.03 gegen
+    unreachable Bins) statt hartkodiertem Fenster; **hartes Leak-Gate**
+    (kanonisches Gewicht in den aeussersten 3 Bins je Rand < 1e-3 fuer
+    JEDES Analyse-T; gemessen max 1.6e-10) statt Kommentar + manuellem
+    T-Gitter-Trim.
+  - **Zweifache arXiv-unabhaengige Quervalidierung:** (a) frisches Wolff
+    (L=12, beide Twist-Richtungen): ΔE ≤ 0.009, ΔΥ₂ ≤ 0.010;
+    (b) deterministischer **Drift-Guard gegen die committed PHY032-Evidenz**
+    (Υ(T,L)-Messgitter L=12/24, zur Laufzeit geparst, Muster PHY037): alle
+    16 Punkte innerhalb max(4·SEM, 0.025), max. Ausschoepfung 46%.
+- `spec/260702 PHI HEX phy041 honeycomb entropic tbkt method v01.md`:
+  Methoden-Spec (Vertrags-Quelle) — Delta zu PHY040, Validierungs-Vertrag,
+  ehrliche Bilanz, naechste Stufe (L=32/48 + 2./4.-Ordnungs-FSS).
+
+### Mess-Ergebnis (ehrlich, NICHT getunt)
+- C-eliminierte WM-Paare auf den GLATTEN WL-Kurven: (12,16)=**0.5951**
+  (+3.86% vs 0.573), (12,24)=**0.6029** (+5.22%), (16,24)=**0.6087** (+6.22%).
+- **Konsistenz-Anker:** WL(12,24)=0.6029 reproduziert den Wolff-Paar-Stand
+  PHY032 (12,24)=0.6014 auf ~0.0015 — gleicher Estimator, gleiches L,
+  unabhaengiger Sampler. Der +4-6%-Offset bei L≤24 ist damit nochmals als
+  finite-size (nicht Sampler-Rauschen, nicht Statistik) bestaetigt — deckt
+  sich mit der gesamten PHY034-038-Bilanz und PHY040.
+- Υ₄-Dip erstmals auf honeycomb **rauschfrei** lokalisiert (L=24: T=0.65,
+  finite-size nach oben verschoben wie PHY039/square; L=12/16 am
+  T-Gitterrand — ehrlich ausgewiesen).
+- Fuer T_BKT-Praezision ist das bewusst KEIN neuer Bestwert (L≤24 <
+  PHY032-L=48); der Wert der Stufe ist der validierte, 18x schnellere,
+  gitter-agnostische entropische Apparat + die B&P-Korrektur. Naechste
+  Stufe (Spec §6): L=32/48 + FSS wie arXiv:2406.12076.
+
+### Docs
+- README: Testzaehler-Drift behoben (Suite ist seit PR #15 nicht mehr 90,
+  sondern **112 gesammelt** = 103 schnelle + 9 slow; CI fuehrt `-m "not slow"`
+  aus → **103 passed, 9 deselected** [CI-verifiziert 2026-07-03], die 9 slow
+  lokal mit-slow verifiziert), PHY041-Abschnitt + Repro-Zeile ergaenzt,
+  Serie PHY024-040 → PHY024-041.
+
 ## [2026-06-19] Fixed — portable Engine-Imports (6 Module standalone lauffaehig)
 
 ### Fixed
