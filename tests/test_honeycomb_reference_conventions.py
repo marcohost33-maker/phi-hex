@@ -25,13 +25,12 @@ def test_arxiv_2406_12076_beta_values_are_not_legacy_0576() -> None:
     y4_t, y4_sigma = _beta_to_t(1.635, 0.011)
     binder_t, binder_sigma = _beta_to_t(1.724, 0.002)
 
-    assert y2_t == math.isclose(y2_t, 0.5928, abs_tol=5e-4) or y2_t
-    assert abs(y2_t - 0.5928) < 5e-4
-    assert abs(y2_sigma - 0.0011) < 2e-4
-    assert abs(y4_t - 0.6116) < 5e-4
-    assert abs(y4_sigma - 0.0041) < 5e-4
-    assert abs(binder_t - 0.5800) < 5e-4
-    assert abs(binder_sigma - 0.0007) < 2e-4
+    assert math.isclose(y2_t, 0.5928, abs_tol=5e-4)
+    assert math.isclose(y2_sigma, 0.0011, abs_tol=2e-4)
+    assert math.isclose(y4_t, 0.6116, abs_tol=5e-4)
+    assert math.isclose(y4_sigma, 0.0041, abs_tol=5e-4)
+    assert math.isclose(binder_t, 0.5800, abs_tol=5e-4)
+    assert math.isclose(binder_sigma, 0.0007, abs_tol=2e-4)
 
     for value in (y2_t, y4_t, binder_t):
         assert abs(value - 0.576) > 0.003
@@ -51,7 +50,13 @@ def test_honeycomb_reference_band_keeps_sources_separate() -> None:
 
     assert refs["jiang_helicity_direct_T"] < refs["andrade_jorge_dasilva_y2_beta_as_T"]
     assert refs["okabe_otsuka_multi_lattice"] < refs["andrade_jorge_dasilva_y2_beta_as_T"]
-    assert refs["legacy_dedicated_anchor_unattributed"] != refs[
-        "andrade_jorge_dasilva_y2_beta_as_T"]
-    assert refs["legacy_dedicated_anchor_unattributed"] != refs[
-        "andrade_jorge_dasilva_y4_beta_as_T"]
+    assert not math.isclose(
+        refs["legacy_dedicated_anchor_unattributed"],
+        refs["andrade_jorge_dasilva_y2_beta_as_T"],
+        abs_tol=0.003,
+    )
+    assert not math.isclose(
+        refs["legacy_dedicated_anchor_unattributed"],
+        refs["andrade_jorge_dasilva_y4_beta_as_T"],
+        abs_tol=0.003,
+    )
