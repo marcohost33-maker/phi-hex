@@ -79,6 +79,9 @@
 | E0C81556E926946D | 2026-07-06 | spec | repo-native (Methoden-Spec PHY042: honeycomb WL-FSS L=24/32/48, deterministische PHY041-Bruecke, getrennte Y2/Y4-Kanaele, Multi-Walker-Systematik, Gate-Vertrag; KEINE Drive-Quelle) |
 | 0C964B3567E039FD | 2026-07-06 | src | repo-native (PHY042 honeycomb WL-FSS L=24/32/48: Kernel+Analyse 1:1 aus PHY041/PHY040, skalierte Produktion max(30000,60*nbins), 3 g(E)-Walker L=32 (Streams 90000+1000w), parallele (L,walker)-Jobs deterministisch je (seed,stream); KEINE Drive-Quelle) |
 | 50820093FC34DB50 | 2026-07-06 | tests | repo-native (MC-freie Gates fuer PHY042: prod-Skalierungs-Vertrag, Stream-Kollisionsfreiheit, T-Gitter-Bruecke, PHY041-Report-Drift-Guard (Paar-Tabelle+Y4-Dip zeichengenau), Referenzband-Konsistenz, slow Job-Smoke L=8; KEINE Drive-Quelle) |
+| 8600E4296F5EE769 | 2026-07-06 | spec | repo-native (PHY042-Spec v01b HAERTUNG nach Lauf 1: Multi-Walker an L=32 UND 48, Walker-Mittel-Kurven, Validitaets-Domaene aus Walker-Spread, Paar-Quotierbarkeit, Coverage-Massen-Gate, NR-PHY042-01..03; supersedet E0C81556E926946D; KEINE Drive-Quelle) |
+| B077389971FF455F | 2026-07-06 | src | repo-native (PHY042 v01b HAERTUNG: Lauf-1-Negativ-Result (Y2 sampler-limitiert T>~0.60 bei L>=32) -> Walker-Mittel-Hauptanalyse, _validity_domain, _uncovered_mass-Gate, Paar-Quotierbarkeit ueber Walker-Kombos; supersedet 0C964B3567E039FD; KEINE Drive-Quelle) |
+| BD614CA66088D13B | 2026-07-06 | tests | repo-native (PHY042-Tests v01b: +Validitaets-Domaenen-Gate (zusammenhaengend ab unterem Rand) + Coverage-Massen-2-Bin-Boltzmann-Orakel; supersedet 50820093FC34DB50; KEINE Drive-Quelle) |
 
 ## Referenz-Konfidenz (append-only)
 

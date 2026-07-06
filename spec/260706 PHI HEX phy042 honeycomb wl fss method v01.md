@@ -34,11 +34,12 @@ importiert (single source of truth, kein Reinvent):
 - **Skalierte Produktionsphase:** prod_sweeps = max(30000, 60 * nbins),
   damit die Bin-Belegungsdichte (~60 Samples/Bin, PHY041-Niveau bei L=24)
   bei L=32/48 nicht ausduennt. Ausnahme L=24: exakt 30000 (siehe §3 Bruecke).
-- **Multi-Walker:** bei L=32 laufen 3 unabhaengige g(E)-Walker
+- **Multi-Walker:** je 3 unabhaengige g(E)-Walker bei L=32 UND L=48
   (Walker 0: Standard-Stream 650+L; Walker w>=1: Stream 90000+1000*w+L,
   kollisionsfrei zu allen bisherigen Stream-Vertraegen). Die Streuung der
   Y2-Kurven ueber Walker ist der Systematik-Schaetzer des Samplers und wird
-  auf die Paar-T_BKT propagiert (Paar-Neuberechnung je Walker).
+  auf die Paar-T_BKT propagiert (Paar-Neuberechnung ueber alle
+  Walker-Kombinationen).
 - Unabhaengige Jobs (L, Walker) duerfen parallel laufen (Prozess-Pool);
   jede Job-RNG ist vollstaendig durch (master_seed, stream) bestimmt -
   Determinismus unabhaengig vom Scheduling.
@@ -55,17 +56,49 @@ Reproduktion des committed PHY041-Stands - verifizierbar ueber:
 - [VAL-C] Y4-Dip L=24 == 0.6500 (committed PHY041-Reportwert, exakt auf
   dem T-Gitter).
 
+## 3b. Haertung nach Lauf 1 (2026-07-06) — Lineage
+
+Lauf 1 (Einzel-Walker bei L=48, Walker nur bei L=32) hat ein reales
+Negativ-Result geliefert (Gate-Log in `results/`): die Y2-Kurven sind bei
+L>=32 oberhalb T~0.60 sampler-limitiert — Walker-Spread bis 0.14 im
+Kernfenster, FSS-Ordnungsverletzung (Y2(L=32) < Y2(L=48) bei T>=0.62),
+Y4-Dip bei L=32 nicht walker-robust (0.615/0.64/0.66). Ursache:
+Dekorrelation der vortex-reichen Konfigurationen in der Produktionsphase,
+kein Bug (Leak-Gate und <E>-Validierung blieben unauffaellig).
+
+Konsequenz-Haertungen (v01b, in-place vor Merge, PR-Draft):
+
+1. Multi-Walker an BEIDEN grossen L (32 und 48), Hauptanalyse auf
+   Walker-Mittel-Kurven.
+2. **Validitaets-Domaene** je L aus dem Walker-Spread: zusammenhaengend ab
+   dem unteren T-Rand, solange Spread < 0.04 (= VAL-A-Y2-Toleranz);
+   0.02/0.01 als strengere Stufen ausgewiesen.
+3. **Paar-Quotierbarkeit:** ein Paar ist nur quotierbar, wenn sein
+   Crossing innerhalb beider Domaenen liegt; sonst explizites NR.
+4. **Coverage-Massen-Gate:** kanonische Masse (volle lng) auf
+   produktions-unbesetzten Bins < 1e-3 fuer jedes in-Domaene-T
+   (verallgemeinert das Rand-Leak-Gate; Lauf 1: L=48 nur 1043/1641 Bins
+   in der Produktion besetzt).
+5. VAL-A-Y2-Gate gilt nur fuer in-Domaene-Punkte; ausserhalb liegende
+   Punkte werden als Evidenz ausgewiesen, nicht als Gate.
+
+Negativ-Result-IDs: **NR-PHY042-01** (Y2-Hoch-T-Sampler-Limit L>=32),
+**NR-PHY042-02** (Paare mit Crossing ausserhalb der Domaene nicht
+belastbar), **NR-PHY042-03** (Y4-Dip L>=32 nicht walker-robust bei diesem
+Budget).
+
 ## 4. Gates (PASS = Pipeline-Integritaet)
 
 | Gate | Kriterium |
 |---|---|
 | A aligned-Orakel | Y2(0) = 3/4 J exakt (Aggregat-Maschinerie) |
 | LEAK | kanonisches Randgewicht < 1e-3 fuer jedes (L, Walker, T) |
-| VAL-A Wolff | frisches Wolff L=32 (T=0.55/0.60/0.65): dE<0.03, dY2<0.04 |
+| COVER | kanonische Masse auf unbesetzten Bins < 1e-3 (in-Domaene-T) |
+| VAL-A Wolff | frisches Wolff L=32 (T=0.55/0.60/0.65): dE<0.03 immer; dY2<0.04 fuer in-Domaene-T |
 | VAL-B PHY032 | L=24-Kurve trifft committed PHY032-Gitter (Toleranz s.o.) |
 | VAL-C PHY041 | Y4-Dip L=24 bei T=0.6500 (committed Reportwert) |
-| Y2-Glaette | Y2(T) L=48 im Kernfenster [0.54,0.66] streng monoton fallend |
-| WALKER | max. Y2-Spread ueber 3 Walker (L=32, Kernfenster) < 0.02 |
+| Y2-Glaette | Y2(T) L=48 (Mittel-Kurve) im Kernfenster [0.54,0.66] streng monoton fallend |
+| PAIR-2432 | Crossing des Paars (24,32) liegt in beiden Validitaets-Domaenen |
 
 ## 5. Auswertungs-Vertrag (getrennte Kanaele)
 

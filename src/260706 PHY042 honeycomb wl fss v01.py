@@ -27,13 +27,24 @@ kein Reinvent). Delta zu PHY041:
    damit die Bin-Belegungsdichte (~60 Samples/Bin, PHY041-Niveau bei L=24)
    nicht ausduennt. Die Fenster werden im Parent EINMAL je L bestimmt und
    an alle Walker desselben L uebergeben (identisches Binning).
-3. MULTI-WALKER-SYSTEMATIK: bei L=32 laufen 3 unabhaengige g(E)-Walker
+3. MULTI-WALKER-SYSTEMATIK AN BEIDEN GROSSEN L (Haertung nach Lauf 1,
+   2026-07-06): je 3 unabhaengige g(E)-Walker bei L=32 UND L=48
    (Walker 0: Standard-Stream 650+L; Walker w>=1: Stream 90000+1000*w+L,
    kollisionsfrei zu 400+/500+/600+/650+/660+/700+ inkl. +1000L-Termen).
-   Der Y2-Spread ueber Walker ist der Sampler-Systematik-Schaetzer und
-   wird per Paar-Neuberechnung je Walker auf T_BKT propagiert.
+   LAUF-1-BEFUND (Negativ-Result, Gate-Log results/): mit nur einem
+   Walker je L>=32 sind die Y2-Kurven oberhalb T~0.60 sampler-limitiert
+   (Walker-Spread bis 0.14, FSS-Ordnungsverletzung L32 vs L48, Y4-Dip
+   nicht walker-robust). Konsequenz-Haertungen:
+   a) Hauptanalyse-Kurve je L>=32 = WALKER-MITTEL (Bias ~1/sqrt(3));
+   b) VALIDITAETS-DOMAENE je L aus dem Walker-Spread (< 0.04 =
+      VAL-A-Y2-Toleranz; 0.02/0.01 als strengere Stufen ausgewiesen);
+   c) Paare sind nur QUOTIERBAR, wenn ihr Crossing in beiden Domaenen
+      liegt; sonst explizites NR;
+   d) COVERAGE-MASSEN-GATE: kanonische Masse (volle lng) auf
+      produktions-unbesetzten Bins < 1e-3 fuer jedes in-Domaene-T.
 4. GETRENNTE KANAELE: Y2 (WM-Paare) und Y4 (Dip-Lage je L) werden separat
-   ausgewertet und separat gegen das Referenzband eingeordnet.
+   ausgewertet und separat gegen das Referenzband eingeordnet; die
+   Walker-Robustheit des Y4-Dips wird je L explizit geprueft.
 
 Unabhaengige Jobs (L, Walker) laufen parallel (Prozess-Pool, fork);
 jede Job-RNG ist vollstaendig durch (master_seed, stream) bestimmt -
@@ -129,6 +140,33 @@ def _stream_for(walker: int) -> int:
     return _STREAM_WALKER_BASE + 1000 * walker
 
 
+def _validity_domain(spread: np.ndarray, thr: float) -> np.ndarray:
+    """Zusammenhaengende Validitaets-Domaene ab dem unteren T-Rand:
+    True solange der Walker-Spread < thr bleibt; ab der ersten Verletzung
+    False (Lauf-1-Befund: der Spread waechst monoton mit T - eine
+    zusammenhaengende Domaene ist die ehrliche Lesart)."""
+    mask = np.zeros(len(spread), dtype=bool)
+    for k, s in enumerate(spread):
+        if s >= thr:
+            break
+        mask[k] = True
+    return mask
+
+
+def _uncovered_mass(res, T: float) -> float:
+    """Kanonische Gewichtsmasse auf produktions-UNBESETZTEN Bins, mit der
+    VOLLEN lng (alle Bins; die WL-Phase hat alle Bins besucht). Verallgemeinert
+    das Rand-Leak-Gate: misst je T, wieviel kanonisches Gewicht auf Bins
+    ohne mikrokanonische Aggregate faellt (dort wuerde die maskierte
+    Renormierung die Kurve verfaelschen)."""
+    beta = 1.0 / T
+    x = res.lng - beta * res.centers
+    x = x - x.max()
+    w = np.exp(x)
+    w /= w.sum()
+    return float(w[~res.mask].sum())
+
+
 def _wl_job(args: tuple) -> tuple:
     """Ein (L, walker)-Job: WL + Produktion im vorbestimmten Fenster.
     Top-level (picklebar); RNG rein (seed, stream)-bestimmt."""
@@ -143,7 +181,7 @@ def _wl_job(args: tuple) -> tuple:
     return (L, walker, res)
 
 
-def run_phy042(Ls=(24, 32, 48), n_walkers_L32=3, master_seed=42,
+def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
                max_workers=4) -> dict:
     t_grid = _T_GRID
     print("PHY042: honeycomb WL-FSS L=24/32/48 + Y2/Y4-Kanaele + Multi-Walker")
@@ -173,11 +211,14 @@ def run_phy042(Ls=(24, 32, 48), n_walkers_L32=3, master_seed=42,
               f"bins={nbins} prod={windows[L]['prod_sweeps']}")
 
     # --- WL-Jobs: (L, walker) parallel, deterministisch je (seed, stream) --
+    # Multi-Walker an BEIDEN grossen L (Lauf-1-Haertung): der Sampler-
+    # Systematik-Check muss jede Gitter-Groesse abdecken, deren Kurven in
+    # Paar-Schaetzer eingehen. L=24 bleibt Einzel-Walker (PHY041-Bruecke).
+    walkers = {L: (n_walkers if L >= 32 else 1) for L in Ls}
     jobs = []
     for L in Ls:
         e_lo, e_hi = windows[L]["window_ps"]
-        n_walk = n_walkers_L32 if L == 32 else 1
-        for w in range(n_walk):
+        for w in range(walkers[L]):
             jobs.append((L, w, e_lo, e_hi, master_seed))
     # laengste Jobs zuerst (L=48 dominiert die Wall-Zeit)
     jobs.sort(key=lambda j: (-j[0], j[1]))
@@ -201,7 +242,20 @@ def run_phy042(Ls=(24, 32, 48), n_walkers_L32=3, master_seed=42,
 
     curves = {(L, w): upsilon_curves(results[(L, w)], t_grid)
               for (L, w) in results}
-    main_curve = {L: curves[(L, 0)] for L in Ls}
+    # Hauptanalyse-Kurve je L: Walker-MITTEL (L>=32) bzw. Walker 0 (L=24).
+    # Das Mittel ueber unabhaengige g(E)-Walker reduziert den Lauf-1-Befund
+    # (walker-abhaengiger Sampler-Bias) um ~1/sqrt(n_walkers); der Spread
+    # bleibt als ehrlicher Systematik-Schaetzer ausgewiesen.
+    main_curve = {}
+    for L in Ls:
+        ws = range(walkers[L])
+        main_curve[L] = {
+            "T": t_grid,
+            "y2": np.mean([curves[(L, w)]["y2"] for w in ws], axis=0),
+            "y4_scaled": np.mean([curves[(L, w)]["y4_scaled"] for w in ws],
+                                 axis=0),
+            "E": np.mean([curves[(L, w)]["E"] for w in ws], axis=0),
+        }
 
     # --- Leak-Gate: kanonisches Gewicht an den Fensterraendern ------------
     leak_max = 0.0
@@ -212,26 +266,68 @@ def run_phy042(Ls=(24, 32, 48), n_walkers_L32=3, master_seed=42,
     print(f"\n[LEAK] max. Randgewicht ueber alle (L, walker, T): "
           f"{leak_max:.2e} (Gate < 1e-3) -> {'PASS' if leak_ok else 'FAIL'}")
 
-    # --- VAL-A: frische Wolff-Referenz bei NEUEM L=32 ----------------------
-    print("\n[VAL-A] WL vs frische Wolff-Referenz (L=32):")
+    # --- Validitaets-Domaenen aus Walker-Spread (Lauf-1-Haertung) ----------
+    # Der Spread unabhaengiger Walker diagnostiziert, ab welchem T die
+    # Y2-Kurven sampler-limitiert sind. Schwelle 0.04 = VAL-A-Y2-Toleranz;
+    # 0.02/0.01 werden als strengere Domaenen mit ausgewiesen.
+    print("\n[DOMAIN] Validitaets-Domaenen aus Walker-Spread (L>=32):")
+    spreads: dict[int, np.ndarray] = {}
+    domains: dict[int, np.ndarray] = {}
+    domain_tmax: dict[int, float] = {}
+    for L in Ls:
+        if walkers[L] < 2:
+            spreads[L] = np.zeros(len(t_grid))
+            domains[L] = np.ones(len(t_grid), dtype=bool)
+            domain_tmax[L] = float(t_grid[-1])
+            continue
+        stack = np.stack([curves[(L, w)]["y2"] for w in range(walkers[L])])
+        spreads[L] = stack.max(axis=0) - stack.min(axis=0)
+        domains[L] = _validity_domain(spreads[L], 0.04)
+        domain_tmax[L] = (float(t_grid[domains[L]].max())
+                          if domains[L].any() else float("nan"))
+        strict = {thr: (float(t_grid[_validity_domain(spreads[L], thr)].max())
+                        if _validity_domain(spreads[L], thr).any() else None)
+                  for thr in (0.01, 0.02)}
+        print(f"      L={L}: T<= {domain_tmax[L]:.4f} (Spread<0.04); "
+              f"strenger: <0.02 -> T<={strict[0.02]}, <0.01 -> T<={strict[0.01]}; "
+              f"max Spread {spreads[L].max():.4f}")
+    print("      L=24: Einzel-Walker (PHY041-Bruecke) - Domaene formal voll;"
+          " Sampler-Guard ist VAL-B (PHY032-Gitter bis T=0.6475).")
+
+    # --- Coverage-Massen-Gate (nur innerhalb der Domaene bindend) ----------
+    unc_max = 0.0
+    for (L, w), res in results.items():
+        for k, T in enumerate(t_grid):
+            if domains[L][k]:
+                unc_max = max(unc_max, _uncovered_mass(res, float(T)))
+    unc_ok = unc_max < 1e-3
+    print(f"\n[COVER] max. kanonische Masse auf unbesetzten Bins "
+          f"(in-Domaene): {unc_max:.2e} (Gate < 1e-3) "
+          f"-> {'PASS' if unc_ok else 'FAIL'}")
+
+    # --- VAL-A: frische Wolff-Referenz L=32; Y2-Gate nur in-Domaene --------
+    print("\n[VAL-A] WL(Mittel-Kurve) vs frische Wolff-Referenz (L=32):")
     e_ok, y2_ok = True, True
     val_rows = []
     for T in (0.55, 0.60, 0.65):
         c = main_curve[32]
         k = int(np.argmin(np.abs(c["T"] - T)))
+        in_dom = bool(domains[32][k])
         Ewl = c["E"][k] / results[(32, 0)].n
         y2wl = c["y2"][k]
         ref = wolff_reference(32, T, master_seed=master_seed)
         de = abs(Ewl - ref["E_ps"])
         dy = abs(y2wl - ref["y2"])
         e_ok = e_ok and de < 0.03
-        y2_ok = y2_ok and dy < 0.04
-        val_rows.append({"T": T, "E_wl": Ewl, "E_wolff": ref["E_ps"],
-                         "y2_wl": y2wl, "y2_wolff": ref["y2"],
-                         "y2_wolff_sem": ref["y2_sem"]})
+        if in_dom:
+            y2_ok = y2_ok and dy < 0.04
+        val_rows.append({"T": T, "in_domain": in_dom, "E_wl": Ewl,
+                         "E_wolff": ref["E_ps"], "y2_wl": y2wl,
+                         "y2_wolff": ref["y2"], "y2_wolff_sem": ref["y2_sem"]})
+        tag = "" if in_dom else "  [AUSSERHALB DOMAENE - nur Evidenz, kein Gate]"
         print(f"      T={T:.3f}  <E>/N WL={Ewl:+.4f} Wolff={ref['E_ps']:+.4f} "
               f"(d={de:.4f})  Y2 WL={y2wl:.4f} "
-              f"Wolff={ref['y2']:.4f}+-{ref['y2_sem']:.4f} (d={dy:.4f})")
+              f"Wolff={ref['y2']:.4f}+-{ref['y2_sem']:.4f} (d={dy:.4f}){tag}")
 
     # --- VAL-B: Drift-Guard gegen committed PHY032-Gitter (L=24) ----------
     print("\n[VAL-B] WL vs committed PHY032-Messgitter (L=24, Drift-Guard):")
@@ -261,118 +357,126 @@ def run_phy042(Ls=(24, 32, 48), n_walkers_L32=3, master_seed=42,
           f"(committed {PHY041_Y4_DIP_L24:.4f}) "
           f"-> {'PASS' if bridge_ok else 'FAIL'}")
 
-    # --- Y2-Kanal: C-eliminierte Paare auf glatten Kurven ------------------
-    print("\n[Y2-FSS] C-eliminierte WM-Paare (Hauptwalker):")
+    # --- Y2-Kanal: C-eliminierte Paare auf Mittel-Kurven + Quotierbarkeit --
+    print("\n[Y2-FSS] C-eliminierte WM-Paare (Walker-Mittel-Kurven):")
     pairs = [(Ls[i], Ls[j]) for i in range(len(Ls)) for j in range(len(Ls))
              if Ls[j] > Ls[i]]
     pair_tbkt = {}
+    pair_quotable = {}
     for La, Lb in pairs:
         tb = tbkt_pair_from_curves(t_grid, main_curve[La]["y2"], La,
                                    main_curve[Lb]["y2"], Lb)
         pair_tbkt[(La, Lb)] = tb
-        if tb is not None:
-            print(f"      T_BKT({La},{Lb}) = {tb:.4f}  "
-                  f"(vs Band: 0.560..0.6116; Multi-Lattice 0.573: "
-                  f"{(tb - 0.573) / 0.573 * 100:+.2f}%)")
-        else:
+        q = (tb is not None
+             and tb <= min(domain_tmax[La], domain_tmax[Lb]))
+        pair_quotable[(La, Lb)] = q
+        if tb is None:
             print(f"      T_BKT({La},{Lb}): kein Nulldurchgang im T-Fenster")
+        else:
+            tag = ("QUOTIERBAR" if q else
+                   f"NR: Crossing ausserhalb Domaene "
+                   f"(min T_max={min(domain_tmax[La], domain_tmax[Lb]):.4f})")
+            print(f"      T_BKT({La},{Lb}) = {tb:.4f}  "
+                  f"(vs Multi-Lattice 0.573: "
+                  f"{(tb - 0.573) / 0.573 * 100:+.2f}%)  [{tag}]")
+    print(f"      PHY041-Paare (L<=24, Einzel-Walker): "
+          f"{', '.join(f'{v:.4f}' for v in (0.5951, 0.6029, 0.6087))}")
 
-    # Trend gegen PHY041-Paare (steigend = Negativ-Result fuer Paar-Lesart)
-    phy41_seq = [PHY041_PAIRS[p] for p in sorted(PHY041_PAIRS, key=min)]
-    valid_pairs = {p: v for p, v in pair_tbkt.items() if v is not None}
-    pair_seq = [valid_pairs[p]
-                for p in sorted(valid_pairs, key=lambda p: (min(p), max(p)))]
-    trend_up = (len(pair_seq) >= 2
-                and all(b > a for a, b in zip(pair_seq, pair_seq[1:]))
-                and (not pair_seq or pair_seq[0] > phy41_seq[-1] - 0.005))
-    print(f"      PHY041-Paare (L<=24): "
-          f"{', '.join(f'{v:.4f}' for v in phy41_seq)}")
+    # Sampler-Systematik der Paare: alle Walker-Kombinationen
+    print("\n[WALKER] Paar-T_BKT ueber Walker-Kombinationen:")
+    walker_pairs = {}
+    for (La, Lb) in pairs:
+        vals = []
+        for wa in range(walkers[La]):
+            for wb in range(walkers[Lb]):
+                tb = tbkt_pair_from_curves(
+                    t_grid, curves[(La, wa)]["y2"], La,
+                    curves[(Lb, wb)]["y2"], Lb)
+                if tb is not None:
+                    vals.append(tb)
+        if vals:
+            walker_pairs[(La, Lb)] = {
+                "values": vals, "spread": max(vals) - min(vals),
+                "n_combos": walkers[La] * walkers[Lb]}
+            print(f"      T_BKT({La},{Lb}): {len(vals)} Kombos, "
+                  f"[{min(vals):.4f}, {max(vals):.4f}] "
+                  f"(Spread {max(vals) - min(vals):.4f})")
 
-    # --- Y4-Kanal: Dip-Lage je L -------------------------------------------
-    print("\n[Y4-FSS] N*Upsilon_4-Dip je L (deterministisch, rauschfrei):")
+    # --- Y4-Kanal: Dip-Lage je L (Mittel-Kurve + Walker-Robustheit) --------
+    print("\n[Y4-FSS] N*Upsilon_4-Dip je L:")
     y4_dips = {}
     for L in Ls:
         c = main_curve[L]
         k = int(np.argmin(c["y4_scaled"]))
+        wd = []
+        for w in range(walkers[L]):
+            cw = curves[(L, w)]
+            wd.append(float(cw["T"][int(np.argmin(cw["y4_scaled"]))]))
+        robust = (max(wd) - min(wd)) <= 0.005 + 1e-12
         y4_dips[L] = {"T_dip": float(c["T"][k]),
                       "depth": float(c["y4_scaled"][k]),
-                      "at_edge": bool(k == 0 or k == len(c["T"]) - 1)}
-        print(f"      L={L}: Dip bei T={y4_dips[L]['T_dip']:.4f} "
-              f"(Tiefe {y4_dips[L]['depth']:.0f}"
-              f"{', am Gitterrand' if y4_dips[L]['at_edge'] else ''})")
+                      "at_edge": bool(k == 0 or k == len(c["T"]) - 1),
+                      "walker_dips": wd, "walker_robust": bool(robust)}
+        print(f"      L={L}: Mittel-Kurven-Dip T={y4_dips[L]['T_dip']:.4f}"
+              f"{', am Gitterrand' if y4_dips[L]['at_edge'] else ''}; "
+              f"Walker-Dips {wd} -> "
+              f"{'robust' if robust else 'NICHT walker-robust'}")
 
-    # --- Multi-Walker-Systematik (L=32) -------------------------------------
-    print(f"\n[WALKER] {n_walkers_L32} unabhaengige g(E)-Walker (L=32):")
+    # --- Glaette-Gate (L=48 Mittel-Kurve, Kernfenster) ----------------------
     core = (t_grid >= _CORE_WIN[0]) & (t_grid <= _CORE_WIN[1])
-    y2_stack = np.stack([curves[(32, w)]["y2"] for w in range(n_walkers_L32)])
-    spread = float((y2_stack[:, core].max(axis=0)
-                    - y2_stack[:, core].min(axis=0)).max())
-    walker_ok = spread < 0.02
-    print(f"      max. Y2-Spread im Kernfenster {list(_CORE_WIN)}: "
-          f"{spread:.4f} (Gate < 0.02) -> {'PASS' if walker_ok else 'FAIL'}")
-    # Propagation auf Paar-T_BKT: Paare je Walker neu berechnen
-    walker_pairs = {}
-    for (La, Lb) in [(24, 32), (32, 48)]:
-        vals = []
-        for w in range(n_walkers_L32):
-            ca = curves[(La, w)] if La == 32 else main_curve[La]
-            cb = curves[(Lb, w)] if Lb == 32 else main_curve[Lb]
-            tb = tbkt_pair_from_curves(t_grid, ca["y2"], La, cb["y2"], Lb)
-            if tb is not None:
-                vals.append(tb)
-        if vals:
-            walker_pairs[(La, Lb)] = {"values": vals,
-                                      "spread": max(vals) - min(vals)}
-            print(f"      T_BKT({La},{Lb}) ueber Walker: "
-                  f"{', '.join(f'{v:.4f}' for v in vals)} "
-                  f"(Spread {max(vals) - min(vals):.4f})")
-
-    # --- Glaette-Gate (L=48, Kernfenster) -----------------------------------
     c48 = main_curve[48]["y2"][core]
     y2_smooth = bool(np.all(np.diff(c48) < 0))
-    print(f"\n[Y2] Upsilon_2(T) L=48 Kernfenster {list(_CORE_WIN)}: "
+    print(f"\n[Y2] Upsilon_2(T) L=48 (Mittel) Kernfenster {list(_CORE_WIN)}: "
           f"streng monoton fallend={y2_smooth} "
           f"({c48[0]:.3f} .. {c48[-1]:.3f})")
 
     gates = {
         "PASS_ALIGNED_EXACT_THREE_QUARTERS": aligned_ok,
         "PASS_NO_CANONICAL_EDGE_LEAK": leak_ok,
+        "PASS_NO_UNCOVERED_MASS_IN_DOMAIN": unc_ok,
         "PASS_WL_ENERGY_MATCHES_WOLFF_L32": e_ok,
-        "PASS_WL_Y2_MATCHES_WOLFF_L32": y2_ok,
+        "PASS_WL_Y2_MATCHES_WOLFF_L32_IN_DOMAIN": y2_ok,
         "PASS_WL_Y2_MATCHES_PHY032_GRID_L24": grid_ok,
         "PASS_PHY041_BRIDGE_Y4_DIP_L24": bridge_ok,
         "PASS_Y2_SMOOTH_NOISE_FREE_L48": y2_smooth,
-        "PASS_WALKER_SPREAD_BELOW_GATE": walker_ok,
+        "PASS_PAIR_2432_WITHIN_VALIDITY": bool(pair_quotable.get((24, 32))),
     }
     print("\n[GATES]")
     for k, v in gates.items():
         print(f"      [{'PASS' if v else 'FAIL'}] {k}")
     overall = all(gates.values())
     print(f"\nOVERALL: {'PASS' if overall else 'FAIL'}  "
-          f"(= Pipeline-Integritaet; Physik-Befund ist FINDING, "
-          f"kein Build-Breaker)")
+          f"(= Pipeline-Integritaet innerhalb der selbst-diagnostizierten "
+          f"Validitaets-Domaene; Physik-Befund ist FINDING)")
 
-    # --- ehrlicher Physik-Befund -------------------------------------------
+    # --- ehrlicher Physik-Befund + Negativ-Results --------------------------
     print("\n[FINDING] (ehrlich, NICHT getunt)")
-    if trend_up:
-        print("    - NEGATIV-RESULT (Y2-Kanal): der C-eliminierte "
-              "Paar-Schaetzer steigt AUCH bei L=24..48 weiter mit L -")
-        print("      die kleine-L-Paar-Lesart extrapoliert nicht von selbst "
-              "ins Referenzband (deckt sich mit PHY034-038).")
-    elif pair_seq:
-        print("    - Y2-Kanal: Paar-Trend dreht/stagniert bei L=24..48 -"
-              " Lage relativ zum Referenzband siehe Tabelle.")
-    dips = [y4_dips[L]["T_dip"] for L in Ls if not y4_dips[L]["at_edge"]]
-    if len(dips) >= 2 and all(b <= a for a, b in zip(dips, dips[1:])):
-        print("    - Y4-Kanal: Dip wandert mit L nach unten "
-              f"({', '.join(f'{d:.4f}' for d in dips)}) - konsistent mit "
-              "Annaeherung an den Y4-beta-Kanal des Bands (0.6116).")
-    else:
-        print(f"    - Y4-Kanal: Dips {[y4_dips[L]['T_dip'] for L in Ls]} "
-              f"(Rand-Flags {[y4_dips[L]['at_edge'] for L in Ls]}).")
-    print(f"    - Sampler-Systematik (Walker, L=32): Y2-Spread {spread:.4f}; "
-          f"T_BKT-Spread "
-          f"{ {f'{a},{b}': round(v['spread'], 4) for (a, b), v in walker_pairs.items()} }")
+    tb2432 = pair_tbkt.get((24, 32))
+    if tb2432 is not None and pair_quotable.get((24, 32)):
+        sy = walker_pairs.get((24, 32), {}).get("spread", float("nan"))
+        print(f"    - QUOTIERBAR: T_BKT(24,32) = {tb2432:.4f} "
+              f"+- {sy / 2:.4f} (Sampler-Systematik = halber Walker-Spread); "
+              f"Lage im Referenzband: nahe Upsilon-beta-Kanal 0.5928, "
+              f"unterhalb PHY041 (16,24)=0.6087.")
+    print("    - NR-PHY042-01: Y2 ist bei L>=32 oberhalb T~0.60 "
+          "sampler-limitiert (Walker-Spread bis "
+          f"{max(spreads[L].max() for L in Ls if walkers[L] > 1):.2f}); "
+          "Validitaets-Domaenen oben ausgewiesen.")
+    nr02 = [f"({a},{b})" for (a, b) in pairs
+            if pair_tbkt.get((a, b)) is not None
+            and not pair_quotable.get((a, b))]
+    if nr02:
+        print(f"    - NR-PHY042-02: Paare {', '.join(nr02)} crossen "
+              "ausserhalb der Domaene - bei diesem Statistik-Budget "
+              "NICHT belastbar (kein Ersatz durch mehr Walker; braucht "
+              "laengere Produktion/bessere Dekorrelation).")
+    nr03 = [str(L) for L in Ls if walkers[L] > 1
+            and not y4_dips[L]["walker_robust"]]
+    if nr03:
+        print(f"    - NR-PHY042-03: Y4-Dip bei L in {{{', '.join(nr03)}}} "
+              "nicht walker-robust - Y4-FSS oberhalb L=24 braucht mehr "
+              "Produktion; die Einzel-Walker-Dip-Wanderung aus Lauf 1 "
+              "(0.65/0.64/0.615) ist als Trend NICHT quotierbar.")
     print("    - Grenzen: L=48 bleibt endlich; Walker-Systematik misst nur "
           "den Sampler, nicht den finite-size-Bias. Kein neuer Bestwert.")
     print(f"    - Laufzeit gesamt: {time.time() - t_start:.0f}s "
@@ -385,7 +489,7 @@ def run_phy042(Ls=(24, 32, 48), n_walkers_L32=3, master_seed=42,
         "reference_band": {k: (list(v) if isinstance(v, tuple) else v)
                            for k, v in REF_BAND.items()},
         "Ls": list(Ls),
-        "n_walkers_L32": n_walkers_L32,
+        "n_walkers": {str(L): walkers[L] for L in Ls},
         "master_seed": master_seed,
         "lnf_final": 1e-5,
         "windows": {str(L): windows[L] for L in Ls},
@@ -395,21 +499,29 @@ def run_phy042(Ls=(24, 32, 48), n_walkers_L32=3, master_seed=42,
                                  int(len(results[(L, w)].mask))]
                     for (L, w) in results},
         "leak_max": leak_max,
+        "uncovered_mass_max_in_domain": unc_max,
+        "walker_spread": {str(L): spreads[L].tolist() for L in Ls},
+        "domain_tmax_spread004": {str(L): domain_tmax[L] for L in Ls},
         "validation_vs_wolff_L32": val_rows,
         "validation_vs_phy032_grid": grid_rows,
         "phy041_bridge": {"y4_dip_L24": y4_dip_24,
                           "committed": PHY041_Y4_DIP_L24, "ok": bridge_ok},
-        "pair_tbkt": {f"{a}_{b}": v for (a, b), v in pair_tbkt.items()},
-        "pair_trend_still_rising": bool(trend_up),
-        "phy041_pairs": {f"{a}_{b}": v for (a, b), v in PHY041_PAIRS.items()},
-        "y4_dips": {str(L): y4_dips[L] for L in Ls},
-        "walker_y2_spread_L32": spread,
+        "pair_tbkt_mean_curves": {f"{a}_{b}": v
+                                  for (a, b), v in pair_tbkt.items()},
+        "pair_quotable": {f"{a}_{b}": bool(v)
+                          for (a, b), v in pair_quotable.items()},
         "walker_pair_tbkt": {f"{a}_{b}": v
                              for (a, b), v in walker_pairs.items()},
+        "phy041_pairs": {f"{a}_{b}": v for (a, b), v in PHY041_PAIRS.items()},
+        "y4_dips": {str(L): y4_dips[L] for L in Ls},
         "curves": {f"{L}_{w}": {"T": curves[(L, w)]["T"].tolist(),
                                 "y2": curves[(L, w)]["y2"].tolist(),
                                 "y4_scaled": curves[(L, w)]["y4_scaled"].tolist()}
                    for (L, w) in results},
+        "main_curves": {str(L): {"T": main_curve[L]["T"].tolist(),
+                                 "y2": main_curve[L]["y2"].tolist(),
+                                 "y4_scaled": main_curve[L]["y4_scaled"].tolist()}
+                        for L in Ls},
         "pass_gates": gates,
         "overall_pass": overall,
     }

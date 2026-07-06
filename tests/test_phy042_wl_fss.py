@@ -101,6 +101,33 @@ def test_pair_trend_inputs_are_sorted_ascending():
     assert seq == [0.5951, 0.6029, 0.6087]
 
 
+def test_validity_domain_contiguous_from_low_edge():
+    """Domaene ist zusammenhaengend ab dem unteren T-Rand und endet an der
+    ERSTEN Schwellen-Verletzung (auch wenn der Spread danach wieder faellt -
+    ehrliche Lesart des Lauf-1-Befunds)."""
+    spread = np.array([0.001, 0.01, 0.03, 0.05, 0.02, 0.01])
+    dom = phy042._validity_domain(spread, 0.04)
+    assert dom.tolist() == [True, True, True, False, False, False]
+    assert phy042._validity_domain(spread, 0.0005).tolist() == [False] * 6
+    assert phy042._validity_domain(spread, 1.0).all()
+
+
+def test_uncovered_mass_two_level_oracle():
+    """Coverage-Massen-Diagnostik auf einem 2-Bin-Boltzmann-Orakel: bei
+    gleicher Entropie ist die Masse des unbesetzten Bins genau sein
+    kanonisches Gewicht exp(-dE/T)/(1+exp(-dE/T))."""
+    from types import SimpleNamespace
+    res = SimpleNamespace(lng=np.array([0.0, 0.0]),
+                          centers=np.array([-10.0, -9.0]),
+                          mask=np.array([True, False]))
+    T = 0.5
+    expected = math.exp(-1.0 / T) / (1.0 + math.exp(-1.0 / T))
+    assert phy042._uncovered_mass(res, T) == pytest.approx(expected, rel=1e-12)
+    res_full = SimpleNamespace(lng=res.lng, centers=res.centers,
+                               mask=np.array([True, True]))
+    assert phy042._uncovered_mass(res_full, T) == 0.0
+
+
 @pytest.mark.slow
 def test_wl_job_smoke_small_lattice():
     """Slow-Smoke: ein kompletter (L=8, walker=1)-Job durch den PHY042-
