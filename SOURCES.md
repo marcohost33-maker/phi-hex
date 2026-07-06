@@ -76,6 +76,9 @@
 | F29ECAC13EF7F72D | 2026-07-02 | tests | repo-native (Gates fuer PHY041: Aggregat-Orakel Y2(0)=3/4 exakt, lokale dE==volle Energie, Fenster-/Floor-Logik, Leak-Mass, PHY032-Drift-Guard-Parser zeichengenau, Paar-Wiring honeycomb-Band, slow WL-Smoke; KEINE Drive-Quelle) |
 | BE7B703D270732F2 | 2026-07-02 | results | repo-native (Gate-Evidenz PHY041 honeycomb L in {12,16,24}, master_seed=42, lnf_final=1e-5, prod_sweeps=30000; OVERALL=PASS; VAL-A Wolff dE<=0.009/dY2<=0.010, VAL-B 16/16 PHY032-Gitterpunkte ok, Leak 1.6e-10; Paare 0.5951/0.6029/0.6087; KEINE Drive-Quelle) |
 | 386A9752D410E844 | 2026-07-02 | spec | repo-native (Methoden-Spec PHY041: Delta zu PHY040 (B&P-1/t-Korrektur, Auto-Fenster, Leak-Gate), zweifacher Validierungs-Vertrag, ehrliche Bilanz, naechste Stufe L=32/48+FSS; KEINE Drive-Quelle) |
+| E0C81556E926946D | 2026-07-06 | spec | repo-native (Methoden-Spec PHY042: honeycomb WL-FSS L=24/32/48, deterministische PHY041-Bruecke, getrennte Y2/Y4-Kanaele, Multi-Walker-Systematik, Gate-Vertrag; KEINE Drive-Quelle) |
+| 0C964B3567E039FD | 2026-07-06 | src | repo-native (PHY042 honeycomb WL-FSS L=24/32/48: Kernel+Analyse 1:1 aus PHY041/PHY040, skalierte Produktion max(30000,60*nbins), 3 g(E)-Walker L=32 (Streams 90000+1000w), parallele (L,walker)-Jobs deterministisch je (seed,stream); KEINE Drive-Quelle) |
+| 50820093FC34DB50 | 2026-07-06 | tests | repo-native (MC-freie Gates fuer PHY042: prod-Skalierungs-Vertrag, Stream-Kollisionsfreiheit, T-Gitter-Bruecke, PHY041-Report-Drift-Guard (Paar-Tabelle+Y4-Dip zeichengenau), Referenzband-Konsistenz, slow Job-Smoke L=8; KEINE Drive-Quelle) |
 
 ## Referenz-Konfidenz (append-only)
 
