@@ -3,6 +3,50 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-07-06] PHY042 — Honeycomb WL-FSS L=24/32/48 (Voll-Lauf, getrennte Y2/Y4-Kanaele, Multi-Walker-Systematik)
+
+Setzt die in PHY041/PR #18 vertraglich benannte "Naechste Stufe" um: L=32/48
+mit demselben gitter-agnostischen WL/1-t-Kernel, getrennte Upsilon_2-/
+Upsilon_4-FSS und mehrere g(E)-Walker als Sampler-Systematik. **Ergebnis ist
+ein FINDING, kein neuer T_BKT-Bestwert und kein finaler T_BKT-Claim.**
+
+### Added
+- `src/260706 PHY042 honeycomb wl fss v01.py` + `spec/260706 PHI HEX phy042
+  honeycomb wl fss method v01.md` + `tests/test_phy042_wl_fss.py` (6 schnelle
+  MC-freie Gates, PASS verified 2026-07-06, + 1 slow Job-Smoke). Kernel/Analyse
+  1:1 aus PHY041/PHY040 (single source of truth); Delta: skalierte Produktion
+  `max(30000, 60*nbins)`, 3 unabhaengige Walker bei L=32/48 (kollisionsfreier
+  Stream-Vertrag), deterministisch je (seed, stream).
+- Gate-Log `results/260707 PHY042 honeycomb wl-fss L24-32-48 gate report.json`
+  (`overall_pass=True`, 9/9 Pipeline-Gates, Lauf 2026-07-06, ~3498 s wall,
+  `master_seed=42`, `lnf_final=1e-5`). Die Gates pruefen Pipeline-**Integritaet**,
+  nicht Physik-Wahrheit.
+
+### Mess-Ergebnis (ehrlich, Finding)
+- Gate A: aligned `Upsilon_2(0) = 3/4 J` exakt PASS; Rand-Leak max 1.6e-10;
+  unbesetzte kanonische Masse in-Domaene max 1.9e-10.
+- Validitaets-Domaene `T_max` (Walker-Spread < 0.04): L24=0.67, L32=0.60,
+  L48=0.585.
+- Upsilon_2-Paar-Schaetzer (C-eliminiert, Mittel-Kurven, nur relativ zum
+  Referenzband): (24,32)=**0.5875** (belastbar), (24,48)=**0.5898**,
+  (32,48)=**0.5916**.
+- **NR-PHY042-02:** Nur das Paar (24,32) crosst in beiden Validitaets-Domaenen
+  (quotable). (24,48) und (32,48) crossen ausserhalb der Domaene und sind bei
+  diesem Statistik-Budget NICHT belastbar (Walker-Spread 0.033 bzw. 0.039 in
+  T_BKT vs. 0.013 fuer (24,32)).
+- **NR-PHY042-03:** Der Upsilon_4-Dip ist bei L in {32,48} nicht walker-robust
+  (L=24 robust bei T=0.65; L=32/48 walker-abhaengig). Upsilon_4-FSS oberhalb
+  L=24 braucht mehr Produktion.
+- **Grenzen:** L=48 bleibt endlich; die Walker-Systematik misst nur den Sampler
+  (g(E)-Bias), nicht den finite-size-Bias. Kein T_BKT-Bestwert-Claim ohne
+  Cross-Family-Review.
+
+### Docs
+- README: PHY042-Abschnitt (Finding, Gate-/Diagnostik-Tabelle, Paar-Tabelle,
+  NR-02/03) + Review-Stand-Zeile auf PHY042/PR #20 + "Naechste Stufe" auf die
+  offenen Produktions-Punkte aktualisiert. Referenz-Einordnung bleibt
+  ausschliesslich ueber das Honeycomb-Referenzband (Doc-Drift-Gate bindend).
+
 ## [2026-07-02] PHY041 — WL-entropischer Helicity-Modul auf HONEYCOMB (18x-Kernel, echte B&P-1/t-Phase, Auto-Fenster, Leak-Gate)
 
 Setzt den in der PHY040-Methoden-Spec (§6) vertraglich benannten
