@@ -3,6 +3,30 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-07-07] Provenance-Reparatur: SOURCES.md-Integritaets-Audit + CI-Gate (Issue #21)
+
+Reine Provenance-Reparatur, keine Ergebnis-Aenderung: der PHY042-Befund
+bleibt unveraendert (quotable nur Paar (24,32); NR-PHY042-02/03 bestehen;
+kein finaler T_BKT-Claim).
+
+### Added
+- SOURCES.md-Abschnitt "Integritaets-Audit 2026-07-07" (append-only
+  Nachtrag): pinnt den PHY042-Gate-Report
+  `results/260707 PHY042 honeycomb wl-fss L24-32-48 gate report.json` mit
+  voller SHA-256 `19a9ce3c…eefa3cf` (committete Bytes des Merge-Commits
+  `856d35e`, Git-Blob `41aeb90e` als Zusatz-Locator) — schliesst Issue #21.
+- 24 weitere Audit-Zeilen: Voll-Audit fand 25 committete Dateien ohne
+  byte-genau passende SOURCES-Zeile — 11 durch spaetere PR-Modifikation
+  nach korrektem Erst-Eintrag (Klasse `stand`), 14 ohne jemals passenden
+  Byte-Match bzw. ohne Eintrag (Klasse `korrektur`; Erst-Hashes stammten
+  von Staging-Staenden vor Review-Fixes). Alt-Zeilen bleiben als Lineage
+  unveraendert stehen.
+- `tests/test_sources_integrity.py` (schnelles CI-Gate, MC-frei): (1) jede
+  committete Datei unter `src/ tests/ spec/ results/ archive/` braucht eine
+  byte-genau passende SOURCES-Zeile (CRLF/LF/BOM-Varianten fuer
+  Windows-Staging-Alt-Eintraege erlaubt); (2) PHY042-Report zusaetzlich
+  ueber volle SHA-256 gepinnt. Tests 113/113 PASS (verified 2026-07-07).
+
 ## [2026-07-06] PHY042 — Honeycomb WL-FSS L=24/32/48 (Voll-Lauf, getrennte Y2/Y4-Kanaele, Multi-Walker-Systematik)
 
 Setzt die in PHY041/PR #18 vertraglich benannte "Naechste Stufe" um: L=32/48
