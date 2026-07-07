@@ -2,7 +2,7 @@
 
 > **Status:** Forschungs-Repo (privat) | XY/BKT-Physik auf Dreiecks-, Honeycomb- und Kagome-Gittern.  
 > **Lizenz:** Apache-2.0 | **Lineage/Provenance:** siehe `SOURCES.md`.  
-> **Aktueller Review-Stand:** PHY041/PR #18 ist ein Pipeline-Finding, **kein neuer T_BKT-Bestwert**.
+> **Aktueller Review-Stand:** PHY042/PR #20 (Voll-Lauf L=24/32/48) ist ein Pipeline-Finding, **kein neuer T_BKT-Bestwert** (interne Gates PASS; Grenzen NR-PHY042-02/03).
 
 Phi-Hex untersucht das 2D-XY-Modell und BKT-Physik auf periodischen Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Wang-Landau-DOS und Finite-Size-Scaling.
 
@@ -48,7 +48,32 @@ PHY041 liefert fuer honeycomb mit Wang-Landau/1-t bei L<=24 die glatten Paarwert
 | (12,24) | 0.6029 |
 | (16,24) | 0.6087 |
 
-Interpretation: Das ist ein **FINDING** zur Pipeline und zum kleinen-L-Verhalten, kein finaler T_BKT. Der Wert liegt im oberen Bereich des Referenzbands bzw. oberhalb der unteren Honeycomb-Anker. Die naechste Stufe ist L=32/48 plus getrennte Upsilon_2-/Upsilon_4-FSS.
+Interpretation: Das ist ein **FINDING** zur Pipeline und zum kleinen-L-Verhalten, kein finaler T_BKT. Der Wert liegt im oberen Bereich des Referenzbands bzw. oberhalb der unteren Honeycomb-Anker. Die naechste Stufe (L=32/48 plus getrennte Upsilon_2-/Upsilon_4-FSS) ist mit PHY042 gelaufen (siehe unten).
+
+## PHY042 — Voll-Lauf L=24/32/48 (Finding, kein Bestwert)
+
+PHY042 fuehrt den PHY041-Kernel auf L=24/32/48 mit getrennten Upsilon_2-/Upsilon_4-FSS-Kanaelen und Multi-Walker-Systematik aus (L=24: 1 Walker; L=32/48: je 3). Gate-Log: `results/260707 PHY042 honeycomb wl-fss L24-32-48 gate report.json` (`overall_pass=True`, 9/9 Pipeline-Gates, Lauf 2026-07-06, ~3498 s wall, `master_seed=42`, `lnf_final=1e-5`). Die Pipeline-Gates pruefen **Integritaet, nicht Physik-Wahrheit**; der Physik-Befund ist ein FINDING.
+
+| Gate / Diagnostik | Wert |
+|---|---|
+| A: aligned `Upsilon_2(0) = 3/4 J` exakt | PASS |
+| max. kanonisches Rand-Leak | 1.6e-10 |
+| max. unbesetzte kanonische Masse in-Domaene | 1.9e-10 |
+| Validitaets-Domaene `T_max` (Walker-Spread < 0.04) | L24: 0.67, L32: 0.60, L48: 0.585 |
+
+Upsilon_2-Paar-Schaetzer (C-eliminiert, Mittel-Kurven), Einordnung **nur relativ zum Referenzband**:
+
+| Paar | T_BKT | belastbar? |
+|---|---:|---|
+| (24,32) | 0.5875 | ja — Crossing in beiden Validitaets-Domaenen |
+| (24,48) | 0.5898 | **nein** — NR-PHY042-02 |
+| (32,48) | 0.5916 | **nein** — NR-PHY042-02 |
+
+Ehrliche Grenzen:
+
+- **Kein neuer Bestwert / kein finaler T_BKT-Claim.** L=48 bleibt endlich; die Walker-Systematik misst nur den Sampler (g(E)-Bias), nicht den finite-size-Bias. Ein neuer Bestwert braucht Cross-Family-Review.
+- **NR-PHY042-02:** Die Paare (24,48) und (32,48) crossen ausserhalb der gemeinsamen Validitaets-Domaene und sind bei diesem Statistik-Budget nicht belastbar (Walker-Spread 0.033 bzw. 0.039 in T_BKT vs. 0.013 fuer das quotable Paar (24,32)).
+- **NR-PHY042-03:** Der Upsilon_4-Dip ist bei L in {32,48} nicht walker-robust (L=24 robust bei T=0.65; L=32/48 walker-abhaengig). Upsilon_4-FSS oberhalb L=24 braucht mehr Produktion.
 
 ## Methodische Kernformeln
 
@@ -87,12 +112,11 @@ archive/    Vorgaenger-Versionen
 SOURCES.md  Provenance / SHA-256
 ```
 
-## Naechste Stufe nach PR #18
+## Naechste Stufe nach PR #20
 
-1. PR #18 bleibt Draft, bis Doku-Drift-Gate und CI gruen sind.
-2. L=32/48 mit PHY041-Kernel laufen lassen.
-3. Upsilon_2- und Upsilon_4-FSS getrennt auswerten.
-4. Mehrere g(E)-Walker nur als Systematik-Check, nicht als Ersatz fuer L-FSS.
+1. Mehr Produktions-Statistik, damit die Crossings (24,48)/(32,48) in-Domaene und belastbar werden (NR-PHY042-02 aufloesen).
+2. Walker-robuster Upsilon_4-Dip fuer L>=32 (NR-PHY042-03 aufloesen), dann Dip-FSS Richtung T_BKT.
+3. Kein T_BKT-Bestwert-Claim ohne Cross-Family-Review.
 
 ---
 *Coworker Research / Coworkerz | Repo-Anlage 2026-06-04 nach arbeitsschablone_forschungs-repo-anlage*
