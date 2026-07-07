@@ -83,6 +83,52 @@
 | B077389971FF455F | 2026-07-06 | src | repo-native (PHY042 v01b HAERTUNG: Lauf-1-Negativ-Result (Y2 sampler-limitiert T>~0.60 bei L>=32) -> Walker-Mittel-Hauptanalyse, _validity_domain, _uncovered_mass-Gate, Paar-Quotierbarkeit ueber Walker-Kombos; supersedet 0C964B3567E039FD; KEINE Drive-Quelle) |
 | BD614CA66088D13B | 2026-07-06 | tests | repo-native (PHY042-Tests v01b: +Validitaets-Domaenen-Gate (zusammenhaengend ab unterem Rand) + Coverage-Massen-2-Bin-Boltzmann-Orakel; supersedet 50820093FC34DB50; KEINE Drive-Quelle) |
 
+## Integritaets-Audit 2026-07-07 — committed-Bytes-Nachtrag (append-only)
+
+Audit-Methode: SHA-256 ueber die exakt committeten Bytes am jeweiligen HEAD
+(Merge-Commit), 16-Zeichen-Anzeige-Praefix wie oben. Fuer Alt-Eintraege der
+Staging-Tabelle gelten CRLF/LF-Varianten als Match (Windows-Staging vs.
+Git-Checkout). Befund des Audits: 25 aktuell committete Dateien waren nicht
+byte-genau durch eine Zeile gedeckt — 11 davon durch spaetere PR-Modifikation
+nach korrektem Erst-Eintrag (Klasse `stand`), 14 ohne jemals passenden
+Byte-Match bzw. ganz ohne Eintrag (Klasse `korrektur`; Erst-Hashes wurden
+offenbar auf Staging-Staenden vor Review-Fixes berechnet). Die Alt-Zeilen
+bleiben unveraendert als Staging-Lineage stehen; die folgenden Zeilen pinnen
+den committeten Stand. Ab jetzt maschinell erzwungen durch
+`tests/test_sources_integrity.py` (schnelles CI-Gate): jede committete Datei
+unter `src/ tests/ spec/ results/ archive/` braucht eine byte-genau passende
+Zeile; bei Aenderung einer Datei wird hier eine neue Zeile angehaengt
+(append-only, letzte Zeile pro Pfad gewinnt).
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| 19A9CE3C799401DB | 2026-07-07 18:28 | results | repo-native: `results/260707 PHY042 honeycomb wl-fss L24-32-48 gate report.json` (Issue #21; SHA-256 voll: `19a9ce3c799401dbb55e519c09b390bee9dfbe23792f99b2e7c650c3eeefa3cf`, berechnet auf den committeten Bytes des Merge-Commits `856d35e0f9ca0cd649fef308fa7332cbde0f8b95` = PR-#20-Head `5443d849cc45a3f94f46558a4087bbf033f08288`; Git-Blob-SHA-1 als Zusatz-Locator: `41aeb90ed77b4bc03654208d378772c083791609`. Claim-Grenze: `overall_pass=True` = 9/9 Pipeline-Integritaets-Gates, KEIN finaler/thermodynamischer T_BKT-Claim; quotable nur Paar (24,32), NR-PHY042-02/03 bleiben bestehen) |
+| BC811AD3299EAB2D | 2026-07-03 | results | repo-native: `results/260702 PHY041 honeycomb wang-landau entropic helicity report.txt` (korrektur: Alt-Zeile BE7B703D270732F2 matchte nie die committeten Bytes) |
+| 0D6A92BA24A6C9F6 | 2026-06-04 | results | repo-native: `results/260602 PHY026 wolff report.txt` (stand: SUPERSEDED-Header vom Konventionswechsel per-Site angehaengt, PR #2; Erst-Eintrag 9DA595C33D1B870A = Drive-Stand) |
+| F1CE3D7A65C576E4 | 2026-06-12 | spec | repo-native: `spec/260612 PHI HEX hks tbkt extrapolation method v01.md` (korrektur: Alt-Zeile D650EC6A5A08AADC matchte nie die committeten Bytes) |
+| 14778405040BCBD9 | 2026-07-03 | spec | repo-native: `spec/260702 PHI HEX phy041 honeycomb entropic tbkt method v01.md` (korrektur: Alt-Zeile 386A9752D410E844 matchte nie die committeten Bytes) |
+| 647F5F280E5492AD | 2026-07-03 | spec | repo-native: `spec/260703 PHI HEX honeycomb reference conventions audit v01.md` (korrektur: hatte keinen Eintrag; Vertragsquelle seit PR #18) |
+| 902308D03FA17B47 | 2026-06-11 | src | repo-native: `src/260602 PHI HEX core v2 2 hardened.py` (stand: nach PR #6/#8 Vektorisierung + cliff_delta-Fix; Erst-Eintrag 43B2FDBAE7B5B2F2) |
+| D1C76F97E2C67A0C | 2026-06-19 | src | repo-native: `src/260602 PHY026 wolff cluster v01.py` (stand: nach PR #14 portable Imports; Erst-Eintrag 52C986DD1902A28F) |
+| C80D54576A5FC28C | 2026-06-19 | src | repo-native: `src/260602 PHY027 precision fss v01.py` (stand: nach PR #14 portable Imports; Erst-Eintrag C90447EDC7E22A31) |
+| 3D9E7790E27DA707 | 2026-06-19 | src | repo-native: `src/260602 PHY028 square validation v01.py` (stand: nach PR #14 portable Imports; Erst-Eintrag 0AD5B381DF189D6B) |
+| E1E9DBD9997770DF | 2026-06-19 | src | repo-native: `src/260602 PHY029 triangular sandvik v01.py` (stand: nach PR #14 portable Imports; Erst-Eintrag 01298D5B551BE783) |
+| 4FF5E1D3DE186AB6 | 2026-06-13 | src | repo-native: `src/260609 PHY033 kagome tbkt per-site v01.py` (korrektur: Alt-Zeile 34E2DBB28702618D matchte nie die committeten Bytes; enthaelt REF_KAGOME_CONFIDENCE seit PR #11) |
+| DDCBAD6B0836E940 | 2026-06-19 | src | repo-native: `src/260616 PHY039 fourth-order helicity modulus v01.py` (stand: nach PR #14 portable Imports; Erst-Eintraege 76E11AAF96595EA6/B5BC77D9F5166D0F) |
+| 3684729AF36C781F | 2026-06-19 | src | repo-native: `src/260616 PHY040 wang-landau entropic helicity v01.py` (stand: nach PR #14 portable Imports; Erst-Eintrag 1B36F10F747DBF6B) |
+| 82A4E955CC78E736 | 2026-06-07 | src | repo-native: `src/phy017 validation kernel v1 3 1.py` (stand: nach Code-Review-Haertung PR #4; Erst-Eintrag 3468FAA595DAEF59 = Drive-Stand) |
+| 6B8F6E35DDB31788 | 2026-06-07 | src | repo-native: `src/phy024/PHY024_R0_XY_PhiHex_Reference_v01.py` (stand: nach Code-Review-Haertung PR #4; Erst-Eintrag E62082D9A9D52ACF = Drive-Stand) |
+| A815E204DD76C194 | 2026-06-12 | tests | repo-native: `tests/conftest.py` (korrektur: hatte keinen byte-genauen Eintrag; Modul-Loader, mehrfach per PR erweitert) |
+| AEC818965BC7ABA7 | 2026-06-04 | tests | repo-native: `tests/test_cross_validation_core_phy028.py` (korrektur: hatte keinen Eintrag) |
+| 90B56DC0CF69CFB5 | 2026-06-19 | tests | repo-native: `tests/test_helicity_isotropy_t0.py` (korrektur: hatte keinen Eintrag; T=0-Isotropie-Orakel aus PR #15) |
+| 609ABE8A37963F12 | 2026-06-07 | tests | repo-native: `tests/test_helicity_per_site.py` (korrektur: hatte keinen byte-genauen Eintrag) |
+| 1B6EF3BA02106C6B | 2026-07-03 | tests | repo-native: `tests/test_honeycomb_reference_conventions.py` (korrektur: hatte keinen Eintrag; Referenzband-Gate aus PR #18) |
+| 27F8F23EFB06F667 | 2026-07-03 | tests | repo-native: `tests/test_phy041_doc_drift.py` (korrektur: hatte keinen Eintrag; Doku-Drift-Gate aus PR #18) |
+| 748CE6BD9D1BF99D | 2026-06-07 | tests | repo-native: `tests/test_tbkt_honeycomb.py` (stand: nach PHY032-PR #5; Erst-Eintrag 3FC5DB6EF124D21E) |
+| 6F2F10E3A0E2FBDC | 2026-06-09 | tests | repo-native: `tests/test_tbkt_kagome.py` (korrektur: Alt-Zeile 401D99A49ABAB6ED matchte nie die committeten Bytes) |
+| 92A54B6416809F98 | 2026-06-04 | tests | repo-native: `tests/test_tbkt_triangular.py` (korrektur: hatte keinen byte-genau passenden Eintrag) |
+| 3794252FE709E961 | 2026-07-07 | tests | repo-native: `tests/test_sources_integrity.py` (NEU: SHA-First-Integritaets-Gate, erzwingt byte-genaue SOURCES.md-Deckung + PHY042-Voll-SHA-Pin; Issue #21; KEINE Drive-Quelle) |
+
 ## Referenz-Konfidenz (append-only)
 
 | Referenz | Wert | Quelle(n) | Konfidenz | Notiz |
