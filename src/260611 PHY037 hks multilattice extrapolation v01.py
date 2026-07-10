@@ -113,7 +113,14 @@ def bare_largest_pair(pairs):
 
 
 def _closest_ref_dev(value, refs):
-    """Naechste Referenz + relative Abweichung in %."""
+    """Naechste Referenz + relative Abweichung in %.
+
+    None-sicher (Code-Audit M3, 2026-07-10): value=None (Extrapolation ohne
+    Nulldurchgang) liefert (None, None) statt TypeError - so wird das Gate
+    PASS_ALL_EXTRAPOLATIONS_FINITE als FAIL berichtet statt zu crashen.
+    """
+    if value is None:
+        return None, None
     ref = min(refs, key=lambda r: abs(value - r))
     return ref, (value - ref) / ref * 100.0
 
@@ -128,8 +135,10 @@ def analyse_lattice(name):
     ref_e, dev_e = _closest_ref_dev(primary, refs)
     ref_b, dev_b = _closest_ref_dev(bval, refs)
     # "sauber" = Extrapolation naeher an ref als das blanke groesste Paar
-    # UND innerhalb 1% einer Referenz.
-    clean = abs(dev_e) < 1.0 and abs(dev_e) <= abs(dev_b) + 1e-9
+    # UND innerhalb 1% einer Referenz. None-sicher: ohne endliche
+    # Extrapolation/Referenzabweichung ist das Verdikt nicht "sauber".
+    clean = (dev_e is not None and dev_b is not None
+             and abs(dev_e) < 1.0 and abs(dev_e) <= abs(dev_b) + 1e-9)
     return {
         "pairs": pairs, "refs": refs, "primary": primary, "band": band,
         "bare_key": bkey, "bare_val": bval,
@@ -156,7 +165,10 @@ def run_phy037():
         "PASS_ALL_EXTRAPOLATIONS_FINITE": all(
             res[n]["primary"] is not None for n in LATTICES),
         # Robuster Positiv-Befund: kagome konvergiert sauber zur Referenz.
-        "PASS_KAGOME_CONVERGES_TO_REF": abs(res["kagome"]["dev_extrap"]) < 1.0,
+        # None-sicher (Code-Audit M3): fehlende Extrapolation -> FAIL.
+        "PASS_KAGOME_CONVERGES_TO_REF": (
+            res["kagome"]["dev_extrap"] is not None
+            and abs(res["kagome"]["dev_extrap"]) < 1.0),
     }
     overall = all(gates.values())
     return {"res": res, "gates": gates, "overall": overall}
@@ -177,13 +189,20 @@ def write_report(rep, path):
     hdr = (f"  {'Gitter':11} {'Extrap':>8} {'Abw':>8} {'bestes Paar':>12} "
            f"{'Abw':>8} {'Systematik-Band':>20} {'Verdikt':>10}")
     L.append(hdr)
+    def f4(x, width=8):
+        # None-sicher (Code-Audit M3): FAIL-Report statt TypeError.
+        return f"{x:{width}.4f}" if x is not None else f"{'None':>{width}}"
+
+    def fpct(x, width=7):
+        return f"{x:+{width}.2f}%" if x is not None else f"{'n/a':>{width}} "
+
     for name in ("honeycomb", "kagome", "triangular"):
         r = res[name]
         blo, bhi = r["band"]
         band = f"[{blo:.4f},{bhi:.4f}]" if blo is not None else "[n/a]"
         verdikt = "SAUBER" if r["clean"] else "UEBERSCHIESST"
-        L.append(f"  {name:11} {r['primary']:8.4f} {r['dev_extrap']:+7.2f}% "
-                 f"{r['bare_val']:12.4f} {r['dev_bare']:+7.2f}% "
+        L.append(f"  {name:11} {f4(r['primary'])} {fpct(r['dev_extrap'])} "
+                 f"{f4(r['bare_val'], 12)} {fpct(r['dev_bare'])} "
                  f"{band:>20} {verdikt:>10}")
     L.append("")
     for name in ("honeycomb", "kagome", "triangular"):
@@ -193,9 +212,9 @@ def write_report(rep, path):
                 r["pairs"].items(),
                 key=lambda kv: char_size(kv[0][0], kv[0][1], "geom")):
             lc = char_size(l1, l2, "geom")
-            L.append(f"  Paar({l1},{l2}) = {t:.4f}  [Lc(geom)={lc:.2f}]")
-        L.append(f"  -> L->inf (p=2,geom) = {r['primary']:.4f}  "
-                 f"({r['dev_extrap']:+.2f}% vs {r['ref_extrap']})")
+            L.append(f"  Paar({l1},{l2}) = {f4(t, 0)}  [Lc(geom)={lc:.2f}]")
+        L.append(f"  -> L->inf (p=2,geom) = {f4(r['primary'], 0)}  "
+                 f"({fpct(r['dev_extrap'], 0)} vs {r['ref_extrap']})")
         L.append("")
     L.append("--- BEFUND (ehrliche Methoden-Bilanz) ---")
     L.append("  kagome:    Paare fallen monoton -> Extrap ~ref. SAUBER.")
@@ -228,8 +247,9 @@ def main() -> int:
     print(f"PHY037 Report -> {out}")
     for name in ("honeycomb", "kagome", "triangular"):
         r = rep["res"][name]
-        print(f"  {name:11} extrap={r['primary']:.4f} "
-              f"({r['dev_extrap']:+.2f}%)  "
+        ex = "None" if r["primary"] is None else f"{r['primary']:.4f}"
+        dv = "n/a" if r["dev_extrap"] is None else f"{r['dev_extrap']:+.2f}%"
+        print(f"  {name:11} extrap={ex} ({dv})  "
               f"{'SAUBER' if r['clean'] else 'UEBERSCHIESST'}")
     print(f"  OVERALL: {'PASS' if rep['overall'] else 'FAIL'}")
     return 0 if rep["overall"] else 1

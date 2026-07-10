@@ -84,10 +84,14 @@ def test_reference_band_matches_conventions_audit_spec():
             ).read_text(encoding="utf-8")
     band = phy042.REF_BAND
     assert band["multi_lattice"] == 0.573 and "0.573" in spec
+    # Haertung 2026-07-10 (Code-Audit): exakte Token statt rstrip("0")-
+    # Degradierung ("0.5800" -> "0.58" haette fast alles gematcht). Wert UND
+    # Unsicherheit muessen zeichengenau in der Vertragsquelle stehen.
     for key, (val, sig) in ((k, v) for k, v in band.items()
                             if isinstance(v, tuple)):
-        assert f"{val:.4f}".rstrip("0") in spec or f"{val}" in spec, key
-    # beta-Konversions-Kanaele explizit
+        assert f"{val:.4f}" in spec or f"{val:.3f}" in spec, key
+        assert f"{sig:g}" in spec, (key, sig)
+    # beta-Konversions-Kanaele explizit (exakte 4-Dezimal-Token)
     for tok in ("0.5928", "0.6116", "0.5800"):
         assert tok in spec
 

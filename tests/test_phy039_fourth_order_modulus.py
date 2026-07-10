@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import math
 import numpy as np
-import pytest
 
 import conftest
 
@@ -86,7 +85,8 @@ def test_dip_minimum_parabolic_vertex():
     assert tmin2 is None
 
 
-@pytest.mark.slow
+# De-slow 2026-07-10 (Code-Audit 1.3): gemessen <3.5s - gehoert als
+# fails-before-Gate in die schnelle CI-Suite, nicht hinter -m slow.
 def test_square_y2_recovers_reference_signal():
     """Langsam: ein einzelner (L=16) Messpunkt - Upsilon_2 nahe der NK-Geraden
     am Goldstandard, und N*Upsilon_4 ist negativ (Dip-Vorzeichen)."""

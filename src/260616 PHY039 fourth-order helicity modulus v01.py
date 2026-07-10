@@ -270,6 +270,14 @@ def measure_square_y2y4(L: int, T: float, n_seeds: int = 12,
     cfg = XYConfig(J=1.0, T=T)
     y2s, y4s = [], []
     for sd in range(n_seeds):
+        # DOKUMENTIERTE STREAM-KOLLISION (Code-Audit L1, 2026-07-10): die
+        # 300er-Basis kollidiert mit PHY028 (gleiches master_seed=42, gleiche
+        # square-Familie, ueberlappende L in {8,16}). Heute trennen NUR die
+        # disjunkten T-Gitter (hier 0.86-0.92 vs 0.85-0.95 in PHY028) die
+        # Markov-Ketten. Beim Verfeinern der temps hier ZUERST die Basis auf
+        # einen ungebuchten Bereich (z.B. 800+) heben - der Stream-Vertrag
+        # ist in PHY041/PHY042 inventarisiert. Nicht still geaendert, weil
+        # der committete PHY039-Report bit-reproduzierbar bleiben muss.
         rng = make_rng(master_seed, stream=300 + sd + 1000 * L)
         th = rng.uniform(0, 2 * math.pi, n)
         for _ in range(n_burn):

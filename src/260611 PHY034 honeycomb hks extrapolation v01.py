@@ -153,11 +153,18 @@ def ols_intercept(xs, ys):
     return intercept, slope
 
 
-def extrapolate_pairs(pair_estimates, power: int, size_mode: str) -> float:
-    """L->inf-Intercept der Paar-Schaetzer in u = 1/(ln Lc)^power."""
+def extrapolate_pairs(pair_estimates, power: int, size_mode: str):
+    """L->inf-Intercept der Paar-Schaetzer in u = 1/(ln Lc)^power.
+
+    None-sicher (Code-Audit M3, 2026-07-10): liefert None, wenn ein
+    Paar-Schaetzer None ist (kein Nulldurchgang) - der FAIL-Pfad muss einen
+    Gate-Report schreiben koennen statt mit TypeError zu crashen.
+    """
     xs, ys = [], []
     for (l1, l2) in DOUBLING_PAIRS:
         t = pair_estimates[(l1, l2)]
+        if t is None:
+            return None
         xs.append(log_variable(char_size(l1, l2, size_mode), power))
         ys.append(t)
     intercept, _ = ols_intercept(xs, ys)
@@ -174,6 +181,8 @@ def extrapolation_ci(pair_estimates, power: int = 2, size_mode: str = "geom",
     das ehrlich sichtbar (deterministisch, fixer Seed). Rueckgabe:
     (median, lo, hi, std).
     """
+    if any(pair_estimates.get(k) is None for k in DOUBLING_PAIRS):
+        return None, None, None, None  # None-sicher (Code-Audit M3)
     rng = np.random.default_rng(seed)
     sig = {k: PHY032_PAIR_BOOTSTD[k] for k in DOUBLING_PAIRS}
     draws = np.empty(n_mc)
@@ -199,7 +208,9 @@ def hks_systematic_band(pair_estimates):
         for p in (1, 2, 3):
             grid[(mode, p)] = extrapolate_pairs(pair_estimates, p, mode)
     primary = grid[("geom", 2)]
-    vals = list(grid.values())
+    vals = [v for v in grid.values() if v is not None]
+    if not vals:
+        return None, None, None, grid  # None-sicher (Code-Audit M3)
     return primary, min(vals), max(vals), grid
 
 
@@ -246,23 +257,27 @@ def run_phy034():
         repro_ok = repro_ok and ok
         repro_detail[k] = (got, expect, ok)
 
+    all_pairs_finite = all(pairs.get(k) is not None for k in DOUBLING_PAIRS)
+
     primary, band_lo, band_hi, grid = hks_systematic_band(pairs)
 
     # Statistische CI (MC-Propagation der per-Paar Seed-Bootstrap-Streuung).
+    # EHRLICHKEITS-HINWEIS (Code-Audit M4, 2026-07-10): die CI behandelt die
+    # beiden Paar-Schaetzer als unabhaengig, obwohl (12,24) und (24,48) die
+    # L=24-Daten teilen - sie ist damit approximativ. Die korrekte gemeinsame
+    # Seed-Bootstrap-Propagation macht PHY035 (dichte Leiter).
     ci_med, ci_lo, ci_hi, ci_std = extrapolation_ci(pairs)
 
     ref_lo, ref_hi = REF_HONEYCOMB_MULTI, REF_HONEYCOMB_DEDICATED
 
-    # Gate 2: Primaer-Extrapolation reduziert den Offset zur Referenz.
+    # Gates 2-4: None-sicher (fails-closed statt TypeError, Code-Audit M3).
     offset_bare = abs(BARE_LARGEST_PAIR - REF_MID)
-    offset_extrap = abs(primary - REF_MID)
-    reduces = offset_extrap < offset_bare
-
-    # Gate 3: Systematik-Band ueberlappt das Referenz-Intervall.
-    brackets = (band_lo <= ref_hi) and (band_hi >= ref_lo)
-
-    # Gate 4: Statistische CI deckt das Referenz-Intervall (Konsistenz).
-    ci_covers = (ci_lo <= ref_hi) and (ci_hi >= ref_lo)
+    reduces = (primary is not None
+               and abs(primary - REF_MID) < offset_bare)
+    brackets = (band_lo is not None and band_hi is not None
+                and (band_lo <= ref_hi) and (band_hi >= ref_lo))
+    ci_covers = (ci_lo is not None and ci_hi is not None
+                 and (ci_lo <= ref_hi) and (ci_hi >= ref_lo))
 
     # Gate 5: Synthetisches Orakel rekonstruiert bekannten Limes (rein quadr.).
     oracle = oracle_recovers_t_star()
@@ -270,6 +285,7 @@ def run_phy034():
 
     gates = {
         "PASS_PAIRS_REPRODUCE_PHY032": repro_ok,
+        "PASS_ALL_PAIRS_FINITE": all_pairs_finite,
         "PASS_EXTRAP_REDUCES_OFFSET": reduces,
         "PASS_BAND_BRACKETS_REFERENCE": brackets,
         "PASS_STAT_CI_COVERS_REFERENCE": ci_covers,
@@ -290,8 +306,15 @@ def run_phy034():
     }
 
 
-def _pct(x: float, ref: float) -> str:
+def _pct(x, ref: float) -> str:
+    if x is None:
+        return "n/a"
     return f"{(x - ref) / ref * 100:+.2f}%"
+
+
+def _fmt4(x) -> str:
+    """None-sichere 4-Nachkommastellen-Formatierung (Code-Audit M3)."""
+    return "None" if x is None else f"{x:.4f}"
 
 
 def write_report(rep: dict, path: Path) -> None:
@@ -322,19 +345,21 @@ def write_report(rep: dict, path: Path) -> None:
     L.append("  Variation (charakt. Groesse Lc x Potenz p), Intercept u->0:")
     L.append(f"  {'Lc-Modus':10} {'p=1':>9} {'p=2':>9} {'p=3':>9}")
     for mode in ("small", "geom", "large"):
-        row = [f"{rep['grid'][(mode, p)]:.4f}" for p in (1, 2, 3)]
+        row = [_fmt4(rep['grid'][(mode, p)]) for p in (1, 2, 3)]
         L.append(f"  {mode:10} {row[0]:>9} {row[1]:>9} {row[2]:>9}")
     pr = rep["primary"]
     lo, hi = rep["band"]
     L.append("")
-    L.append(f"  PRIMAER (HKS-Standard p=2, Lc=geom) = {pr:.4f}  "
+    L.append(f"  PRIMAER (HKS-Standard p=2, Lc=geom) = {_fmt4(pr)}  "
              f"vs {REF_HONEYCOMB_MULTI}: {_pct(pr, REF_HONEYCOMB_MULTI)}  "
              f"vs {REF_HONEYCOMB_DEDICATED}: {_pct(pr, REF_HONEYCOMB_DEDICATED)}")
-    L.append(f"  Systematik-Band (alle 9 Varianten) = [{lo:.4f}, {hi:.4f}]")
+    L.append(f"  Systematik-Band (alle 9 Varianten) = [{_fmt4(lo)}, {_fmt4(hi)}]")
     cm, clo, chi, cstd = rep["ci"]
     L.append("  Statistische 95%-CI (MC-Propagation der per-Paar")
-    L.append(f"    Seed-Bootstrap-Streuung)          = [{clo:.4f}, {chi:.4f}] "
-             f"(std {cstd:.4f}; Hebel verstaerkt Paar-Fehler ~3x)")
+    L.append(f"    Seed-Bootstrap-Streuung)          = [{_fmt4(clo)}, {_fmt4(chi)}] "
+             f"(std {_fmt4(cstd)}; Hebel verstaerkt Paar-Fehler ~3x;")
+    L.append("    approximativ: Paare teilen L=24-Daten, als unabhaengig")
+    L.append("    propagiert - korrekte gemeinsame Propagation in PHY035)")
     L.append(f"  Roh-Paar groesstes L (24,48)        = {BARE_LARGEST_PAIR:.4f} "
              f" {_pct(BARE_LARGEST_PAIR, REF_HONEYCOMB_MULTI)} / "
              f"{_pct(BARE_LARGEST_PAIR, REF_HONEYCOMB_DEDICATED)}")
@@ -373,8 +398,8 @@ def main() -> int:
            / "260611 PHY034 honeycomb hks extrapolation report.txt")
     write_report(rep, out)
     print(f"PHY034 Report -> {out}")
-    print(f"  PRIMAER (HKS p=2, geom) = {rep['primary']:.4f}  "
-          f"Band {rep['band'][0]:.4f}..{rep['band'][1]:.4f}")
+    print(f"  PRIMAER (HKS p=2, geom) = {_fmt4(rep['primary'])}  "
+          f"Band {_fmt4(rep['band'][0])}..{_fmt4(rep['band'][1])}")
     print(f"  OVERALL: {'PASS' if rep['overall'] else 'FAIL'}")
     return 0 if rep["overall"] else 1
 

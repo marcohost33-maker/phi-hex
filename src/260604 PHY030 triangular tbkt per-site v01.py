@@ -81,7 +81,9 @@ def sandvik_pair_tbkt(data_L, data_2L):
         u1, u2 = data_L[T].upsilon_mean, data_2L[T].upsilon_mean
         R1 = math.pi * u1 / (2 * T) - 1.0
         R2 = math.pi * u2 / (2 * T) - 1.0
-        if abs(R1) > 1e-6 and abs(R2) > 1e-6:
+        # P1-Fix 2026-07-10 (Code-Audit M1): physikalischer WM-Ast verlangt
+        # R > 0 (1/R = 2 ln L + C > 0); R <= 0 waere ein Pol-Artefakt.
+        if R1 > 1e-6 and R2 > 1e-6:
             diffs.append((T, (1.0 / R1 - 1.0 / R2) - (-2.0 * ln2)))
     for i in range(len(diffs) - 1):
         (t0, d0), (t1, d1) = diffs[i], diffs[i + 1]

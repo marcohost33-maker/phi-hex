@@ -16,3 +16,17 @@ coworker-dde (byte-identisch verifiziert 2026-06-04, Equalita-Audit 4/4 PASS).
 ## Konsequenzen
 + Ein Ort pro Thema, nachvollziehbare Lineage, CI-Schutz.
 - Engine-Doppelhaltung mit coworker-dde -> Sync-Disziplin noetig (AGENTS.md §Project).
+
+## Nachtrag 2026-07-10 (Code-Audit; Historie oben unveraendert)
+
+Zwei Aussagen dieses ADR sind ueberholt und werden hier datiert korrigiert
+(nicht umgeschrieben - Lineage-Konvention):
+
+1. **dde-Doppelhaltung:** AGENTS.md §Project sagt inzwischen ausdruecklich
+   "KEINE dde-Doppelhaltung" fuer phi-hex (Quelle ist Drive `0Phi Hex` +
+   `Universe 2.0\Hqstphi Hex`). Die im Konsequenzen-Punkt genannte
+   Sync-Disziplin mit coworker-dde entfaellt damit fuer dieses Repo.
+2. **"CI = Syntax-Gate":** Die CI ist seit den PRs #6/#15/#22 ein
+   mehrstufiges Gate (ruff-Lint blockierend, compileall, pytest-Matrix
+   3.10-3.13 mit Korrektheits-/Integritaets-Gates inkl. SHA-First-Gate
+   `tests/test_sources_integrity.py`).

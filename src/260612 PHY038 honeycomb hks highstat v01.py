@@ -94,7 +94,8 @@ def run_phy038(n_seeds=N_SEEDS, n_measure=N_MEASURE, n_burn=N_BURN,
     ci_ok = boot["ci_lower"] is not None
     # Hat hoehere Statistik das (32,64)-CI ggue. PHY036 verengt?
     pb = pair_boot[(32, 64)]
-    width_38 = (pb["ci_upper"] - pb["ci_lower"]) if pb["ci_lower"] else None
+    width_38 = ((pb["ci_upper"] - pb["ci_lower"])
+                if pb["ci_lower"] is not None else None)
 
     gates = {
         "PASS_ALIGNED_EXACT_THREE_QUARTERS": gate_a,
@@ -118,7 +119,15 @@ def run_phy038(n_seeds=N_SEEDS, n_measure=N_MEASURE, n_burn=N_BURN,
 
 
 def _pct(x, ref):
+    if x is None:
+        return "n/a"
     return f"{(x - ref) / ref * 100:+.2f}%"
+
+
+def _fmt4(x):
+    """None-sichere Formatierung (Code-Audit M3, 2026-07-10): der FAIL-Pfad
+    muss einen Report schreiben koennen statt mit TypeError zu crashen."""
+    return "None" if x is None else f"{x:.4f}"
 
 
 def write_report(rep, path):
@@ -154,7 +163,7 @@ def write_report(rep, path):
     ex = rep["extrap"]
     b = rep["boot"]
     L.append("--- HKS-L->inf-Extrapolation (3 Punkte, u=1/(lnLc)^2) ---")
-    L.append(f"  T_BKT(L->inf) = {ex:.4f}  {_pct(ex, REF_MULTI)}/"
+    L.append(f"  T_BKT(L->inf) = {_fmt4(ex)}  {_pct(ex, REF_MULTI)}/"
              f"{_pct(ex, REF_DEDICATED)}")
     if b["ci_lower"] is not None:
         L.append(f"    Seed-Bootstrap: CI[{b['ci_lower']:.4f},{b['ci_upper']:.4f}]"
@@ -194,7 +203,7 @@ def main() -> int:
     b = rep["boot"]
     ci = (f"CI[{b['ci_lower']:.4f},{b['ci_upper']:.4f}]"
           if b["ci_lower"] is not None else "CI[n/a]")
-    print(f"  T_BKT(L->inf) = {rep['extrap']:.4f}  {ci}  "
+    print(f"  T_BKT(L->inf) = {_fmt4(rep['extrap'])}  {ci}  "
           f"(PHY036 war {PHY036_EXTRAP})")
     print(f"  Laufzeit {rep['elapsed_s']:.1f}s  "
           f"OVERALL: {'PASS' if rep['overall'] else 'FAIL'}")

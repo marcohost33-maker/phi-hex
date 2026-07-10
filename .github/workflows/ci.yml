@@ -25,7 +25,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install ruff
       - name: ruff check
-        run: ruff check src   # Lint-Baseline gesetzt (ruff.toml) -> blockierend
+        # Lint-Baseline gesetzt (ruff.toml) -> blockierend. Seit 2026-07-10
+        # auch tests/ (die Gate-Schicht selbst war vorher ungelintet).
+        run: ruff check src tests
 
   test:
     name: test (py${{ matrix.python-version }})
@@ -33,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false  # alle Versionen melden, nicht beim ersten Fehler abbrechen
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:

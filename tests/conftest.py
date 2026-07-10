@@ -37,6 +37,16 @@ _MODULE_FILES = {
         "260611 PHY037 hks multilattice extrapolation v01.py",
     "phy038_hks_highstat":
         "260612 PHY038 honeycomb hks highstat v01.py",
+    # Coverage-Schliessung 2026-07-10 (Code-Audit): diese fuenf Module hatten
+    # bis dahin KEIN Test-Gate (nur compile+lint). Import + Orakel-Smokes in
+    # tests/test_module_smoke_gates.py.
+    "phy017_validation_kernel": "phy017 validation kernel v1 3 1.py",
+    "phy027_precision_fss": "260602 PHY027 precision fss v01.py",
+    "phy029_triangular_sandvik": "260602 PHY029 triangular sandvik v01.py",
+    "phy024_r0_reference": str(Path("phy024")
+                               / "PHY024_R0_XY_PhiHex_Reference_v01.py"),
+    "phy024_r2_honeycomb": str(Path("phy024")
+                               / "PHY024_R2_PeriodicHoneycomb_XY_PhiHex_v01.py"),
 }
 
 
@@ -48,7 +58,14 @@ def _load(name: str, filename: str):
     mod = importlib.util.module_from_spec(spec)
     # VOR exec registrieren (dataclass-Resolver + interne Imports brauchen das).
     sys.modules[name] = mod
-    spec.loader.exec_module(mod)
+    try:
+        spec.loader.exec_module(mod)
+    except BaseException:
+        # Haertung 2026-07-10 (Code-Audit): halb-initialisiertes Modul nicht
+        # in sys.modules zuruecklassen - ein Retry bekaeme sonst still das
+        # kaputte Modul statt eines erneuten Fehlers.
+        sys.modules.pop(name, None)
+        raise
     return mod
 
 

@@ -3,6 +3,87 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-07-10] Code-Audit: P0-Geometrie-Fix square + Pol-Guards + Gate-/Test-/Infra-Haertung
+
+Drei unabhaengige Review-Passes ueber den ganzen Stack; jeder Befund vor dem
+Fix verifiziert. Vertragsquelle: `spec/260710 PHI HEX code audit v01.md`.
+
+### Fixed (Physik-relevant)
+- **P0/H1 — PHY028 `build_square_lattice`:** (min,max)-Kantensortierung
+  invertierte fuer die 2L Wrap-Bonds das Vorzeichen von `edge_disp`;
+  `sin_accum` war systematisch falsch (Upsilon ~25% zu tief; L=16/T=0.90:
+  0.486 statt 0.646). Betroffen per Import auch PHY039 + PHY040. Alle drei
+  deterministisch (seed=42) neu gerechnet:
+  - PHY028: Paare (8,16)=0.8867 (-0.76%), (16,32)=0.8841 (-1.05%) — das
+    fruehere "+0.16%" war ein Zufallstreffer des Bug-Codes; 1%-Gate jetzt
+    ehrlich knapp FAIL, V&V-Anker auf "~1% bei L<=32" herabgestuft (Gate
+    NICHT aufgeweicht). Alter Report mit SUPERSEDED-Header als Lineage.
+  - PHY039: Y4-Dip liegt auf den korrigierten Kurven AUSSERHALB des
+    T-Fensters [0.85,0.95] (alle L am Gitterrand) — Dip-Gates ehrlich FAIL;
+    die fruehere Dip-Lage 0.9316 ist als Bug-Artefakt zurueckgezogen.
+  - PHY040: WL-Kurven/Paar-Werte auf korrigierter Geometrie neu; zusaetzlich
+    Ehrlichkeits-Korrektur: die 1/t-Phase (B&P) war mit den committeten
+    Parametern TOTER CODE (Umschaltbedingung nie wahr) — Method-String
+    korrigiert, `one_over_t_engaged`-Instrumentierung; Sampler unveraendert
+    (echte B&P-Phase bleibt PHY041).
+  Kern-Torus (0/243 Bonds), honeycomb-/kagome-Builder: verifiziert NICHT
+  betroffen. Gate: `tests/test_phy028_square_geometry.py` (Uniform-Twist-
+  Orakel + min-image-Konsistenz).
+- **P1/M1 — Pol-Artefakt in allen C-freien Paar-Root-Findern** (PHY028/029/
+  030v01/030v02/031/040; via Import PHY032-035/041/042): der Pol von 1/R am
+  finite-L-NK-Crossing wurde als Nulldurchgang interpoliert (verifiziert:
+  Szenario ohne WM-Wurzel lieferte T_BKT=1.449). Jetzt R>0-Guard
+  (physikalischer WM-Ast); Pol-Rejektions-Orakel als CI-Gates.
+- **P1/H2 — PHY041 Coverage-Luecke:** kanonische Masse auf produktions-
+  unbesetzten Bins war ungegatet (maskierte Renormierung haette still
+  verfaelscht) — `uncovered_canonical_mass` + Gate (Backport PHY042).
+
+### Fixed (Robustheit/Gates)
+- PHY034-038: None-Paar-Schaetzer crashten VOR dem Gate-Report (TypeError
+  statt FAIL-Evidenz) — None-sichere Reports, FAIL-Pfad schreibt Evidenz.
+- PHY041/042: PHY032-Drift-Guard und Wolff-Y2-Gate konnten vacuous passen
+  (leerer Parse / leere Validitaets-Domaene) — Parse-Vertrag + Domaenen-
+  Praesenz-Pflicht. PHY042: n_walkers=1-Crash gefixt; Paar-Print nutzt
+  PHY041_PAIRS-Konstante. PHY040/041: Anneal-/WL-Schleifen-Caps (lautes
+  Scheitern statt Endlos-Haengen).
+- PHY026: vacuous `PASS_CLUSTER_NONTRIVIAL` -> 0.05<frac<0.95; PHY028/031:
+  fails-open-Paar-Gates -> fails-closed + an groesstes Paar gebunden;
+  PHY030v02: Residuen konsistent bei T_min + `C_at_bound`-Diagnose.
+- RNG-Dokumentation: 300+-Stream-Kollision PHY028/PHY039 inventarisiert
+  (Code-Kommentare; Streams unveraendert = Bit-Repro der Reports erhalten).
+
+### Added (Tests: 113 -> 139 fast)
+- `tests/test_phy028_square_geometry.py` (H1-+M1-Regressions-Orakel),
+  `tests/test_module_smoke_gates.py` (phy017/PHY027/PHY029/phy024 R0+R2 —
+  vorher NULL Coverage), Coverage-Massen- + Parse-Vertrags-Gates fuer
+  PHY041. Tests 139/139 fast + 4/4 slow PASS (verified 2026-07-10).
+- 6 Sub-4s-Tests von `slow` in die CI-Suite geholt (u.a. der RNG-Stream-
+  Bit-Vertrag PHY031/032 — lief vorher NIE in CI).
+- Zahnlose Tests geschaerft: Referenzkonventions-Gate prueft jetzt
+  Produktions-Konstanten (REF_BAND/REF_MULTI/REF_DEDIC); Edge-Rejektions-
+  Gate erzwingt None bei Rand-argmin; REF_BAND-Token-Check exakt.
+
+### Changed (Provenance/Infra)
+- `tests/test_sources_integrity.py` gehaertet: pfadgebundenes Matching
+  (Ziel-Spalte), CRLF-Varianten NUR fuer Windows-Staging-Zeilen,
+  Scope-Escape-Gate fuer .py, `docs/` im Scope. Aufgedeckte Altlasten
+  (4 repo-native results-Zeilen mit CRLF-Staging-Hashes; phy024-R0-Zeile
+  mit Ziel `src` statt `src/phy024`) per Korrektur-Zeilen gepinnt
+  (append-only).
+- CI: ruff lintet jetzt auch `tests/`; Python-Matrix + 3.13. Dependabot:
+  pip-Ecosystem ergaenzt (requirements-dev.txt war unueberwacht).
+- ADR-001: datierter Nachtrag (dde-Doppelhaltung entfaellt laut AGENTS.md;
+  "CI = Syntax-Gate" ueberholt). README: Mess-Stand square re-baselined,
+  PHY042-Repro-Kommando, Naechste-Stufe-Punkte 4-6 (Audit O1/O4).
+
+### Offen (bewusst NICHT still gefixt — Audit §2)
+- O1: Konventionsfrage per-Site-Upsilon vs NK-Gerade auf nicht-quadratischen
+  Gittern (triangular-Faktor 0.866) — Quercheck vor jedem neuen Claim.
+- O2: T-Scans teilen RNG-Stream je (L,Seed) (Common-Random-Numbers,
+  dokumentiert); O3: 300+-Basis doppelt gebucht; O4: Re-Runs PHY030v02/
+  032/033 mit Pol-Guard; O5: PHY025-Generator nur in Drive-Lineage;
+  O6: PHY034-CI approximativ (im Report ausgewiesen).
+
 ## [2026-07-07] Provenance-Reparatur: SOURCES.md-Integritaets-Audit + CI-Gate (Issue #21)
 
 Reine Provenance-Reparatur, keine Ergebnis-Aenderung: der PHY042-Befund

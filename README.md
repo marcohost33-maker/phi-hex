@@ -2,7 +2,7 @@
 
 > **Status:** Forschungs-Repo (privat) | XY/BKT-Physik auf Dreiecks-, Honeycomb- und Kagome-Gittern.  
 > **Lizenz:** Apache-2.0 | **Lineage/Provenance:** siehe `SOURCES.md`.  
-> **Aktueller Review-Stand:** PHY042/PR #20 (Voll-Lauf L=24/32/48) ist ein Pipeline-Finding, **kein neuer T_BKT-Bestwert** (interne Gates PASS; Grenzen NR-PHY042-02/03).
+> **Aktueller Review-Stand:** Code-Audit 2026-07-10 (`spec/260710 PHI HEX code audit v01.md`): P0-Geometrie-Fix im Quadratgitter (PHY028/039/040 neu gerechnet, V&V-Anker ehrlich auf ~1% herabgestuft), Pol-Guards in allen Paar-Schaetzern, Gate-/Test-Haertung. Davor: PHY042/PR #20 (Voll-Lauf L=24/32/48) als Pipeline-Finding, **kein neuer T_BKT-Bestwert** (Grenzen NR-PHY042-02/03).
 
 Phi-Hex untersucht das 2D-XY-Modell und BKT-Physik auf periodischen Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Wang-Landau-DOS und Finite-Size-Scaling.
 
@@ -35,10 +35,19 @@ Konversion: `T = 1 / beta`, `sigma_T = sigma_beta / beta^2`.
 
 | Gitter | aktueller interner Stand | externe Einordnung | Methode |
 |---|---:|---|---|
-| square | 0.893 | Goldstandard/Referenzanker | Sandvik-Paar / V&V |
+| square | 0.8841 (Paar (16,32), -1.05% vs 0.8935) | V&V-Anker ~1% (nach edge_disp-Fix 2026-07-10; das fruehere +0.16% war Bug-Artefakt) | Sandvik-Paar / V&V, PHY028 |
 | triangular | 1.4007 +/- 0.0081 | nahe 1.418 | Wolff + Weber-Minnhagen |
 | honeycomb | 0.5917 CI[0.587,0.598] fuer Paar (24,48) | oberhalb der unteren Honeycomb-Anker, finite-size-sensitiv | Wolff + Sandvik-Paar / PHY032 |
 | kagome | 0.8479 CI[0.8414,0.8507] | nahe rough estimate 0.825 | Wolff + WM-Fit / PHY033 |
+
+**Audit-Hinweis 2026-07-10 (square-Familie):** Der Wrap-Bond-Vorzeichen-Bug
+in `build_square_lattice` (PHY028, per Import auch PHY039/PHY040) hat
+Upsilon auf dem Quadratgitter systematisch unterschaetzt; alle drei Module
+wurden deterministisch (seed=42) neu gerechnet. Der PHY039-Y4-Dip liegt auf
+den korrigierten Kurven AUSSERHALB des T-Fensters [0.85,0.95] (Dip-Gates
+ehrlich FAIL; Fenster-Erweiterung = naechste Stufe). triangular/honeycomb/
+kagome-Gitter waren nicht betroffen (Builder verifiziert). Details:
+`spec/260710 PHI HEX code audit v01.md`.
 
 PHY041 liefert fuer honeycomb mit Wang-Landau/1-t bei L<=24 die glatten Paarwerte:
 
@@ -97,6 +106,7 @@ pytest
 python "src/260607 PHY032 honeycomb wm-logfit bootstrap v01.py"
 python "src/260616 PHY040 wang-landau entropic helicity v01.py"
 python "src/260702 PHY041 honeycomb wang-landau entropic helicity v01.py"
+python "src/260706 PHY042 honeycomb wl fss v01.py"
 ```
 
 CI prueft Lint, Compile und schnelle Korrektheits-Gates. Slow-Messlaeufe bleiben lokal.
@@ -112,11 +122,14 @@ archive/    Vorgaenger-Versionen
 SOURCES.md  Provenance / SHA-256
 ```
 
-## Naechste Stufe nach PR #20
+## Naechste Stufe nach PR #20 + Code-Audit 2026-07-10
 
 1. Mehr Produktions-Statistik, damit die Crossings (24,48)/(32,48) in-Domaene und belastbar werden (NR-PHY042-02 aufloesen).
 2. Walker-robuster Upsilon_4-Dip fuer L>=32 (NR-PHY042-03 aufloesen), dann Dip-FSS Richtung T_BKT.
 3. Kein T_BKT-Bestwert-Claim ohne Cross-Family-Review.
+4. Square-V&V-Re-Baseline: mehr Statistik/groessere L, damit das 1%-Gate wieder belastbar bindet; PHY039-Dip-Fenster erweitern (Audit O-Punkte).
+5. Konventions-Quercheck per-Site-Upsilon vs NK-Gerade auf triangular (Binder/Korrelations-Ratio) — Audit-Punkt O1, vor jedem neuen triangular-Claim.
+6. Re-Run PHY030v02/PHY032/PHY033 mit Pol-Guard bei der naechsten Produktions-Runde (Audit-Punkt O4).
 
 ---
 *Coworker Research / Coworkerz | Repo-Anlage 2026-06-04 nach arbeitsschablone_forschungs-repo-anlage*

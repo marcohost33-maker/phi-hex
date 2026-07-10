@@ -118,7 +118,9 @@ PHY041_Y4_DIP_L24 = 0.6500
 # RNG-Stream-Vertrag PHY042: Walker 0 nutzt die PHY041-Streams (600er Anker,
 # 650+L WL) fuer die deterministische L=24-Bruecke; Zusatz-Walker w>=1 nutzen
 # 90000+1000*w (+L in wl_entropic_lattice) - kollisionsfrei zu allen
-# bisherigen Vertraegen (400+/500+/600+/650+/660+/700+ inkl. +1000L-Terme).
+# bisherigen Vertraegen (300+/400+/500+/600+/650+/660+/700+ inkl. +1000L-
+# Terme; Hinweis Code-Audit L1 2026-07-10: 300+ ist von PHY028 UND PHY039
+# doppelt gebucht, dort nur durch disjunkte T-Gitter getrennt).
 _STREAM_WALKER_BASE = 90000
 
 _T_GRID = np.round(np.arange(0.52, 0.6701, 0.005), 4)  # identisch PHY041
@@ -308,6 +310,7 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
     # --- VAL-A: frische Wolff-Referenz L=32; Y2-Gate nur in-Domaene --------
     print("\n[VAL-A] WL(Mittel-Kurve) vs frische Wolff-Referenz (L=32):")
     e_ok, y2_ok = True, True
+    y2_any_in_domain = False  # Haertung 2026-07-10 (Code-Audit M2)
     val_rows = []
     for T in (0.55, 0.60, 0.65):
         c = main_curve[32]
@@ -321,6 +324,7 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
         e_ok = e_ok and de < 0.03
         if in_dom:
             y2_ok = y2_ok and dy < 0.04
+            y2_any_in_domain = True
         val_rows.append({"T": T, "in_domain": in_dom, "E_wl": Ewl,
                          "E_wolff": ref["E_ps"], "y2_wl": y2wl,
                          "y2_wolff": ref["y2"], "y2_wolff_sem": ref["y2_sem"]})
@@ -332,7 +336,13 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
     # --- VAL-B: Drift-Guard gegen committed PHY032-Gitter (L=24) ----------
     print("\n[VAL-B] WL vs committed PHY032-Messgitter (L=24, Drift-Guard):")
     grid032 = parse_phy032_grid()
-    grid_ok = True
+    # Haertung 2026-07-10 (Code-Audit M1): der Drift-Guard darf nicht
+    # vacuous passen, wenn der Parser nichts findet (Vertrag: 8 T-Punkte
+    # fuer L=24 im committeten PHY032-Report).
+    grid_ok = len(grid032.get(24, [])) == 8
+    if not grid_ok:
+        print("      PARSE-VERTRAG VERLETZT: erwarte 8 Gitterpunkte fuer "
+              f"L=24, gefunden {len(grid032.get(24, []))}")
     grid_rows = []
     for (T, u032, sem032) in grid032.get(24, []):
         if not (t_grid[0] <= T <= t_grid[-1]):
@@ -380,7 +390,7 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
                   f"(vs Multi-Lattice 0.573: "
                   f"{(tb - 0.573) / 0.573 * 100:+.2f}%)  [{tag}]")
     print(f"      PHY041-Paare (L<=24, Einzel-Walker): "
-          f"{', '.join(f'{v:.4f}' for v in (0.5951, 0.6029, 0.6087))}")
+          f"{', '.join(f'{v:.4f}' for v in PHY041_PAIRS.values())}")
 
     # Sampler-Systematik der Paare: alle Walker-Kombinationen
     print("\n[WALKER] Paar-T_BKT ueber Walker-Kombinationen:")
@@ -435,7 +445,10 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
         "PASS_NO_CANONICAL_EDGE_LEAK": leak_ok,
         "PASS_NO_UNCOVERED_MASS_IN_DOMAIN": unc_ok,
         "PASS_WL_ENERGY_MATCHES_WOLFF_L32": e_ok,
-        "PASS_WL_Y2_MATCHES_WOLFF_L32_IN_DOMAIN": y2_ok,
+        # Haertung 2026-07-10 (Code-Audit M2): das Gate darf nicht vacuous
+        # passen, wenn KEIN Validierungs-T in der Domaene liegt - genau dann
+        # waere der Sampler am kaputtesten.
+        "PASS_WL_Y2_MATCHES_WOLFF_L32_IN_DOMAIN": y2_ok and y2_any_in_domain,
         "PASS_WL_Y2_MATCHES_PHY032_GRID_L24": grid_ok,
         "PASS_PHY041_BRIDGE_Y4_DIP_L24": bridge_ok,
         "PASS_Y2_SMOOTH_NOISE_FREE_L48": y2_smooth,
@@ -458,9 +471,13 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
               f"+- {sy / 2:.4f} (Sampler-Systematik = halber Walker-Spread); "
               f"Lage im Referenzband: nahe Upsilon-beta-Kanal 0.5928, "
               f"unterhalb PHY041 (16,24)=0.6087.")
+    # Haertung 2026-07-10 (Code-Audit L2): default schuetzt den
+    # n_walkers=1-Pfad (leerer Generator -> ValueError VOR dem Report).
+    max_spread = max((spreads[L].max() for L in Ls if walkers[L] > 1),
+                     default=float("nan"))
     print("    - NR-PHY042-01: Y2 ist bei L>=32 oberhalb T~0.60 "
           "sampler-limitiert (Walker-Spread bis "
-          f"{max(spreads[L].max() for L in Ls if walkers[L] > 1):.2f}); "
+          f"{max_spread:.2f}); "
           "Validitaets-Domaenen oben ausgewiesen.")
     nr02 = [f"({a},{b})" for (a, b) in pairs
             if pair_tbkt.get((a, b)) is not None

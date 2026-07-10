@@ -184,18 +184,30 @@ def fit_tbkt_fixedT(T_grid, Ls, ups_of_T, sems_of_T):
                 # chi^2(T) ~ a*(T - T_bkt)^2 + chi2_min; chi^2_min+1 -> 1-sigma
                 sigma = float(math.sqrt(1.0 / a))
 
-    # Residuen je L beim Punktschaetzer (mit C_min ausgewertet).
+    # Residuen je L am Gitter-argmin T_min: Daten UND Modell bei DERSELBEN
+    # Temperatur (T_min, mit dem dort optimierten C_min) ausgewertet.
+    # P2-Fix 2026-07-10 (Code-Audit L4): frueher wurden Daten bei T_min mit
+    # dem Modell beim parabolisch verfeinerten T_bkt verglichen - das mischte
+    # zwei Temperaturen und addierte einen systematischen Offset bis
+    # ~(2/pi)*Gitterweite/2 in jedes Residuum.
     residuals = {}
     for k, L in enumerate(Ls):
-        model = wm_form(T_bkt, L, C_min)
+        model = wm_form(T_min, L, C_min)
         meas = ups_of_T[T_min][k]
         residuals[L] = {"measured": meas, "wm_model": model,
                         "residual": meas - model}
+
+    # Haertung 2026-07-10 (Code-Audit L5): C am Rand des Golden-Section-
+    # Suchintervalls [-2 ln L_min + 0.05, 50] ist ein Diagnose-Signal
+    # (Optimum ausserhalb des Fensters -> chi^2(T)-Profil dort verzerrt).
+    c_lo = -2.0 * min(math.log(L) for L in Ls) + 0.05
+    c_at_bound = (C_min - c_lo) < 1e-3 or (50.0 - C_min) < 1e-3
 
     return {
         "per_T": [{"T": t, "C": c, "chi2": x} for (t, c, x) in per_T],
         "T_bkt": T_bkt,
         "C": C_min,
+        "C_at_bound": c_at_bound,
         "chi2_min": chi2_min,
         "sigma": sigma,
         "residuals_per_L": residuals,
@@ -215,7 +227,12 @@ def tbkt_pair_C_eliminated(T_grid, ups_L1, sems_L1, L1, ups_L2, sems_L2, L2):
     for i, T in enumerate(T_grid):
         R1 = math.pi * ups_L1[i] / (2.0 * T) - 1.0
         R2 = math.pi * ups_L2[i] / (2.0 * T) - 1.0
-        if abs(R1) < 1e-6 or abs(R2) < 1e-6:
+        # P1-Fix 2026-07-10 (Code-Audit M1): auf dem physikalischen WM-Ast
+        # ist 1/R = 2 ln L + C > 0, also R > 0. Punkte mit R <= 0 (jenseits
+        # des finite-L-NK-Crossings) werden uebersprungen; sonst liefert der
+        # Pol von 1/R einen Schein-Nulldurchgang, der in Bootstrap-Resamples
+        # als "valider" T_BKT-Wert zaehlte (Pol-Artefakt statt WM-Wurzel).
+        if R1 < 1e-6 or R2 < 1e-6:
             g.append((T, None))
         else:
             g.append((T, (1.0 / R1 - 1.0 / R2) - target))
@@ -292,7 +309,8 @@ def run_phy030_v02(radii=(4, 6, 9),
     sigA = fitA["sigma"]
     sig_str = f"{sigA:.4f}" if sigA is not None else "n/a (Rand)"
     print(f"\n  T_BKT(WM-Fit) = {tA:.4f} +- {sig_str}  "
-          f"(C={fitA['C']:+.3f})")
+          f"(C={fitA['C']:+.3f}"
+          f"{', C AM SUCHRAND - Diagnose pruefen' if fitA['C_at_bound'] else ''})")
     print(f"  Abw. vs Referenz {REF_TRIANGULAR}: "
           f"{(tA - REF_TRIANGULAR) / REF_TRIANGULAR * 100:+.2f}%")
     print("  Residuen je L bei T_BKT (gemessen - WM-Modell):")

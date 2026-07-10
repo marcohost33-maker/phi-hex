@@ -1,5 +1,7 @@
-# Dependabot - github-actions only (kein Python-Manifest im Repo; pip-Block erst
-# wenn pyproject/requirements landet - Schema-Lehre aza-backend PR#14).
+# Dependabot - github-actions + pip. Der pip-Block kam 2026-07-10 (Code-Audit):
+# requirements-dev.txt existiert seit dem CI-Test-Gate; die fruehere Notiz
+# "kein Python-Manifest im Repo" war ueberholt (angekuendigter Trigger war
+# genau das Landen einer requirements-Datei - Schema-Lehre aza-backend PR#14).
 version: 2
 updates:
   - package-ecosystem: "github-actions"
@@ -20,3 +22,21 @@ updates:
         applies-to: security-updates
         patterns: ["*"]
     labels: ["dependencies", "github-actions"]
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Zurich"
+    open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
+    groups:
+      pip-minor-and-patch:
+        applies-to: version-updates
+        update-types: ["minor", "patch"]
+      pip-security:
+        applies-to: security-updates
+        patterns: ["*"]
+    labels: ["dependencies", "python"]
