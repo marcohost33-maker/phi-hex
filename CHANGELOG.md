@@ -21,11 +21,15 @@ Fix verifiziert. Vertragsquelle: `spec/260710 PHI HEX code audit v01.md`.
   - PHY039: Y4-Dip liegt auf den korrigierten Kurven AUSSERHALB des
     T-Fensters [0.85,0.95] (alle L am Gitterrand) — Dip-Gates ehrlich FAIL;
     die fruehere Dip-Lage 0.9316 ist als Bug-Artefakt zurueckgezogen.
-  - PHY040: WL-Kurven/Paar-Werte auf korrigierter Geometrie neu; zusaetzlich
-    Ehrlichkeits-Korrektur: die 1/t-Phase (B&P) war mit den committeten
-    Parametern TOTER CODE (Umschaltbedingung nie wahr) — Method-String
-    korrigiert, `one_over_t_engaged`-Instrumentierung; Sampler unveraendert
-    (echte B&P-Phase bleibt PHY041).
+  - PHY040: WL-Kurven/Paar-Werte auf korrigierter Geometrie neu — Paare
+    jetzt (12,16)=0.9005 (+0.85%), (12,24)=0.9117 (+2.10%), (16,24) ohne
+    Crossing; Bias-Gate ehrlich FAIL (OVERALL FAIL = Pipeline-Integritaet
+    PASS + ehrlicher finite-size-Befund). Zusaetzlich Ehrlichkeits-
+    Korrektur: die 1/t-Phase (B&P) war mit den committeten Parametern
+    TOTER CODE (Umschaltbedingung nie wahr; Re-Run-Instrumentierung
+    bestaetigt "1/t-Phase=NIE" live) — Method-String korrigiert,
+    `one_over_t_engaged`-Instrumentierung; Sampler unveraendert (echte
+    B&P-Phase bleibt PHY041).
   Kern-Torus (0/243 Bonds), honeycomb-/kagome-Builder: verifiziert NICHT
   betroffen. Gate: `tests/test_phy028_square_geometry.py` (Uniform-Twist-
   Orakel + min-image-Konsistenz).

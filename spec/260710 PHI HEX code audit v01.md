@@ -30,9 +30,13 @@ Fix (deterministischer Re-Run seed=42): (8,16)=0.8867 (-0.76%),
 aufgeweicht; der V&V-Anker ist auf "~1% bei L<=32, 12 Seeds" herabgestuft
 (Re-Baseline mit mehr Statistik/groesseren L = naechste Stufe). Betroffen
 und neu gerechnet: PHY028, PHY039, PHY040 (beide importieren
-`build_square_lattice` aus PHY028). NICHT betroffen: Kern-Torus
-(bond-weise verifiziert 0/243 inkonsistent), honeycomb/kagome-Builder
-(natuerliche Orientierung), PHY041/042.
+`build_square_lattice` aus PHY028). PHY039-Re-Run: Y4-Dip ausserhalb des
+T-Fensters (Dip-Gates FAIL, Dip-Lage 0.9316 zurueckgezogen). PHY040-Re-Run:
+WL-vs-Wolff-Gates PASS (intern konsistent), Paare (12,16)=0.9005 (+0.85%),
+(12,24)=0.9117 (+2.10%), (16,24) ohne Crossing — Bias-Gate ehrlich FAIL;
+Instrumentierung bestaetigt "1/t-Phase=NIE" live. NICHT betroffen:
+Kern-Torus (bond-weise verifiziert 0/243 inkonsistent), honeycomb/
+kagome-Builder (natuerliche Orientierung), PHY041/042.
 
 Fix: Kanten in natuerlicher Orientierung speichern (kein min/max).
 Gate: `tests/test_phy028_square_geometry.py` (min-image-Konsistenz aller

@@ -188,3 +188,5 @@ bleiben unveraendert als Lineage stehen; letzte Zeile pro Pfad gewinnt.
 | ED24AF221FB962AC | 2026-07-10 | tests | repo-native: `tests/test_tbkt_kagome.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
 | F25FD1C09DA0784E | 2026-07-10 | tests | repo-native: `tests/test_tbkt_triangular.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
 | F001F2F448D80896 | 2026-07-10 | tests | repo-native: `tests/test_tbkt_wm_logfit.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| 9808BD879D79CCD9 | 2026-07-10 | results | repo-native: `results/260710 PHY040 wang-landau entropic helicity report v02.txt` (NEU: Gate-Evidenz PHY040 v02 nach edge_disp-Fix + 1/t-Instrumentierung, seed=42; Paare +0.85%/+2.10%, Bias-Gate ehrlich FAIL; '1/t-Phase=NIE' live bestaetigt) |
+| D5506272366D8BA0 | 2026-07-10 | spec | repo-native: `spec/260710 PHI HEX code audit v01.md` (stand: Audit-Spec um PHY039-/PHY040-Re-Run-Resultate ergaenzt; supersedet vorherige Zeile gleicher Datei) |
