@@ -4,5 +4,5 @@
 # lokal (siehe README "Reproduzieren").
 numpy>=1.26
 scipy>=1.11
-pytest>=8.0
+pytest>=9.1.1
 ruff>=0.15.20
