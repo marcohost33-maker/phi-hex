@@ -148,3 +148,40 @@ def test_phy040_pair_from_curves_rejects_pole_artifact():
     y2a = [_ups_from_R(0.30, T) for T in Ts]
     y2b = [_ups_from_R(r, T) for r, T in zip(R2s, Ts)]
     assert phy040.tbkt_pair_from_curves(Ts, y2a, 24, y2b, 48) is None
+
+
+# ---------------------------------------------------------------------------
+# M1b: kein Interpolieren QUER ueber eine Pol-Luecke (Codex-Review PR#23)
+# ---------------------------------------------------------------------------
+
+def _gap_scenario():
+    """Gueltige Punkte beidseits EINER gefilterten Pol-Luecke; der
+    Vorzeichenwechsel existiert NUR quer ueber die Luecke (disconnected
+    branch) - ein Crossing-Ergebnis waere das Pol-Artefakt in neuer Form.
+    Verifiziert vor dem Fix: v02 lieferte hier 1.4311."""
+    Ts = [1.40, 1.42, 1.44]
+    R1s = [0.30, -0.05, 0.30]
+    R2s = [0.05, -0.05, 2.00]   # 1/R2: 20 -> (Luecke) -> 0.5
+    ups1 = [_ups_from_R(r, T) for r, T in zip(R1s, Ts)]
+    ups2 = [_ups_from_R(r, T) for r, T in zip(R2s, Ts)]
+    return Ts, ups1, ups2
+
+
+def test_phy030v02_pair_does_not_bridge_pole_gap():
+    Ts, ups1, ups2 = _gap_scenario()
+    sem = [1e-4] * len(Ts)
+    assert phy030v02.tbkt_pair_C_eliminated(
+        Ts, ups1, sem, 9, ups2, sem, 19) is None
+
+
+def test_phy028_pair_does_not_bridge_pole_gap():
+    Ts, ups1, ups2 = _gap_scenario()
+    data_L = {T: _res(u) for T, u in zip(Ts, ups1)}
+    data_2L = {T: _res(u) for T, u in zip(Ts, ups2)}
+    assert phy028.sandvik_pair_tbkt(8, data_L, data_2L) is None
+
+
+def test_phy040_pair_does_not_bridge_pole_gap():
+    Ts, ups1, ups2 = _gap_scenario()
+    assert phy040.tbkt_pair_from_curves(
+        np.array(Ts), ups1, 24, ups2, 48) is None

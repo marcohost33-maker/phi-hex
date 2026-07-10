@@ -77,16 +77,20 @@ def sandvik_pair_tbkt(data_L, data_2L):
     ln2 = math.log(2.0)
     Ts = sorted(set(data_L) & set(data_2L))
     diffs = []
-    for T in Ts:
+    for k, T in enumerate(Ts):
         u1, u2 = data_L[T].upsilon_mean, data_2L[T].upsilon_mean
         R1 = math.pi * u1 / (2 * T) - 1.0
         R2 = math.pi * u2 / (2 * T) - 1.0
         # P1-Fix 2026-07-10 (Code-Audit M1): physikalischer WM-Ast verlangt
         # R > 0 (1/R = 2 ln L + C > 0); R <= 0 waere ein Pol-Artefakt.
         if R1 > 1e-6 and R2 > 1e-6:
-            diffs.append((T, (1.0 / R1 - 1.0 / R2) - (-2.0 * ln2)))
+            diffs.append((k, T, (1.0 / R1 - 1.0 / R2) - (-2.0 * ln2)))
+    # P2-Fix 2026-07-10b (Codex-Review PR#23): Crossing NUR zwischen
+    # BENACHBARTEN Gitterpunkten - kein Interpolieren ueber Pol-Luecken.
     for i in range(len(diffs) - 1):
-        (t0, d0), (t1, d1) = diffs[i], diffs[i + 1]
+        (k0, t0, d0), (k1, t1, d1) = diffs[i], diffs[i + 1]
+        if k1 - k0 != 1:
+            continue
         if d0 == 0.0:
             return t0
         if d0 * d1 < 0.0:

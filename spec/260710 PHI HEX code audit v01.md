@@ -54,6 +54,15 @@ WM-Wurzel lieferte T_BKT=1.449). In PHY032/033 liefen solche Artefakte als
 PHY032/033/034/035/041/042). Gates: Pol-Rejektions-Orakel in
 `tests/test_phy028_square_geometry.py`.
 
+**Nachschaerfung 2026-07-10b (Codex-Review PR#23, verifiziert):** das
+blosse Ueberspringen der R<=0-Punkte interpolierte noch QUER ueber die
+Pol-Luecke (Vorzeichenwechsel zwischen nicht-benachbarten Gitterpunkten =
+disconnected branch; Repro: Luecken-Szenario lieferte 1.4311). Jetzt wird
+ein Crossing nur zwischen BENACHBARTEN Gitterpunkten akzeptiert (alle 6
+Root-Finder). Committete v02-Evidenz unveraendert (PHY028-Paare und
+PHY040-Paare aus den Report-JSONs bit-genau reproduziert); Gap-Brueckungs-
+Orakel als CI-Gates ergaenzt.
+
 Hinweis Evidenz: die committeten PHY030v02/PHY032/PHY033-Reports sind vor
 dem Guard entstanden; ihre Scan-Fenster lagen ueberwiegend im R>0-Bereich,
 Bootstrap-Tail-Resamples koennen aber betroffen sein. Re-Run bei der

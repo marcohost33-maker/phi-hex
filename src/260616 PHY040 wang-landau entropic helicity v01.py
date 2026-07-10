@@ -333,10 +333,14 @@ def tbkt_pair_from_curves(temps, y2_a, La, y2_b, Lb):
         # P1-Fix 2026-07-10 (Code-Audit M1): physikalischer WM-Ast verlangt
         # R > 0 (1/R = 2 ln L + C > 0); R <= 0 waere ein Pol-Artefakt.
         if Ra > 1e-6 and Rb > 1e-6:
-            diffs.append((T, (1.0 / Ra - 1.0 / Rb) - target))
+            diffs.append((k, T, (1.0 / Ra - 1.0 / Rb) - target))
+    # P2-Fix 2026-07-10b (Codex-Review PR#23): Crossing NUR zwischen
+    # BENACHBARTEN Gitterpunkten - kein Interpolieren ueber Pol-Luecken.
     for i in range(len(diffs) - 1):
-        T0, d0 = diffs[i]
-        T1, d1 = diffs[i + 1]
+        k0, T0, d0 = diffs[i]
+        k1, T1, d1 = diffs[i + 1]
+        if k1 - k0 != 1:
+            continue
         if d0 == 0:
             return float(T0)
         if d0 * d1 < 0:

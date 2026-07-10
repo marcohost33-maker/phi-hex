@@ -236,9 +236,16 @@ def tbkt_pair_C_eliminated(T_grid, ups_L1, sems_L1, L1, ups_L2, sems_L2, L2):
             g.append((T, None))
         else:
             g.append((T, (1.0 / R1 - 1.0 / R2) - target))
-    pts = [(t, v) for (t, v) in g if v is not None]
-    for i in range(len(pts) - 1):
-        (t0, d0), (t1, d1) = pts[i], pts[i + 1]
+    # P2-Fix 2026-07-10b (Codex-Review PR#23): Nulldurchgang NUR zwischen
+    # BENACHBARTEN Gitterpunkten akzeptieren. Das fruehere Kompaktieren der
+    # None-Punkte interpolierte ueber Pol-Luecken hinweg - ein Vorzeichen-
+    # wechsel QUER ueber eine R<=0-Luecke ist kein physikalischer WM-
+    # Nulldurchgang (disconnected branch), sondern das Pol-Artefakt in
+    # neuer Form (relevant fuer verrauschte/Bootstrap-Eingaben).
+    for i in range(len(g) - 1):
+        (t0, d0), (t1, d1) = g[i], g[i + 1]
+        if d0 is None or d1 is None:
+            continue
         if d0 == 0.0:
             return t0
         if d0 * d1 < 0.0:

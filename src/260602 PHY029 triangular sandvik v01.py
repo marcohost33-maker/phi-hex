@@ -56,7 +56,7 @@ def sandvik_pair(r1: int, r2: int, temps: list, cache: dict,
     ratio = L2 / L1
     target = -2.0 * math.log(ratio)
     diffs = []
-    for T in temps:
+    for k, T in enumerate(temps):
         for r in (r1, r2):
             if (r, T) not in cache:
                 cache[(r, T)] = measure_helicity_wolff(radius=r, T=T, **cfg)
@@ -65,10 +65,14 @@ def sandvik_pair(r1: int, r2: int, temps: list, cache: dict,
         # P1-Fix 2026-07-10 (Code-Audit M1): physikalischer WM-Ast verlangt
         # R > 0 (1/R = 2 ln L + C > 0); R <= 0 waere ein Pol-Artefakt.
         if R1 > 1e-6 and R2 > 1e-6:
-            diffs.append((T, (1.0 / R1 - 1.0 / R2) - target))
+            diffs.append((k, T, (1.0 / R1 - 1.0 / R2) - target))
+    # P2-Fix 2026-07-10b (Codex-Review PR#23): Crossing NUR zwischen
+    # BENACHBARTEN Gitterpunkten - kein Interpolieren ueber Pol-Luecken.
     for i in range(len(diffs) - 1):
-        T0, d0 = diffs[i]
-        T1, d1 = diffs[i + 1]
+        k0, T0, d0 = diffs[i]
+        k1, T1, d1 = diffs[i + 1]
+        if k1 - k0 != 1:
+            continue
         if d0 == 0:
             return T0
         if d0 * d1 < 0:
