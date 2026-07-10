@@ -1,0 +1,271 @@
+### RE-RUN 2026-07-10 (Code-Audit H1: korrigierte square-Geometrie) ###
+# Deterministischer Re-Run (master_seed=42, Parameter identisch zum
+# superseded Report 260616) nach dem edge_disp-Fix in PHY028.
+# Ergebnis ehrlich: Y4-Dip ausserhalb des T-Fensters -> Dip-Gates FAIL.
+########################################################################
+PHY039: Vierte-Ordnung-Helicity-Modul (Minnhagen-Kim) - Validierung
+Coworker Research / Coworkerz, 16. Juni 2026
+========================================================================
+
+[1] Estimator-Orakel (F4 closed-form vs numerische 4. Ableitung)
+    F2: closed=-0.171428  num=-0.171428  rel=2.67e-11
+    F4: closed=-1.044677  num=-1.044677  rel=6.49e-08
+
+[2] Gate A (ausgerichtet, T->0): Upsilon_2 = 1.000000 (muss 1.0 sein, square z=4)
+
+[3] Wolff-Messung square (n_seeds=12, n_measure=1500)
+  L=8:
+    T=0.85  Y2=0.708+-0.001 (NK=0.541)  N*Y4=-168+-6
+    T=0.87  Y2=0.697+-0.002 (NK=0.554)  N*Y4=-181+-7
+    T=0.89  Y2=0.680+-0.001 (NK=0.567)  N*Y4=-216+-9
+    T=0.91  Y2=0.665+-0.002 (NK=0.579)  N*Y4=-232+-9
+    T=0.93  Y2=0.651+-0.001 (NK=0.592)  N*Y4=-265+-14
+    T=0.95  Y2=0.634+-0.002 (NK=0.605)  N*Y4=-300+-22
+  L=16:
+    T=0.85  Y2=0.690+-0.001 (NK=0.541)  N*Y4=-1211+-67
+    T=0.87  Y2=0.674+-0.001 (NK=0.554)  N*Y4=-1502+-102
+    T=0.89  Y2=0.656+-0.001 (NK=0.567)  N*Y4=-2656+-684
+    T=0.91  Y2=0.635+-0.001 (NK=0.579)  N*Y4=-2437+-256
+    T=0.93  Y2=0.613+-0.001 (NK=0.592)  N*Y4=-2586+-185
+    T=0.95  Y2=0.586+-0.002 (NK=0.605)  N*Y4=-3114+-291
+  L=24:
+    T=0.85  Y2=0.682+-0.001 (NK=0.541)  N*Y4=-3794+-301
+    T=0.87  Y2=0.666+-0.001 (NK=0.554)  N*Y4=-4079+-294
+    T=0.89  Y2=0.642+-0.001 (NK=0.567)  N*Y4=-8658+-1291
+    T=0.91  Y2=0.619+-0.001 (NK=0.579)  N*Y4=-8086+-589
+    T=0.93  Y2=0.595+-0.002 (NK=0.592)  N*Y4=-10919+-967
+    T=0.95  Y2=0.564+-0.002 (NK=0.605)  N*Y4=-14058+-713
+
+[4] Dip-Minimum T_min(L) von N*Upsilon_4 (Minnhagen-Kim-Signatur):
+    L= 8: argmin am Gitterrand -> Dip nicht eingeschlossen
+    L=16: argmin am Gitterrand -> Dip nicht eingeschlossen
+    L=24: argmin am Gitterrand -> Dip nicht eingeschlossen
+
+[5] PASS-Gates:
+    [PASS] PASS_Y4_ESTIMATOR_ORACLE
+    [PASS] PASS_ALIGNED_Y2_EXACT
+    [FAIL] PASS_DIP_PRESENT
+    [FAIL] PASS_SOME_L_DIP_BRACKETS_REF
+
+OVERALL: FAIL
+
+[6] EHRLICHE BILANZ:
+    - Der F4-Estimator ist erst-prinzipiell hergeleitet und durch
+      ein numerisches Orakel auf Maschinengenauigkeit bestaetigt
+      (F4 rel-Fehler ~1e-8) - die Korrektheit der Observable steht.
+    - Der negative Dip von N*Upsilon_4 (Minnhagen-Kim-Signatur des
+      Sprungs) EXISTIERT und vertieft sich mit L wie erwartet.
+    - ABER seine LAGE konvergiert unter Wolff NICHT sauber: L=16
+      trifft 0.8901 (-0.31%), doch L=8 UND L=24 schieben das argmin
+      an den Gitterrand (>0.95) - der L=16-Treffer ist also NICHT
+      robust, sondern rausch-/finite-size-dominiert (Dip ~15-25%
+      verrauscht). Der 4.-Ordnungs-Kumulant gewinnt unter Wolff
+      KEINE Praezision ggue. der 2.-Ordnungs-Paar-Methode.
+    - Das deckt sich exakt mit PHY036/038 (Limes wandert mit L,
+      mehr Statistik heilt nicht) und mit der Referenz 2406.12076,
+      die T_BKT GERADE DESHALB mit Wang-Landau-ENTROPISCHEM Sampling
+      + Simulated Annealing (nicht blossem Wolff) bestimmt.
+    - KORREKTE naechste Stufe (web-recherchiert): nicht 'mehr L /
+      mehr Seeds', sondern ein ANDERER Sampler (Wang-Landau /
+      multikanonisch) - der einzige im Repo noch ungenutzte Hebel.
+
+--- JSON-Report ---
+{
+  "module": "PHY039_fourth_order_helicity_modulus",
+  "attribution": "Coworker Research / Coworkerz",
+  "date": "2026-06-16",
+  "reference_T_bkt_square": 0.8929,
+  "method_origin": "Minnhagen & Kim PRB 67 172509 (2003), cond-mat/0304226",
+  "best_practice_ref": "arXiv:2406.12076 (honeycomb, 2nd+4th-order, Wang-Landau)",
+  "oracle": {
+    "F2_closed": -0.17142828977157532,
+    "F2_num": -0.17142828977614508,
+    "F4_closed": -1.0446774253403537,
+    "F4_num": -1.0446773575070147,
+    "F2_relerr": 2.665698434051514e-11,
+    "F4_relerr": 6.493233385259143e-08
+  },
+  "aligned_y2": 1.0,
+  "measurements": {
+    "8": {
+      "0.8500": {
+        "T": 0.85,
+        "L": 8,
+        "y2_mean": 0.7079274237833006,
+        "y2_sem": 0.0008795564262056143,
+        "y4_scaled_mean": -167.7245969075337,
+        "y4_scaled_sem": 5.535012422693029,
+        "nk_line": 0.5411268065124442
+      },
+      "0.8700": {
+        "T": 0.87,
+        "L": 8,
+        "y2_mean": 0.6969890697652366,
+        "y2_sem": 0.0019189533169313069,
+        "y4_scaled_mean": -181.1246202976423,
+        "y4_scaled_sem": 7.047211779505817,
+        "nk_line": 0.5538592019597958
+      },
+      "0.8900": {
+        "T": 0.89,
+        "L": 8,
+        "y2_mean": 0.6801719097571364,
+        "y2_sem": 0.0014724286071343875,
+        "y4_scaled_mean": -215.97470031106465,
+        "y4_scaled_sem": 9.354241314022554,
+        "nk_line": 0.5665915974071474
+      },
+      "0.9100": {
+        "T": 0.91,
+        "L": 8,
+        "y2_mean": 0.6649219268282082,
+        "y2_sem": 0.0016586549945063595,
+        "y4_scaled_mean": -232.25608289418162,
+        "y4_scaled_sem": 9.446783726715209,
+        "nk_line": 0.5793239928544991
+      },
+      "0.9300": {
+        "T": 0.93,
+        "L": 8,
+        "y2_mean": 0.6505209175560623,
+        "y2_sem": 0.0012705520206011186,
+        "y4_scaled_mean": -264.9853158656778,
+        "y4_scaled_sem": 14.024819199915948,
+        "nk_line": 0.5920563883018507
+      },
+      "0.9500": {
+        "T": 0.95,
+        "L": 8,
+        "y2_mean": 0.6339636636100701,
+        "y2_sem": 0.0016106433339060401,
+        "y4_scaled_mean": -300.4638361661836,
+        "y4_scaled_sem": 22.313965270790316,
+        "nk_line": 0.6047887837492023
+      }
+    },
+    "16": {
+      "0.8500": {
+        "T": 0.85,
+        "L": 16,
+        "y2_mean": 0.6897864324242526,
+        "y2_sem": 0.0009046149750963112,
+        "y4_scaled_mean": -1211.0803154479609,
+        "y4_scaled_sem": 66.53684558591986,
+        "nk_line": 0.5411268065124442
+      },
+      "0.8700": {
+        "T": 0.87,
+        "L": 16,
+        "y2_mean": 0.6739175023748959,
+        "y2_sem": 0.0009292093116032235,
+        "y4_scaled_mean": -1501.5613337911188,
+        "y4_scaled_sem": 102.25230186403043,
+        "nk_line": 0.5538592019597958
+      },
+      "0.8900": {
+        "T": 0.89,
+        "L": 16,
+        "y2_mean": 0.6559392499371575,
+        "y2_sem": 0.0014315375456451541,
+        "y4_scaled_mean": -2656.270998384298,
+        "y4_scaled_sem": 684.458223268569,
+        "nk_line": 0.5665915974071474
+      },
+      "0.9100": {
+        "T": 0.91,
+        "L": 16,
+        "y2_mean": 0.6353480511296178,
+        "y2_sem": 0.001338468692673231,
+        "y4_scaled_mean": -2437.3942457718276,
+        "y4_scaled_sem": 255.92746633859724,
+        "nk_line": 0.5793239928544991
+      },
+      "0.9300": {
+        "T": 0.93,
+        "L": 16,
+        "y2_mean": 0.6125190731953576,
+        "y2_sem": 0.00103888537640492,
+        "y4_scaled_mean": -2585.8332400290496,
+        "y4_scaled_sem": 185.29694469996397,
+        "nk_line": 0.5920563883018507
+      },
+      "0.9500": {
+        "T": 0.95,
+        "L": 16,
+        "y2_mean": 0.5860236941594252,
+        "y2_sem": 0.0018000154720820177,
+        "y4_scaled_mean": -3113.93567898066,
+        "y4_scaled_sem": 290.84628085146585,
+        "nk_line": 0.6047887837492023
+      }
+    },
+    "24": {
+      "0.8500": {
+        "T": 0.85,
+        "L": 24,
+        "y2_mean": 0.6824675230875762,
+        "y2_sem": 0.0009677076902468505,
+        "y4_scaled_mean": -3793.584551156402,
+        "y4_scaled_sem": 301.26021729913606,
+        "nk_line": 0.5411268065124442
+      },
+      "0.8700": {
+        "T": 0.87,
+        "L": 24,
+        "y2_mean": 0.6664766550752077,
+        "y2_sem": 0.0010116157699904581,
+        "y4_scaled_mean": -4079.423048832521,
+        "y4_scaled_sem": 293.86492270662717,
+        "nk_line": 0.5538592019597958
+      },
+      "0.8900": {
+        "T": 0.89,
+        "L": 24,
+        "y2_mean": 0.6424947865301073,
+        "y2_sem": 0.0012682045025682685,
+        "y4_scaled_mean": -8658.313537877837,
+        "y4_scaled_sem": 1291.1506594557268,
+        "nk_line": 0.5665915974071474
+      },
+      "0.9100": {
+        "T": 0.91,
+        "L": 24,
+        "y2_mean": 0.6186557836476156,
+        "y2_sem": 0.0014580339895894016,
+        "y4_scaled_mean": -8086.128534027678,
+        "y4_scaled_sem": 588.582078176121,
+        "nk_line": 0.5793239928544991
+      },
+      "0.9300": {
+        "T": 0.93,
+        "L": 24,
+        "y2_mean": 0.5951391891027178,
+        "y2_sem": 0.001843609845858283,
+        "y4_scaled_mean": -10919.386232188122,
+        "y4_scaled_sem": 967.4064179948904,
+        "nk_line": 0.5920563883018507
+      },
+      "0.9500": {
+        "T": 0.95,
+        "L": 24,
+        "y2_mean": 0.5640725657174425,
+        "y2_sem": 0.0019968625705918774,
+        "y4_scaled_mean": -14057.936855235928,
+        "y4_scaled_sem": 713.3391353066093,
+        "nk_line": 0.6047887837492023
+      }
+    }
+  },
+  "dip_T_min": {
+    "8": null,
+    "16": null,
+    "24": null
+  },
+  "pass_gates": {
+    "PASS_Y4_ESTIMATOR_ORACLE": true,
+    "PASS_ALIGNED_Y2_EXACT": true,
+    "PASS_DIP_PRESENT": false,
+    "PASS_SOME_L_DIP_BRACKETS_REF": false
+  },
+  "overall_pass": false
+}

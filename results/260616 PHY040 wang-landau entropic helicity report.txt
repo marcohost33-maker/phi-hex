@@ -1,3 +1,14 @@
+### SUPERSEDED 2026-07-10 (Code-Audit H1 + WL-H1) ###
+# (1) PHY040 importiert build_square_lattice aus PHY028 und hat auf der
+#     fehlerhaften Wrap-Bond-Geometrie gemessen (Upsilon zu tief).
+# (2) Method-Drift: der Header claimt "1/t (B&P)", aber die Umschalt-
+#     bedingung war mit diesen Parametern nie wahr - der Lauf war reines
+#     Standard-WL (Fehler-Saettigung; unabhaengig von PHY041 gefunden).
+# Gueltiger Stand (korrigierte Geometrie + Instrumentierung, seed=42):
+#   results/260710 PHY040 wang-landau entropic helicity report v02.txt
+# Details: spec/260710 PHI HEX code audit v01.md + CHANGELOG.md.
+# Report bleibt als Lineage erhalten (nicht geloescht).
+########################################################################
 PHY040: Wang-Landau-entropischer Helicity-Modul - square-Goldstandard
 Coworker Research / Coworkerz, 16. Juni 2026
 ========================================================================

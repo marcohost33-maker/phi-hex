@@ -157,7 +157,8 @@ def test_mutation_guard_sign_flip_kills_fit(monkeypatch):
 # (b) Smoke: Pipeline-Integritaet auf Mini-Parametern
 # ---------------------------------------------------------------------------
 
-@pytest.mark.slow
+# De-slow 2026-07-10 (Code-Audit 1.3): gemessen <3.5s - gehoert als
+# fails-before-Gate in die schnelle CI-Suite, nicht hinter -m slow.
 def test_smoke_pipeline_mini():
     """End-to-end Mini-Lauf: Messung -> WM-Fit liefert endlichen Schaetzer
     in einem physikalisch sinnvollen Band um T_BKT=1.418.

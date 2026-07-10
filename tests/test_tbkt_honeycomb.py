@@ -106,7 +106,8 @@ def test_sandvik_pair_recovers_synthetic_T_true(T_true, C_true):
     assert abs(tc - T_true) < 0.006, f"Paar T_BKT={tc:.4f} verfehlt {T_true}"
 
 
-@pytest.mark.slow
+# De-slow 2026-07-10 (Code-Audit 1.3): gemessen <3.5s - gehoert als
+# fails-before-Gate in die schnelle CI-Suite, nicht hinter -m slow.
 def test_honeycomb_crossing_in_physical_band():
     """Mini-Wolff-Lauf: per-L NK-Crossing im Band um die Referenz 0.573.
 

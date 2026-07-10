@@ -1,3 +1,13 @@
+### SUPERSEDED 2026-07-10 (Code-Audit H1: Wrap-Bond-Vorzeichen-Bug) ###
+# PHY039 importiert build_square_lattice aus PHY028 und hat den Y4-Dip
+# auf der fehlerhaften Geometrie gemessen. Auf den korrigierten Kurven
+# liegt der Dip AUSSERHALB des T-Fensters [0.85,0.95] (alle L am
+# Gitterrand); die hier berichtete Dip-Lage (0.9316, L=16) ist als
+# Bug-Artefakt zurueckgezogen. Gueltiger Stand (Dip-Gates ehrlich FAIL):
+#   results/260710 PHY039 fourth-order helicity modulus report v02.txt
+# Details: spec/260710 PHI HEX code audit v01.md + CHANGELOG.md.
+# Report bleibt als Lineage erhalten (nicht geloescht).
+########################################################################
 PHY039: Vierte-Ordnung-Helicity-Modul (Minnhagen-Kim) - Validierung
 Coworker Research / Coworkerz, 16. Juni 2026
 ========================================================================

@@ -1,4 +1,4 @@
-# _SOURCES_raw.md — phi-hex (Staging 2026-06-04)
+# SOURCES.md — phi-hex (Integritaets-Wahrheit; urspruenglich _SOURCES_raw.md, Staging 2026-06-04)
 
 | SHA256 (16) | mtime | Ziel | Quelle |
 |---|---|---|---|
@@ -136,3 +136,67 @@ Zeile; bei Aenderung einer Datei wird hier eine neue Zeile angehaengt
 | T_BKT(kagome), reines XY | 0.825 | arXiv:2501.07388 (= publ. J.Phys.A 2025, doi:10.1088/1751-8121/ada988) | **SINGLE-SOURCE / mittel** | Web-Recherche 2026-06-13: KEINE unabhaengige Zweit-Berechnung des reinen XY-Kagome-T_BKT gefunden. XY-VBEG-Kagome (Physica A 2018, S0378437118303406) ist ein ANDERES Modell, nicht vergleichbar. Wert ist zudem ein selbst-deklarierter "rough estimate" (L=48..192). Plausibel via z=4 zwischen Honeycomb 0.573 und Triangular 1.418, aber nicht 2.-Quellen-gestuetzt. Code: `REF_KAGOME_CONFIDENCE` in PHY033. |
 | T_BKT(honeycomb), reines XY | 0.573 | arXiv:2501.07388 + arXiv:2406.12076 | **corroborated** | Honeycomb hat eine dedizierte Zweitquelle (2406.12076, umfassende MC-Analyse) → staerker belegt als kagome. |
 | T_BKT(triangular), reines XY | 1.418 | arXiv:2501.07388 | single-source | Wie kagome aus derselben Multi-Lattice-Linie; keine separate Zweitquelle erfasst. |
+
+## Code-Audit 2026-07-10 — Nachtrag (append-only)
+
+Audit-Fixes (spec/260710 PHI HEX code audit v01.md, CHANGELOG 2026-07-10):
+P0-Geometrie-Fix square (PHY028/039/040 neu gerechnet), Pol-Guards,
+Gate-/Test-Haertung. Zusaetzlich Korrektur-Zeilen fuer Altlasten, die das
+gehaertete pfadgebundene Gate aufgedeckt hat (CRLF-Staging-Hashes auf
+repo-native-Zeilen; ein Ziel-Feld `src` statt `src/phy024`). Alt-Zeilen
+bleiben unveraendert als Lineage stehen; letzte Zeile pro Pfad gewinnt.
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| 539B43CB97617CC7 | 2026-07-10 | docs/ADR | repo-native: `docs/ADR/ADR-001-repo-anlage.md` (docs neu im SOURCES-Scope; Stand nach datiertem Nachtrag 2026-07-10 (dde/CI-Korrektur)) |
+| 5F29E8C186C450A9 | 2026-07-10 | results | repo-native: `results/260602 PHY028 square report.txt` (stand: SUPERSEDED-Header 2026-07-10 angehaengt (H1-Bug-Lineage); Erst-Eintrag 73C8810C093BAA73) |
+| 993ECBA310F18817 | 2026-07-10 | results | repo-native: `results/260604 PHY030 triangular tbkt per-site report.txt` (korrektur (Pfad-Bindung Audit 2026-07-10): Alt-Zeile 40ACCA3C4A63EB6B war CRLF-Staging-Hash; Bytes unveraendert, jetzt committed-LF gepinnt) |
+| 2D8930A6F6335064 | 2026-07-10 | results | repo-native: `results/260604 PHY030 v02 wm-logfit report.txt` (korrektur (Pfad-Bindung Audit 2026-07-10): Alt-Zeile 06D49F65483D2FEB war CRLF-Staging-Hash; Bytes unveraendert, jetzt committed-LF gepinnt) |
+| 8823BB6FFE354ACF | 2026-07-10 | results | repo-native: `results/260607 PHY032 honeycomb wm-logfit bootstrap report.txt` (korrektur (Pfad-Bindung Audit 2026-07-10): Alt-Zeile FE09590499875FF7 war CRLF-Staging-Hash; Bytes unveraendert, jetzt committed-LF gepinnt) |
+| 927D147E1616D088 | 2026-07-10 | results | repo-native: `results/260609 PHY033 kagome tbkt per-site report.txt` (korrektur (Pfad-Bindung Audit 2026-07-10): Alt-Zeile 804F71EFAE465181 war CRLF-Staging-Hash; Bytes unveraendert, jetzt committed-LF gepinnt) |
+| 6B32E36EE2285BB2 | 2026-07-10 | results | repo-native: `results/260616 PHY039 fourth-order helicity modulus report.txt` (stand: SUPERSEDED-Header 2026-07-10 angehaengt (H1-Bug-Lineage); Erst-Eintraege 0C56953B89615AF7/99DEED878B6A5BFA) |
+| 40286170CEEE5614 | 2026-07-10 | results | repo-native: `results/260616 PHY040 wang-landau entropic helicity report.txt` (stand: SUPERSEDED-Header 2026-07-10 angehaengt (H1 + 1/t-Method-Drift); Erst-Eintrag E479797E546F20F0) |
+| D7A15F9064AA1D11 | 2026-07-10 | results | repo-native: `results/260710 PHY028 square report v02.txt` (NEU: Gate-Evidenz PHY028 v02 nach edge_disp-Fix, deterministisch seed=42; (16,32)=0.8841 (-1.05%), 1%-Gate ehrlich FAIL) |
+| A1E9973216BFD77C | 2026-07-10 | results | repo-native: `results/260710 PHY039 fourth-order helicity modulus report v02.txt` (NEU: Gate-Evidenz PHY039 v02 nach edge_disp-Fix, seed=42; Y4-Dip ausserhalb Fenster, Dip-Gates ehrlich FAIL) |
+| 2DBAEB5713701CE8 | 2026-07-10 | spec | repo-native: `spec/260710 PHI HEX code audit v01.md` (NEU: Vertragsquelle Code-Audit 2026-07-10 (H1/M1/WL-H1/WL-H2 + O1-O7)) |
+| 6E7AB20C425DBA43 | 2026-07-10 | src | repo-native: `src/260602 PHY026 wolff cluster v01.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| 94CC8445EF365838 | 2026-07-10 | src | repo-native: `src/260602 PHY028 square validation v01.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| F2BBD4A085460E37 | 2026-07-10 | src | repo-native: `src/260602 PHY029 triangular sandvik v01.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| DE62E31D29044C82 | 2026-07-10 | src | repo-native: `src/260604 PHY030 triangular tbkt per-site v01.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| 43697DBAE0CB16D6 | 2026-07-10 | src | repo-native: `src/260604 PHY030 triangular tbkt per-site v02 wm-logfit.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| 3A2E469ABCA7484A | 2026-07-10 | src | repo-native: `src/260607 PHY031 honeycomb tbkt per-site v01.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| FC493341E8D87C41 | 2026-07-10 | src | repo-native: `src/260611 PHY034 honeycomb hks extrapolation v01.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| 14042E66470DF172 | 2026-07-10 | src | repo-native: `src/260611 PHY035 honeycomb hks dense ladder v01.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| 4DBD65AF13EBB51A | 2026-07-10 | src | repo-native: `src/260611 PHY036 honeycomb hks large ladder v01.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| B9C8F44697C74697 | 2026-07-10 | src | repo-native: `src/260611 PHY037 hks multilattice extrapolation v01.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| DF691A1A187A428E | 2026-07-10 | src | repo-native: `src/260612 PHY038 honeycomb hks highstat v01.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| 1841A17489E6292F | 2026-07-10 | src | repo-native: `src/260616 PHY039 fourth-order helicity modulus v01.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| D7DF334DFAAAE2AD | 2026-07-10 | src | repo-native: `src/260616 PHY040 wang-landau entropic helicity v01.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| 4F438C2E89F7ED5F | 2026-07-10 | src | repo-native: `src/260702 PHY041 honeycomb wang-landau entropic helicity v01.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| 3773502F49499D0C | 2026-07-10 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| 6B8F6E35DDB31788 | 2026-07-10 | src/phy024 | repo-native: `src/phy024/PHY024_R0_XY_PhiHex_Reference_v01.py` (korrektur (Pfad-Bindung Audit 2026-07-10): Alt-Zeile 6B8F6E35DDB31788 hatte Ziel `src` statt `src/phy024`; Bytes unveraendert) |
+| 8BB6A3804D14B320 | 2026-07-10 | tests | repo-native: `tests/conftest.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| 744926E0F2C63912 | 2026-07-10 | tests | repo-native: `tests/test_honeycomb_reference_conventions.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| C34BC954F4C2DA3C | 2026-07-10 | tests | repo-native: `tests/test_module_smoke_gates.py` (NEU: Import-+Orakel-Smokes phy017/PHY027/PHY029/phy024 R0+R2 (Coverage-Schliessung)) |
+| 2CB8026E92BAFCA8 | 2026-07-10 | tests | repo-native: `tests/test_phy028_square_geometry.py` (NEU: H1-Uniform-Twist-/min-image-Orakel + M1-Pol-Rejektions-Gates) |
+| EDC5D087A8DBD0A0 | 2026-07-10 | tests | repo-native: `tests/test_phy039_fourth_order_modulus.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| F7568BA3AEA5D162 | 2026-07-10 | tests | repo-native: `tests/test_phy041_honeycomb_wl.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| 5DFCBEFC8E4FD8D5 | 2026-07-10 | tests | repo-native: `tests/test_phy042_wl_fss.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| 7EA7FD38F605DFF6 | 2026-07-10 | tests | repo-native: `tests/test_sources_integrity.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| F2A2D9EF3D28489C | 2026-07-10 | tests | repo-native: `tests/test_tbkt_honeycomb.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| 1A5FA8A46B0862B9 | 2026-07-10 | tests | repo-native: `tests/test_tbkt_honeycomb_bootstrap.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| ED24AF221FB962AC | 2026-07-10 | tests | repo-native: `tests/test_tbkt_kagome.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| F25FD1C09DA0784E | 2026-07-10 | tests | repo-native: `tests/test_tbkt_triangular.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| F001F2F448D80896 | 2026-07-10 | tests | repo-native: `tests/test_tbkt_wm_logfit.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
+| 9808BD879D79CCD9 | 2026-07-10 | results | repo-native: `results/260710 PHY040 wang-landau entropic helicity report v02.txt` (NEU: Gate-Evidenz PHY040 v02 nach edge_disp-Fix + 1/t-Instrumentierung, seed=42; Paare +0.85%/+2.10%, Bias-Gate ehrlich FAIL; '1/t-Phase=NIE' live bestaetigt) |
+| D5506272366D8BA0 | 2026-07-10 | spec | repo-native: `spec/260710 PHI HEX code audit v01.md` (stand: Audit-Spec um PHY039-/PHY040-Re-Run-Resultate ergaenzt; supersedet vorherige Zeile gleicher Datei) |
+| 24F4DA84EB5F0C9E | 2026-07-10 | spec | repo-native: `spec/260710 PHI HEX code audit v01.md` (stand: O4-Teil-Entwarnung (PHY035-Punktschaetzer mit Guard exakt reproduziert); supersedet vorherige Zeile gleicher Datei) |
+| DF0EDE8BF15A8C43 | 2026-07-10 | tests | repo-native: `tests/test_phy035_hks_dense_ladder.py` (stand: Smoke-Statistik 4/50/25 -> 6/100/40 (altes Mini-Crossing (16,32) war Pol-Artefakt, vom M1-Guard korrekt verhindert)) |
+| A6E8E1A495D88165 | 2026-07-10 | spec | repo-native: `spec/260710 PHI HEX code audit v01.md` (stand: P2-Fix 2026-07-10b (Codex-Review PR#23) - Crossing nur zwischen benachbarten Gitterpunkten, kein Interpolieren ueber Pol-Luecken; committete v02-Evidenz bit-genau reproduziert) |
+| B10C51910AD9073E | 2026-07-10 | src | repo-native: `src/260602 PHY028 square validation v01.py` (stand: P2-Fix 2026-07-10b (Codex-Review PR#23) - Crossing nur zwischen benachbarten Gitterpunkten, kein Interpolieren ueber Pol-Luecken; committete v02-Evidenz bit-genau reproduziert) |
+| 014951A5950F9EA6 | 2026-07-10 | src | repo-native: `src/260602 PHY029 triangular sandvik v01.py` (stand: P2-Fix 2026-07-10b (Codex-Review PR#23) - Crossing nur zwischen benachbarten Gitterpunkten, kein Interpolieren ueber Pol-Luecken; committete v02-Evidenz bit-genau reproduziert) |
+| 7A687DB6D11C4304 | 2026-07-10 | src | repo-native: `src/260604 PHY030 triangular tbkt per-site v01.py` (stand: P2-Fix 2026-07-10b (Codex-Review PR#23) - Crossing nur zwischen benachbarten Gitterpunkten, kein Interpolieren ueber Pol-Luecken; committete v02-Evidenz bit-genau reproduziert) |
+| 8C202FC7835E5556 | 2026-07-10 | src | repo-native: `src/260604 PHY030 triangular tbkt per-site v02 wm-logfit.py` (stand: P2-Fix 2026-07-10b (Codex-Review PR#23) - Crossing nur zwischen benachbarten Gitterpunkten, kein Interpolieren ueber Pol-Luecken; committete v02-Evidenz bit-genau reproduziert) |
+| A4D48816122EF3D0 | 2026-07-10 | src | repo-native: `src/260607 PHY031 honeycomb tbkt per-site v01.py` (stand: P2-Fix 2026-07-10b (Codex-Review PR#23) - Crossing nur zwischen benachbarten Gitterpunkten, kein Interpolieren ueber Pol-Luecken; committete v02-Evidenz bit-genau reproduziert) |
+| A67312BECDFD41FC | 2026-07-10 | src | repo-native: `src/260616 PHY040 wang-landau entropic helicity v01.py` (stand: P2-Fix 2026-07-10b (Codex-Review PR#23) - Crossing nur zwischen benachbarten Gitterpunkten, kein Interpolieren ueber Pol-Luecken; committete v02-Evidenz bit-genau reproduziert) |
+| CC63311768DAB1E8 | 2026-07-10 | tests | repo-native: `tests/test_phy028_square_geometry.py` (stand: P2-Fix 2026-07-10b (Codex-Review PR#23) - Crossing nur zwischen benachbarten Gitterpunkten, kein Interpolieren ueber Pol-Luecken; committete v02-Evidenz bit-genau reproduziert) |

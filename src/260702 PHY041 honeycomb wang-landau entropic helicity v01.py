@@ -117,9 +117,10 @@ E0_PER_SITE = -1.5     # Grundzustand honeycomb (z=3): -z/2 per Site
 PHY032_REPORT = (_ROOT / "results" /
                  "260607 PHY032 honeycomb wm-logfit bootstrap report.txt")
 
-# RNG-Stream-Vertrag PHY041 (kollisionsfrei zu 400+ PHY031/032, 500+ PHY033,
-# 500/700+ PHY040): Anker 600+s+1000L, WL-Walker 650+L, Wolff-Referenz
-# 660+s+1000L.
+# RNG-Stream-Vertrag PHY041 (kollisionsfrei zu 300+ PHY028/PHY039 [dort
+# untereinander kollidierend, nur durch disjunkte T-Gitter getrennt - Code-
+# Audit L1 2026-07-10], 400+ PHY031/032, 500+ PHY033, 500/700+ PHY040):
+# Anker 600+s+1000L, WL-Walker 650+L, Wolff-Referenz 660+s+1000L.
 _STREAM_ANCHOR = 600
 _STREAM_WL = 650
 _STREAM_REF = 660
@@ -231,6 +232,13 @@ def wl_entropic_lattice(nbr_list, ei, ej, ax, ay, n: int, L: int,
     ba = 0.0
     while not (E_lo <= E < E_hi):
         ba += 0.05
+        # Haertung 2026-07-10 (Code-Audit L4): unerreichbares Fenster muss
+        # laut scheitern statt endlos zu haengen (der Grundzustands-Floor
+        # mildert, deckelt aber nicht).
+        if ba > 400.0:
+            raise RuntimeError(
+                f"Anneal erreicht Energie-Fenster [{E_lo},{E_hi}) nicht "
+                f"(L={L}, E={E:.1f}); Fenster pruefen.")
         idx = rng.integers(0, n, size=n).tolist()
         news = rng.uniform(0.0, two_pi, size=n).tolist()
         us = rng.random(size=n).tolist()
@@ -270,6 +278,12 @@ def wl_entropic_lattice(nbr_list, ei, ej, ax, ay, n: int, L: int,
             lng[b] += lnf
             H[b] += 1
         sweeps += 1
+        # Haertung 2026-07-10 (Code-Audit L4): Konvergenz-Cap gegen
+        # Endlos-Haengen (committete Laeufe: <2e5 Sweeps bei L=48).
+        if sweeps > 5_000_000:
+            raise RuntimeError(
+                f"WL-Phase konvergiert nicht (L={L}, sweeps={sweeps}, "
+                f"lnf={lnf:.2e}); Fenster/Bin-Aufloesung pruefen.")
         if sweeps % resync_every == 0:
             E_exact = _full_energy(np.asarray(thl), ei, ej)
             max_drift = max(max_drift, abs(E_exact - E))
@@ -371,6 +385,24 @@ def canonical_edge_leak(res: WLResult, T: float, k_edge: int = 3) -> float:
     """Kanonisches Gewicht in den aeussersten k_edge Bins je Fensterrand."""
     w = _canonical_weights(res, T)
     return float(w[:k_edge].sum() + w[-k_edge:].sum())
+
+
+def uncovered_canonical_mass(res: WLResult, T: float) -> float:
+    """Kanonische Gewichtsmasse auf produktions-UNBESETZTEN Bins.
+
+    Backport des PHY042-Coverage-Gates (Code-Audit H2, 2026-07-10): das
+    Rand-Leak-Gate deckt nur die aeussersten Bins je Fensterrand; kanonische
+    Masse auf unbesetzten Bins WEITER INNEN wuerde von der maskierten
+    Renormierung in _canonical_weights stillschweigend wegnormiert und die
+    Y2/Y4-Kurven verfaelschen. Gerechnet mit der VOLLEN lng (die WL-Phase
+    hat alle Bins besucht; B&P-Kriterium min H >= 1).
+    """
+    beta = 1.0 / T
+    x = res.lng - beta * res.centers
+    x = x - x.max()
+    w = np.exp(x)
+    w /= w.sum()
+    return float(w[~res.mask].sum())
 
 
 def parse_phy032_grid(path: Path = PHY032_REPORT) -> dict:
@@ -478,6 +510,16 @@ def run_phy041(Ls=(12, 16, 24), lnf_final=1e-5, prod_sweeps=30000,
     print(f"\n[LEAK] max. Randgewicht ueber alle L, T: {leak_max:.2e} "
           f"(Gate < 1e-3) -> {'PASS' if leak_ok else 'FAIL'}")
 
+    # --- Coverage-Massen-Gate (Backport PHY042; Code-Audit H2) -------------
+    unc_max = 0.0
+    for L in Ls:
+        for T in t_grid:
+            unc_max = max(unc_max,
+                          uncovered_canonical_mass(results[L], float(T)))
+    unc_ok = unc_max < 1e-3
+    print(f"[COVER] max. kanonische Masse auf unbesetzten Bins: {unc_max:.2e} "
+          f"(Gate < 1e-3) -> {'PASS' if unc_ok else 'FAIL'}")
+
     # --- Quervalidierung (a): frische Wolff-Referenz (L=Ls[0]) ------------
     Lval = Ls[0]
     print(f"\n[VAL-A] WL vs frische Wolff-Referenz (L={Lval}):")
@@ -503,7 +545,13 @@ def run_phy041(Ls=(12, 16, 24), lnf_final=1e-5, prod_sweeps=30000,
     # --- Quervalidierung (b): Drift-Guard gegen committed PHY032-Gitter ---
     print("\n[VAL-B] WL vs committed PHY032-Messgitter (Drift-Guard):")
     grid032 = parse_phy032_grid()
-    grid_ok = True
+    # Haertung 2026-07-10 (Code-Audit M1): der Drift-Guard darf nicht vacuous
+    # passen, wenn der Report-Parser nichts (mehr) findet. Vertrag mit dem
+    # committeten PHY032-Report: L=12 und L=24 mit je 8 T-Punkten.
+    grid_ok = (len(grid032.get(12, [])) == 8 and len(grid032.get(24, [])) == 8)
+    if not grid_ok:
+        print("      PARSE-VERTRAG VERLETZT: erwarte je 8 Gitterpunkte fuer "
+              f"L=12/24, gefunden {[(k, len(v)) for k, v in grid032.items()]}")
     grid_rows = []
     for L in Ls:
         if L not in grid032:
@@ -564,6 +612,7 @@ def run_phy041(Ls=(12, 16, 24), lnf_final=1e-5, prod_sweeps=30000,
     gates = {
         "PASS_ALIGNED_EXACT_THREE_QUARTERS": aligned_ok,
         "PASS_NO_CANONICAL_EDGE_LEAK": leak_ok,
+        "PASS_NO_UNCOVERED_CANONICAL_MASS": unc_ok,
         "PASS_WL_ENERGY_MATCHES_WOLFF": e_ok,
         "PASS_WL_Y2_MATCHES_WOLFF": y2_ok,
         "PASS_WL_Y2_MATCHES_PHY032_GRID": grid_ok,
@@ -608,6 +657,7 @@ def run_phy041(Ls=(12, 16, 24), lnf_final=1e-5, prod_sweeps=30000,
         "windows": {str(L): windows[L] for L in Ls},
         "wl_sweeps": {str(L): results[L].wl_sweeps for L in Ls},
         "leak_max": leak_max,
+        "uncovered_mass_max": unc_max,
         "validation_vs_wolff": val_rows,
         "validation_vs_phy032_grid": grid_rows,
         "pair_tbkt": {f"{a}_{b}": v for (a, b), v in pair_tbkt.items()},

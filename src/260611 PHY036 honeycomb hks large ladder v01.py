@@ -115,7 +115,15 @@ def run_phy036(n_seeds=8, n_measure=140, n_burn=60, master_seed=42):
 
 
 def _pct(x, ref):
+    if x is None:
+        return "n/a"
     return f"{(x - ref) / ref * 100:+.2f}%"
+
+
+def _fmt4(x):
+    """None-sichere Formatierung (Code-Audit M3, 2026-07-10): der FAIL-Pfad
+    muss einen Report schreiben koennen statt mit TypeError zu crashen."""
+    return "None" if x is None else f"{x:.4f}"
 
 
 def write_report(rep, path):
@@ -154,7 +162,7 @@ def write_report(rep, path):
     L.append("--- HKS-L->inf-Extrapolation (3 Punkte, OLS in u=1/(lnLc)^2) ---")
     ex = rep["extrap"]
     b = rep["boot"]
-    L.append(f"  T_BKT(L->inf) = {ex:.4f}  {_pct(ex, REF_MULTI)}/"
+    L.append(f"  T_BKT(L->inf) = {_fmt4(ex)}  {_pct(ex, REF_MULTI)}/"
              f"{_pct(ex, REF_DEDICATED)}")
     if b["ci_lower"] is not None:
         L.append(f"    Seed-Bootstrap: CI[{b['ci_lower']:.4f},"
@@ -185,7 +193,7 @@ def main() -> int:
     b = rep["boot"]
     ci = (f"CI[{b['ci_lower']:.4f},{b['ci_upper']:.4f}]"
           if b["ci_lower"] is not None else "CI[n/a]")
-    print(f"  T_BKT(L->inf) = {rep['extrap']:.4f}  {ci}  (Refs 0.573/0.576)")
+    print(f"  T_BKT(L->inf) = {_fmt4(rep['extrap'])}  {ci}  (Refs 0.573/0.576)")
     print(f"  Laufzeit {rep['elapsed_s']:.1f}s  "
           f"OVERALL: {'PASS' if rep['overall'] else 'FAIL'}")
     return 0 if rep["overall"] else 1

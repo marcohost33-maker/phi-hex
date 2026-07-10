@@ -28,6 +28,13 @@ Crossing-Rauschen). Der 4.-Ordnungs-Dip wird glatt aufgeloest.
    Akzeptanz min(1, g(E)/g(E')). Update ln g(b) += lnf; Histogramm H(b) += 1.
    Phase A (Standard-WL): lnf halbiert bei Flachheit (min H > flat*mean H).
    Phase B (1/t): sobald lnf <= 1/t (t = Sweeps), lnf = 1/t je Sweep.
+   EHRLICHKEITS-NACHTRAG (Code-Audit 2026-07-10, deckt sich mit dem
+   PHY041-Befund): Mit den committeten Parametern (lnf_final=2e-4, flat=0.7)
+   ist die Umschaltbedingung nie wahr - die Flachheits-Epochen sind so lang,
+   dass lnf beim Halbieren immer > 1/sweeps bleibt. Die committeten Laeufe
+   liefen also in REINEM Standard-WL (bekannte Fehler-Saettigung ~0.02 in
+   <E>/N); die echte B&P-1/t-Phase (Besuchs-Kriterium min H >= 1) wurde in
+   PHY041 nachgeruestet. WLResult.one_over_t_engaged instrumentiert das.
    Energiefenster auf den BKT-relevanten Bereich beschraenkt (Reachability +
    Flachheit erreichbar; kanonisches Gewicht der Ziel-T vollstaendig erfasst).
 2. Produktion: g(E) fix, flacher E-Walk (multikanonisch), Sammeln der
@@ -121,6 +128,13 @@ class WLResult:
     micro_y: dict
     wl_sweeps: int
     prod_sweeps: int
+    # Audit-Instrumentierung 2026-07-10 (Code-Audit H1): hat die 1/t-Phase
+    # (Belardinelli&Pereyra) tatsaechlich gegriffen? In den committeten
+    # Laeufen (lnf_final=2e-4, flat=0.7) war die Umschaltbedingung nie wahr
+    # - der Lauf endete in reinem Standard-WL (bekannte Fehler-Saettigung);
+    # PHY041 hat das unabhaengig gefunden und mit echter B&P-Phase korrigiert.
+    one_over_t_engaged: bool = False
+    sweeps_at_1t: int = 0
 
 
 def wang_landau_helicity(L: int, e_lo_ps: float = -1.82, e_hi_ps: float = -0.75,
@@ -151,6 +165,12 @@ def wang_landau_helicity(L: int, e_lo_ps: float = -1.82, e_hi_ps: float = -0.75,
     ba = 0.0
     while not (E_lo <= E < E_hi):
         ba += 0.05
+        # Haertung 2026-07-10 (Code-Audit L4): unerreichbares Fenster muss
+        # laut scheitern statt endlos zu haengen.
+        if ba > 400.0:
+            raise RuntimeError(
+                f"Anneal erreicht Energie-Fenster [{E_lo},{E_hi}) nicht "
+                f"(L={L}, E={E:.1f}); Fenster pruefen.")
         for _ in range(n):
             i = int(randint(n))
             old = th[i]
@@ -166,6 +186,7 @@ def wang_landau_helicity(L: int, e_lo_ps: float = -1.82, e_hi_ps: float = -0.75,
     H = np.zeros(nbins)
     lnf = 1.0
     use_1t = False
+    sweeps_at_1t = 0
     sweeps = 0
     t0 = time.time()
     # ---- WL-Phase: g(E) aufbauen ----
@@ -191,6 +212,12 @@ def wang_landau_helicity(L: int, e_lo_ps: float = -1.82, e_hi_ps: float = -0.75,
             lng[b] += lnf
             H[b] += 1
         sweeps += 1
+        # Haertung 2026-07-10 (Code-Audit L4): Konvergenz-Cap gegen
+        # Endlos-Haengen (committete Laeufe brauchten <5e4 Sweeps).
+        if sweeps > 5_000_000:
+            raise RuntimeError(
+                f"WL-Phase konvergiert nicht (L={L}, sweeps={sweeps}, "
+                f"lnf={lnf:.2e}); Fenster/Flatness pruefen.")
         if use_1t:
             lnf = 1.0 / sweeps
         elif H.min() > 0 and H.min() > flat * H.mean():
@@ -198,8 +225,11 @@ def wang_landau_helicity(L: int, e_lo_ps: float = -1.82, e_hi_ps: float = -0.75,
             H[:] = 0.0
             if lnf <= 1.0 / sweeps:
                 use_1t = True
+                sweeps_at_1t = sweeps
     if verbose:
-        print(f"    WL g(E): L={L} sweeps={sweeps} t={time.time() - t0:.0f}s")
+        print(f"    WL g(E): L={L} sweeps={sweeps} 1/t-Phase="
+              f"{'aktiv ab ' + str(sweeps_at_1t) if use_1t else 'NIE (Standard-WL)'}"
+              f" t={time.time() - t0:.0f}s")
     lng -= lng.max()
 
     # ---- Produktion: g fix, flacher E-Walk, mikrokanonische Aggregate ----
@@ -240,7 +270,8 @@ def wang_landau_helicity(L: int, e_lo_ps: float = -1.82, e_hi_ps: float = -0.75,
     micro_y = {k: np.where(mask, acc_y[k] / denom, 0.0) for k in OBS}
     return WLResult(L=L, n=n, centers=centers, lng=lng, mask=mask,
                     micro_x=micro_x, micro_y=micro_y, wl_sweeps=sweeps,
-                    prod_sweeps=prod_sweeps)
+                    prod_sweeps=prod_sweeps, one_over_t_engaged=use_1t,
+                    sweeps_at_1t=sweeps_at_1t)
 
 
 def _canonical_weights(res: WLResult, T: float) -> np.ndarray:
@@ -299,11 +330,17 @@ def tbkt_pair_from_curves(temps, y2_a, La, y2_b, Lb):
     for k, T in enumerate(temps):
         Ra = math.pi * y2_a[k] / (2 * T) - 1.0
         Rb = math.pi * y2_b[k] / (2 * T) - 1.0
-        if abs(Ra) > 1e-6 and abs(Rb) > 1e-6:
-            diffs.append((T, (1.0 / Ra - 1.0 / Rb) - target))
+        # P1-Fix 2026-07-10 (Code-Audit M1): physikalischer WM-Ast verlangt
+        # R > 0 (1/R = 2 ln L + C > 0); R <= 0 waere ein Pol-Artefakt.
+        if Ra > 1e-6 and Rb > 1e-6:
+            diffs.append((k, T, (1.0 / Ra - 1.0 / Rb) - target))
+    # P2-Fix 2026-07-10b (Codex-Review PR#23): Crossing NUR zwischen
+    # BENACHBARTEN Gitterpunkten - kein Interpolieren ueber Pol-Luecken.
     for i in range(len(diffs) - 1):
-        T0, d0 = diffs[i]
-        T1, d1 = diffs[i + 1]
+        k0, T0, d0 = diffs[i]
+        k1, T1, d1 = diffs[i + 1]
+        if k1 - k0 != 1:
+            continue
         if d0 == 0:
             return float(T0)
         if d0 * d1 < 0:
@@ -482,15 +519,23 @@ def run_phy040(Ls=(12, 16, 24), lnf_final=2e-4, prod_sweeps=30000,
     print("      RAUSCHEN, NICHT den finite-size-Bias (deckt sich mit PHY037/038).")
     print("    - EHRLICHE TRENNUNG der zwei Effekte: Statistik-Limit (PHY039) ist")
     print("      geloest; finite-size-Limit braucht groessere L (square: L>=32;")
-    print("      vgl. PHY028 (16,32) <1%). Der validierte entropische Sampler ist")
-    print("      damit bereit fuer groessere L + den honeycomb-Follow-up.")
+    print("      vgl. PHY028 (16,32) ~1% nach Geometrie-Fix). Der validierte")
+    print("      entropische Sampler ist bereit fuer groessere L + den")
+    print("      honeycomb-Follow-up.")
 
     return {
         "module": "PHY040_wang_landau_entropic_helicity",
         "attribution": "Coworker Research / Coworkerz",
         "date": "2026-06-16",
         "reference_T_bkt_square": ref,
-        "method": "Wang-Landau (PRL 86,2050(2001)) + 1/t (B&P JCP 127,184105(2007))",
+        # Ehrlichkeits-Korrektur 2026-07-10 (Code-Audit H1): der 1/t-Zweig
+        # existiert im Code, greift aber im committeten Parameter-Regime nie
+        # (siehe Header-Nachtrag); der Method-String weist das jetzt aus.
+        "method": ("Wang-Landau (PRL 86,2050(2001)); 1/t-Zweig (B&P JCP 127,"
+                   "184105(2007)) vorhanden, greift im Standard-Regime NICHT "
+                   "- echte B&P-Phase erst in PHY041"),
+        "one_over_t_engaged": {str(L): results[L].one_over_t_engaged
+                               for L in Ls},
         "Ls": list(Ls),
         "lnf_final": lnf_final,
         "prod_sweeps": prod_sweeps,

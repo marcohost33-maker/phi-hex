@@ -56,17 +56,23 @@ def sandvik_pair(r1: int, r2: int, temps: list, cache: dict,
     ratio = L2 / L1
     target = -2.0 * math.log(ratio)
     diffs = []
-    for T in temps:
+    for k, T in enumerate(temps):
         for r in (r1, r2):
             if (r, T) not in cache:
                 cache[(r, T)] = measure_helicity_wolff(radius=r, T=T, **cfg)
         R1 = R_of(cache[(r1, T)].upsilon_mean, T)
         R2 = R_of(cache[(r2, T)].upsilon_mean, T)
-        if abs(R1) > 1e-6 and abs(R2) > 1e-6:
-            diffs.append((T, (1.0 / R1 - 1.0 / R2) - target))
+        # P1-Fix 2026-07-10 (Code-Audit M1): physikalischer WM-Ast verlangt
+        # R > 0 (1/R = 2 ln L + C > 0); R <= 0 waere ein Pol-Artefakt.
+        if R1 > 1e-6 and R2 > 1e-6:
+            diffs.append((k, T, (1.0 / R1 - 1.0 / R2) - target))
+    # P2-Fix 2026-07-10b (Codex-Review PR#23): Crossing NUR zwischen
+    # BENACHBARTEN Gitterpunkten - kein Interpolieren ueber Pol-Luecken.
     for i in range(len(diffs) - 1):
-        T0, d0 = diffs[i]
-        T1, d1 = diffs[i + 1]
+        k0, T0, d0 = diffs[i]
+        k1, T1, d1 = diffs[i + 1]
+        if k1 - k0 != 1:
+            continue
         if d0 == 0:
             return T0
         if d0 * d1 < 0:
@@ -80,7 +86,10 @@ def run_phy029() -> dict[str, Any]:
     print("=" * 70)
     ref = 1.418
     print(f"Referenz T_BKT(triangular) = {ref}(2)")
-    print("Methode verifiziert auf Quadratgitter (PHY028: 0.8950 vs 0.8935)\n")
+    # Aktualisiert 2026-07-10 (PHY028-edge_disp-Fix): korrigierter V&V-Anker
+    # 0.8841 (-1.05%); der fruehere Wert 0.8950 stammte vom Wrap-Bond-Bug.
+    print("Methode verifiziert auf Quadratgitter (PHY028 nach Geometrie-Fix: "
+          "0.8841 vs 0.8935, ~1%)\n")
 
     temps = [1.30, 1.40, 1.50, 1.60]
     cfg = dict(n_measure=500, n_burn=300, n_seeds=8, master_seed=42)

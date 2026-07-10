@@ -19,7 +19,6 @@ from __future__ import annotations
 import math
 
 import numpy as np
-import pytest
 
 from phy032_honeycomb_wm_bootstrap import (
     REF_HONEYCOMB_DEDICATED,
@@ -173,18 +172,30 @@ def test_wm_fit_estimator_recovers_T_true():
 
 
 def test_wm_fit_estimator_rejects_edge_minimum():
-    """Liegt das argmin am T-Gitter-Rand, gibt der Estimator None zurueck
-    (kein verlaesslicher Punktschaetzer am Rand) - Silent-Failure-Gate."""
+    """Liegt das argmin am T-Gitter-Rand, MUSS der Estimator None liefern
+    (kein verlaesslicher Punktschaetzer am Rand) - Silent-Failure-Gate.
+
+    Haertung 2026-07-10 (Code-Audit 4.2): die fruehere Assertion
+    `None or im Inneren` liess fast jedes Verhalten durch (auch einen
+    Estimator ohne Rand-Erkennung, der vom Rand ins Innere extrapoliert).
+    Konstruktion hier: WM-konforme Daten mit T_true OBERHALB des Gitters
+    -> chi^2(T) faellt monoton zum rechten Rand -> argmin garantiert am
+    Rand -> None ist die einzig richtige Antwort.
+    """
     Ls = [12, 24, 48]
-    # Monoton fallendes chi^2 -> argmin am rechten Rand.
     T_grid = [0.55, 0.56, 0.57, 0.58]
-    # means so, dass die WM-Form bei keinem inneren T optimal ist: lineare
-    # L-Abhaengigkeit ohne Log-Form -> argmin tendiert an den Rand.
-    means_LT = {L: {T: 0.2 + 0.01 * L + 0.5 * T for T in T_grid} for L in Ls}
+    T_true, C = 0.70, 2.0   # weit rechts ausserhalb des Gitters
+    means_LT = {L: {T: wm_form(T_true, L, C)
+                    + 0.3 * (T - T_true) * math.log(L) for T in T_grid}
+                for L in Ls}
     est = make_wm_fit_estimator(Ls, T_grid)
-    tb = est(means_LT)
-    # Entweder None (Rand erkannt) oder strikt im Inneren - nie genau am Rand.
-    assert tb is None or (min(T_grid) < tb < max(T_grid)), tb
+    assert est(means_LT) is None
+    # Spiegelfall: T_true unterhalb des Gitters -> argmin am linken Rand.
+    T_true_lo = 0.45
+    means_lo = {L: {T: wm_form(T_true_lo, L, C)
+                    + 0.3 * (T - T_true_lo) * math.log(L) for T in T_grid}
+                for L in Ls}
+    assert est(means_lo) is None
 
 
 def test_both_reference_values_are_distinct_and_documented():
@@ -198,7 +209,8 @@ def test_both_reference_values_are_distinct_and_documented():
 # (d) Reproduzierbarkeit gegen PHY031 v01 (slow: echtes Mini-Wolff-Sampling)
 # ---------------------------------------------------------------------------
 
-@pytest.mark.slow
+# De-slow 2026-07-10 (Code-Audit 1.3): gemessen <3.5s - gehoert als
+# fails-before-Gate in die schnelle CI-Suite, nicht hinter -m slow.
 def test_seedwise_mean_matches_phy031_v01():
     """measure_honeycomb_seedwise teilt den RNG-Stream-Vertrag von PHY031 v01:
     bei identischen Parametern ist das per-Seed-Mittel bit-fuer-bit gleich dem

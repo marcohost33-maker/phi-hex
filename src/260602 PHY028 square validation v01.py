@@ -80,14 +80,20 @@ def build_square_lattice(L):
     n = L * L
     def idx(x, y): return (x % L) * L + (y % L)
     edges, edge_disp = [], []
+    # P0-Fix 2026-07-10 (Code-Audit H1): Kanten in NATUERLICHER Orientierung
+    # (i -> Nachbar in +x/+y) speichern, OHNE min/max-Umsortierung. Die
+    # fruehere (min,max)-Sortierung invertierte fuer die 2L Wrap-Bonds
+    # (x=L-1 -> 0, y=L-1 -> 0) das Vorzeichen von edge_disp relativ zum
+    # gespeicherten (i,j): sin(theta_i - theta_j)*proj ging dort mit falschem
+    # Vorzeichen ein (T1 ist gerade und blieb korrekt; das T=0-Gate konnte
+    # das nicht sehen). Uniform-Twist-Orakel als CI-Gate in
+    # tests/test_phy028_square_geometry.py.
     for x in range(L):
         for y in range(L):
             i = idx(x, y)
-            j = idx(x + 1, y)
-            edges.append((min(i, j), max(i, j)))
+            edges.append((i, idx(x + 1, y)))
             edge_disp.append((1.0, 0.0))
-            k = idx(x, y + 1)
-            edges.append((min(i, k), max(i, k)))
+            edges.append((i, idx(x, y + 1)))
             edge_disp.append((0.0, 1.0))
     return SquareLattice(L=L, edges=edges, edge_disp=edge_disp, n_nodes=n)
 
@@ -160,16 +166,25 @@ def sandvik_pair_tbkt(L, data_L, data_2L):
     ln2 = math.log(2.0)
     Ts = sorted(set(data_L) & set(data_2L))
     diffs = []
-    for T in Ts:
+    for k, T in enumerate(Ts):
         u1 = data_L[T].upsilon_mean
         u2 = data_2L[T].upsilon_mean
         R1 = math.pi * u1 / (2 * T) - 1.0
         R2 = math.pi * u2 / (2 * T) - 1.0
-        if abs(R1) > 1e-6 and abs(R2) > 1e-6:
-            diffs.append((T, (1.0 / R1 - 1.0 / R2) - (-2.0 * ln2)))
+        # P1-Fix 2026-07-10 (Code-Audit M1): auf dem physikalischen WM-Ast
+        # ist 1/R = 2 ln L + C > 0, also R > 0. Punkte mit R <= 0 liegen
+        # jenseits des finite-L-NK-Crossings; der Pol von 1/R dort erzeugte
+        # einen Schein-Nulldurchgang (Pol-Artefakt statt WM-Wurzel).
+        if R1 > 1e-6 and R2 > 1e-6:
+            diffs.append((k, T, (1.0 / R1 - 1.0 / R2) - (-2.0 * ln2)))
+    # P2-Fix 2026-07-10b (Codex-Review PR#23): Crossing NUR zwischen
+    # BENACHBARTEN Gitterpunkten - kein Interpolieren quer ueber eine
+    # gefilterte Pol-Luecke (disconnected branch = Pol-Artefakt).
     for i in range(len(diffs) - 1):
-        T0, d0 = diffs[i]
-        T1, d1 = diffs[i + 1]
+        k0, T0, d0 = diffs[i]
+        k1, T1, d1 = diffs[i + 1]
+        if k1 - k0 != 1:
+            continue
         if d0 == 0:
             return T0
         if d0 * d1 < 0:
@@ -222,10 +237,14 @@ def run_phy028():
     pass_gates = {
         "PASS_ALIGNED_EXACT_J": abs(ups_aligned - 1.0) < 1e-6,
         "PASS_PAIR_METHOD_WORKS": len(valid) >= 1,
+        # Haertung 2026-07-10 (Code-Audit L6): fails-closed statt fails-open -
+        # alle Paare muessen konvergieren, und das 1%-Gate bindet explizit an
+        # das GROESSTE Paar (16,32), nicht an das letzte konvergierte.
+        "PASS_ALL_PAIRS_CONVERGE": len(valid) == len(pairs),
     }
-    if valid:
-        best = valid[-1]
-        pass_gates["PASS_LARGEST_PAIR_WITHIN_1PCT"] = abs(best - ref) / ref < 0.01
+    largest = pair_tbkt.get((16, 32))
+    pass_gates["PASS_LARGEST_PAIR_WITHIN_1PCT"] = (
+        largest is not None and abs(largest - ref) / ref < 0.01)
 
     print("\nPASS-Gates:")
     for k, v in pass_gates.items():
@@ -234,11 +253,13 @@ def run_phy028():
     print(f"\nOVERALL: {'PASS' if overall else 'FAIL'}")
 
     print("\nINTERPRETATION:")
-    print("Das groesste Paar (16,32) reproduziert T_BKT(square) auf <1%.")
-    print("Damit sind Wolff-Sampler UND Sandvik-Paar-Methodik unabhaengig")
-    print("verifiziert (V&V-Code-Verifikation). Die naive Crossing-")
-    print("Extrapolation aus PHY027 ist damit als unsauber widerlegt und")
-    print("durch die C-freie Paar-Methode ersetzt.")
+    print("V&V-Anker: das groesste Paar (16,32) reproduziert T_BKT(square)")
+    print("auf ~1% (nach dem edge_disp-Fix 2026-07-10: 0.8841, -1.05% -")
+    print("das fruehere +0.16% war ein Artefakt des Wrap-Bond-Vorzeichen-")
+    print("Bugs, der Upsilon systematisch ueberschaetzte). Wolff-Sampler und")
+    print("Sandvik-Paar-Methodik bleiben unabhaengig verifiziert; die naive")
+    print("Crossing-Extrapolation aus PHY027 bleibt widerlegt. Fuer <1%")
+    print("braucht es mehr Statistik/groessere L (ehrlich als offen gefuehrt).")
 
     return {
         "module": "PHY028_square_validation_sandvik",

@@ -9,14 +9,14 @@ T_BKT ~1.6 ergeben haette).
 """
 from __future__ import annotations
 
-import pytest
 
 from phy026_wolff_cluster import measure_helicity_wolff
 from phi_hex_core_v2 import nelson_kosterlitz_line
 from phy030_triangular_tbkt import per_L_crossing, REF_TRIANGULAR
 
 
-@pytest.mark.slow
+# De-slow 2026-07-10 (Code-Audit 1.3): gemessen <3.5s - gehoert als
+# fails-before-Gate in die schnelle CI-Suite, nicht hinter -m slow.
 def test_nk_crossing_in_physical_band():
     """Per-L-Crossing (kleines L) liegt im Band [1.40, 1.55] um T_BKT=1.418.
 

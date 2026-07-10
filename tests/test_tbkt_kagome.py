@@ -160,7 +160,8 @@ def test_kagome_reference_between_honeycomb_and_triangular():
 # (d) Smoke (slow): echtes Mini-Wolff-Sampling
 # ---------------------------------------------------------------------------
 
-@pytest.mark.slow
+# De-slow 2026-07-10 (Code-Audit 1.3): gemessen <3.5s - gehoert als
+# fails-before-Gate in die schnelle CI-Suite, nicht hinter -m slow.
 def test_kagome_crossing_in_physical_band():
     """Mini-Wolff-Lauf: per-L NK-Crossing im Band um die Referenz 0.825.
 

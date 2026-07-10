@@ -4,15 +4,53 @@ Diese Tests schuetzen keinen Simulationspfad, sondern den Methodenvertrag:
 Literaturwerte duerfen nicht still von inverse temperature beta_BKT zu
 T_BKT verwechselt werden. Der Anlass ist das Reference-Conventions-Audit
 `spec/260703 PHI HEX honeycomb reference conventions audit v01.md`.
+
+Haertung 2026-07-10 (Code-Audit 4.1): die Tests pruefen jetzt PRODUKTIONS-
+Konstanten (phy042.REF_BAND, PHY041-REFs) statt nur test-lokaler Literale -
+vorher konnte der Drift, den sie verhindern sollen (0.576 wieder als
+direkter Anker im Code), gar nicht auffallen.
 """
 from __future__ import annotations
 
 import math
 
+import conftest
+
+phy041 = conftest._load(
+    "phy041_honeycomb_wl",
+    "260702 PHY041 honeycomb wang-landau entropic helicity v01.py")
+phy042 = conftest._load(
+    "phy042_honeycomb_wl_fss", "260706 PHY042 honeycomb wl fss v01.py")
+
 
 def _beta_to_t(beta: float, sigma_beta: float) -> tuple[float, float]:
     """T = 1/beta mit linearer Fehlerfortpflanzung sigma_T=sigma_beta/beta^2."""
     return 1.0 / beta, sigma_beta / (beta * beta)
+
+
+def test_production_ref_band_uses_converted_beta_channels():
+    """phy042.REF_BAND fuehrt die beta-Kanaele in korrekt konvertierter
+    T-Form (kein stiller beta/T-Mix im Produktionscode)."""
+    band = phy042.REF_BAND
+    for key, (beta, sig_beta) in (("upsilon_beta", (1.687, 0.003)),
+                                  ("upsilon4_beta", (1.635, 0.011)),
+                                  ("binder_beta", (1.724, 0.002))):
+        t, sig_t = _beta_to_t(beta, sig_beta)
+        val, sig = band[key]
+        assert math.isclose(val, t, abs_tol=5e-4), key
+        assert math.isclose(sig, sig_t, abs_tol=2e-4), key
+
+
+def test_production_refs_keep_legacy_0576_out_of_band_channels():
+    """Kein REF_BAND-Kanal darf der Legacy-Direktlesart 0.576 entsprechen;
+    PHY041 fuehrt 0.576 nur als explizit benannten 'dedicated'-Anker."""
+    for key, v in phy042.REF_BAND.items():
+        val = v[0] if isinstance(v, tuple) else v
+        if key == "multi_lattice":
+            continue
+        assert not math.isclose(val, 0.576, abs_tol=1e-9), key
+    assert phy041.REF_MULTI == 0.573
+    assert phy041.REF_DEDIC == 0.576
 
 
 def test_arxiv_2406_12076_beta_values_are_not_legacy_0576() -> None:

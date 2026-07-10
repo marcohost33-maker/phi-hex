@@ -83,6 +83,26 @@ def test_canonical_edge_leak_metric():
     assert phy041.canonical_edge_leak(res2, 1e6) < 1e-6
 
 
+def test_uncovered_canonical_mass_two_level_oracle():
+    """Coverage-Massen-Gate (Backport PHY042, Code-Audit H2): 2-Bin-
+    Boltzmann-Orakel - bei gleicher Entropie ist die Masse des unbesetzten
+    Bins exakt exp(-dE/T)/(1+exp(-dE/T)); volle Abdeckung -> 0."""
+    nbins = 2
+    micro = {k: np.zeros(nbins) for k in phy041.OBS}
+    res = phy041.WLResult(L=8, n=100, centers=np.array([-10.0, -9.0]),
+                          lng=np.zeros(nbins),
+                          mask=np.array([True, False]), micro_x=micro,
+                          micro_y=micro, wl_sweeps=0, prod_sweeps=0)
+    T = 0.5
+    expected = math.exp(-1.0 / T) / (1.0 + math.exp(-1.0 / T))
+    got = phy041.uncovered_canonical_mass(res, T)
+    assert got == pytest.approx(expected, rel=1e-12)
+    res_full = phy041.WLResult(L=8, n=100, centers=res.centers, lng=res.lng,
+                               mask=np.array([True, True]), micro_x=micro,
+                               micro_y=micro, wl_sweeps=0, prod_sweeps=0)
+    assert phy041.uncovered_canonical_mass(res_full, T) == 0.0
+
+
 def test_parse_phy032_grid_drift_guard():
     """Drift-Guard: der Parser liest EXAKT die committed PHY032-Evidenz
     (Stichproben zeichengenau; 8 T-Punkte je L; alle drei L vorhanden)."""

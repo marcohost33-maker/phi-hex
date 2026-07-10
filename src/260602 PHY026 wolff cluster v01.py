@@ -352,8 +352,12 @@ def run_phy026() -> dict[str, Any]:
             b["tau_wolff"] < b["tau_local"] for b in bench),
         "PASS_WOLFF_SPEEDUP_SUBSTANTIAL": mean_ratio > 3.0,
         "PASS_WOLFF_TAU_BOUNDED": all(b["tau_wolff"] < 5.0 for b in bench),
+        # Haertung 2026-07-10 (Code-Audit L3): die fruehere Form
+        # 0 < frac <= 1 war per Konstruktion immer wahr (vacuous). Nahe T_BKT
+        # muss der mittlere Wolff-Cluster makroskopisch sein, aber nicht das
+        # ganze Gitter fluten (committed: 0.38..0.50).
         "PASS_CLUSTER_NONTRIVIAL": all(
-            0.0 < b["mean_cluster_fraction"] <= 1.0 for b in bench),
+            0.05 < b["mean_cluster_fraction"] < 0.95 for b in bench),
         "PASS_HELICITY_T0_THEORY": abs(r0.upsilon_mean - sw_limit) < 0.1,
     }
     print("\nPASS-Gates:")

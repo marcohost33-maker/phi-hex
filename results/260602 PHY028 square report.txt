@@ -1,3 +1,13 @@
+### SUPERSEDED 2026-07-10 (Code-Audit H1: Wrap-Bond-Vorzeichen-Bug) ###
+# Dieser Report wurde mit dem edge_disp-Bug in build_square_lattice
+# erzeugt: die 2L Wrap-Bonds gingen mit invertiertem Vorzeichen in
+# sin_accum ein; Upsilon war ~25% zu tief (z.B. L=16/T=0.90: 0.486 statt
+# 0.646). Das Paar-Ergebnis "0.8950 (+0.16%)" war ein Zufallstreffer des
+# Bug-Codes. Gueltiger Stand (korrigierte Geometrie, seed=42):
+#   results/260710 PHY028 square report v02.txt
+# Details: spec/260710 PHI HEX code audit v01.md + CHANGELOG.md.
+# Report bleibt als Lineage erhalten (nicht geloescht).
+########################################################################
 PHY028: Wolff-Validierung auf dem Quadratgitter (Sandvik-Paar)
 Coworker Research / Coworkerz, 02. Juni 2026
 ======================================================================

@@ -80,8 +80,15 @@ def test_pair_estimates_finite_on_synthetic():
 @pytest.mark.slow
 def test_dense_ladder_smoke_runs_and_is_integer():
     """Mini-Lauf: Pipeline laeuft, Gate A exakt, Extrapolation endlich/plausibel.
-    KEINE Aussage zum Punktschaetzer (Mini-Statistik) - nur Integritaet."""
-    rep = run_phy035(n_seeds=4, n_measure=50, n_burn=25)
+    KEINE Aussage zum Punktschaetzer (Mini-Statistik) - nur Integritaet.
+
+    Statistik-Anhebung 2026-07-10 (Code-Audit M1): mit den frueheren
+    Mini-Parametern (4/50/25) bekam das Paar (16,32) seinen "Nulldurchgang"
+    aus der Pol-Region R<=0 am oberen T-Gitterrand - genau das Artefakt,
+    das der neue R>0-Guard verhindert. Mit 6/100/40 existiert das
+    physikalische Crossing fuer alle drei Paare (deterministisch seed=42,
+    verifiziert: Paare 0.6032/0.5969/0.6016, Extrapolation 0.5952)."""
+    rep = run_phy035(n_seeds=6, n_measure=100, n_burn=40)
     assert abs(rep["ups0"] - SW_LIMIT_HONEYCOMB) < 1e-6
     ex = rep["extrap"]
     assert ex is not None and math.isfinite(ex)

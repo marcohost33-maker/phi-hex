@@ -1,0 +1,149 @@
+### RE-RUN 2026-07-10 (Code-Audit H1: korrigierte Wrap-Bond-Geometrie) ###
+# Deterministischer Re-Run (master_seed=42, Parameter identisch zum
+# superseded Report 260602) nach dem edge_disp-Fix + Pol-Guard (M1) +
+# fails-closed-Gates (L6). Ergebnis ehrlich: (16,32)=0.8841 (-1.05%),
+# 1%-Gate knapp FAIL -> V&V-Anker "~1% bei L<=32" (Gate nicht aufgeweicht).
+########################################################################
+PHY028: Wolff-Validierung auf dem Quadratgitter (Sandvik-Paar)
+Coworker Research / Coworkerz, 02. Juni 2026
+======================================================================
+Bekannter Referenzwert T_BKT(square) = 0.8935(1)
+
+Gate A (perfekt ausgerichtet, T=0): Upsilon = 1.0000 (muss exakt 1.0 sein)
+
+Helicity-Modulus (Wolff, n_seeds=12):
+  L= 8: T=0.86:0.696+-0.003  T=0.88:0.688+-0.004  T=0.9:0.672+-0.003  T=0.92:0.661+-0.003
+  L=16: T=0.86:0.683+-0.002  T=0.88:0.663+-0.002  T=0.9:0.646+-0.002  T=0.92:0.626+-0.003
+  L=32: T=0.86:0.669+-0.002  T=0.88:0.647+-0.002  T=0.9:0.627+-0.003  T=0.92:0.599+-0.003
+
+Sandvik-Paar-Methode T_BKT(L, 2L):
+  T_BKT(8,16) = 0.8867  (Abw. -0.76%)
+  T_BKT(16,32) = 0.8841  (Abw. -1.05%)
+
+PASS-Gates:
+  [PASS] PASS_ALIGNED_EXACT_J
+  [PASS] PASS_PAIR_METHOD_WORKS
+  [PASS] PASS_ALL_PAIRS_CONVERGE
+  [FAIL] PASS_LARGEST_PAIR_WITHIN_1PCT
+
+OVERALL: FAIL
+
+INTERPRETATION:
+V&V-Anker: das groesste Paar (16,32) reproduziert T_BKT(square)
+auf ~1% (nach dem edge_disp-Fix 2026-07-10: 0.8841, -1.05% -
+das fruehere +0.16% war ein Artefakt des Wrap-Bond-Vorzeichen-
+Bugs, der Upsilon systematisch ueberschaetzte). Wolff-Sampler und
+Sandvik-Paar-Methodik bleiben unabhaengig verifiziert; die naive
+Crossing-Extrapolation aus PHY027 bleibt widerlegt. Fuer <1%
+braucht es mehr Statistik/groessere L (ehrlich als offen gefuehrt).
+
+--- JSON-Report ---
+{
+  "module": "PHY028_square_validation_sandvik",
+  "attribution": "Coworker Research / Coworkerz",
+  "reference_T_bkt_square": 0.8935,
+  "aligned_helicity": 1.0,
+  "measurements": {
+    "8": {
+      "0.86": {
+        "T": 0.86,
+        "L": 8,
+        "upsilon_mean": 0.696199552797499,
+        "upsilon_sem": 0.002991140951548461,
+        "nk_line": 0.54749300423612
+      },
+      "0.88": {
+        "T": 0.88,
+        "L": 8,
+        "upsilon_mean": 0.6876749468405009,
+        "upsilon_sem": 0.003500623183969514,
+        "nk_line": 0.5602253996834716
+      },
+      "0.9": {
+        "T": 0.9,
+        "L": 8,
+        "upsilon_mean": 0.6718335313516888,
+        "upsilon_sem": 0.0025026945790855085,
+        "nk_line": 0.5729577951308232
+      },
+      "0.92": {
+        "T": 0.92,
+        "L": 8,
+        "upsilon_mean": 0.6609160961503269,
+        "upsilon_sem": 0.0029782007645024174,
+        "nk_line": 0.5856901905781748
+      }
+    },
+    "16": {
+      "0.86": {
+        "T": 0.86,
+        "L": 16,
+        "upsilon_mean": 0.6831447261933032,
+        "upsilon_sem": 0.002281209197983948,
+        "nk_line": 0.54749300423612
+      },
+      "0.88": {
+        "T": 0.88,
+        "L": 16,
+        "upsilon_mean": 0.6630892008691412,
+        "upsilon_sem": 0.0021641806685891475,
+        "nk_line": 0.5602253996834716
+      },
+      "0.9": {
+        "T": 0.9,
+        "L": 16,
+        "upsilon_mean": 0.6459601681502101,
+        "upsilon_sem": 0.002140307099743309,
+        "nk_line": 0.5729577951308232
+      },
+      "0.92": {
+        "T": 0.92,
+        "L": 16,
+        "upsilon_mean": 0.6260825265153652,
+        "upsilon_sem": 0.0031172328592177397,
+        "nk_line": 0.5856901905781748
+      }
+    },
+    "32": {
+      "0.86": {
+        "T": 0.86,
+        "L": 32,
+        "upsilon_mean": 0.6690276584760507,
+        "upsilon_sem": 0.00176881768017098,
+        "nk_line": 0.54749300423612
+      },
+      "0.88": {
+        "T": 0.88,
+        "L": 32,
+        "upsilon_mean": 0.6467860474880543,
+        "upsilon_sem": 0.002166865413248545,
+        "nk_line": 0.5602253996834716
+      },
+      "0.9": {
+        "T": 0.9,
+        "L": 32,
+        "upsilon_mean": 0.626875501754107,
+        "upsilon_sem": 0.003192695753834227,
+        "nk_line": 0.5729577951308232
+      },
+      "0.92": {
+        "T": 0.92,
+        "L": 32,
+        "upsilon_mean": 0.5988824100830389,
+        "upsilon_sem": 0.0027546545260879658,
+        "nk_line": 0.5856901905781748
+      }
+    }
+  },
+  "pair_tbkt": {
+    "8_16": 0.8866925117226545,
+    "16_32": 0.8841149070266072
+  },
+  "pass_gates": {
+    "PASS_ALIGNED_EXACT_J": true,
+    "PASS_PAIR_METHOD_WORKS": true,
+    "PASS_ALL_PAIRS_CONVERGE": true,
+    "PASS_LARGEST_PAIR_WITHIN_1PCT": false
+  },
+  "overall_pass": false
+}

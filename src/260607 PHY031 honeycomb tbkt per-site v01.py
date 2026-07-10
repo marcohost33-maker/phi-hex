@@ -208,16 +208,22 @@ def sandvik_pair_tbkt(data_L: dict, data_2L: dict) -> float | None:
     ln2 = math.log(2.0)
     Ts = sorted(set(data_L) & set(data_2L))
     diffs = []
-    for T in Ts:
+    for k, T in enumerate(Ts):
         u1 = data_L[T].upsilon_mean
         u2 = data_2L[T].upsilon_mean
         R1 = math.pi * u1 / (2.0 * T) - 1.0
         R2 = math.pi * u2 / (2.0 * T) - 1.0
-        if abs(R1) > 1e-6 and abs(R2) > 1e-6:
-            diffs.append((T, (1.0 / R1 - 1.0 / R2) + 2.0 * ln2))
+        # P1-Fix 2026-07-10 (Code-Audit M1): physikalischer WM-Ast verlangt
+        # R > 0 (1/R = 2 ln L + C > 0); R <= 0 waere ein Pol-Artefakt.
+        if R1 > 1e-6 and R2 > 1e-6:
+            diffs.append((k, T, (1.0 / R1 - 1.0 / R2) + 2.0 * ln2))
+    # P2-Fix 2026-07-10b (Codex-Review PR#23): Crossing NUR zwischen
+    # BENACHBARTEN Gitterpunkten - kein Interpolieren ueber Pol-Luecken.
     for i in range(len(diffs) - 1):
-        T0, d0 = diffs[i]
-        T1, d1 = diffs[i + 1]
+        k0, T0, d0 = diffs[i]
+        k1, T1, d1 = diffs[i + 1]
+        if k1 - k0 != 1:
+            continue
         if d0 == 0.0:
             return T0
         if d0 * d1 < 0.0:
@@ -302,7 +308,12 @@ def run_phy031(Ls=(6, 12, 24),
 
     valid_pairs = [v for v in pair_tbkt.values() if v is not None]
     valid_cross = [v for v in crossings.values() if v is not None]
-    largest_pair = valid_pairs[-1] if valid_pairs else None
+    # Haertung 2026-07-10 (Code-Audit L6): explizit das Paar mit dem
+    # groessten L binden (nicht das letzte konvergierte) und fails-closed:
+    # fehlt das groesste Paar, ist das 8%-Gate FAIL statt stillschweigend
+    # abwesend.
+    largest_key = max(pair_tbkt, key=lambda p: p[1], default=None)
+    largest_pair = pair_tbkt.get(largest_key) if largest_key else None
 
     pass_gates = {
         "PASS_ALIGNED_EXACT_THREE_QUARTERS":
@@ -310,10 +321,12 @@ def run_phy031(Ls=(6, 12, 24),
         "PASS_CROSSING_EXISTS": len(valid_cross) >= 1,
         "PASS_CROSSING_IN_PHYSICAL_BAND": all(
             0.50 < c < 0.75 for c in valid_cross) if valid_cross else False,
+        "PASS_ALL_PAIRS_CONVERGE": (len(valid_pairs) == len(pair_tbkt)
+                                    and len(pair_tbkt) >= 1),
+        "PASS_PAIR_WITHIN_8PCT": (
+            largest_pair is not None
+            and abs(largest_pair - REF_HONEYCOMB) / REF_HONEYCOMB < 0.08),
     }
-    if largest_pair is not None:
-        pass_gates["PASS_PAIR_WITHIN_8PCT"] = (
-            abs(largest_pair - REF_HONEYCOMB) / REF_HONEYCOMB < 0.08)
 
     print("\nPASS-Gates:")
     for k, v in pass_gates.items():
