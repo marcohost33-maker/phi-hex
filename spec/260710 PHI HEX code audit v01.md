@@ -156,8 +156,15 @@ inventarisiert; bei T-Gitter-Aenderung ZUERST PHY039 auf ungebuchte Basis
 ### O4 — Re-Runs nach M1-Guard
 
 PHY030v02/PHY032/PHY033(+PHY034/035-Ketten) bei naechster Produktions-
-Runde mit Pol-Guard neu rechnen und Reports neu pinnen (erwartete
-Aenderung: keine bis Tail-Effekte in Bootstrap-CIs).
+Runde mit Pol-Guard neu rechnen und Reports neu pinnen. Teil-Entwarnung
+(verifiziert 2026-07-10): die deterministische Re-Analyse der committeten
+PHY035-Vollparameter (8/140/60, seed=42) MIT Guard reproduziert die
+committeten Punktschaetzer EXAKT ((8,16)=0.5969, (12,24)=0.6014,
+(16,32)=0.5993, Extrapolation 0.6052) — die Punkt-Evidenz war nicht
+pol-beeinflusst. Offen bleiben die Bootstrap-Tail-Resamples (CIs).
+Gegenteiliges Mini-Statistik-Beispiel als Beleg der Guard-Wirkung: der
+PHY035-Smoke mit 4/50/25 bezog das (16,32)-"Crossing" aus der Pol-Region
+(Smoke-Statistik deshalb auf 6/100/40 angehoben, Test-Kommentar).
 
 ### O5 — PHY025-Generator nie migriert
 

@@ -190,3 +190,5 @@ bleiben unveraendert als Lineage stehen; letzte Zeile pro Pfad gewinnt.
 | F001F2F448D80896 | 2026-07-10 | tests | repo-native: `tests/test_tbkt_wm_logfit.py` (stand: Code-Audit-Fixes/Haertung 2026-07-10 (siehe spec/260710 + CHANGELOG)) |
 | 9808BD879D79CCD9 | 2026-07-10 | results | repo-native: `results/260710 PHY040 wang-landau entropic helicity report v02.txt` (NEU: Gate-Evidenz PHY040 v02 nach edge_disp-Fix + 1/t-Instrumentierung, seed=42; Paare +0.85%/+2.10%, Bias-Gate ehrlich FAIL; '1/t-Phase=NIE' live bestaetigt) |
 | D5506272366D8BA0 | 2026-07-10 | spec | repo-native: `spec/260710 PHI HEX code audit v01.md` (stand: Audit-Spec um PHY039-/PHY040-Re-Run-Resultate ergaenzt; supersedet vorherige Zeile gleicher Datei) |
+| 24F4DA84EB5F0C9E | 2026-07-10 | spec | repo-native: `spec/260710 PHI HEX code audit v01.md` (stand: O4-Teil-Entwarnung (PHY035-Punktschaetzer mit Guard exakt reproduziert); supersedet vorherige Zeile gleicher Datei) |
+| DF0EDE8BF15A8C43 | 2026-07-10 | tests | repo-native: `tests/test_phy035_hks_dense_ladder.py` (stand: Smoke-Statistik 4/50/25 -> 6/100/40 (altes Mini-Crossing (16,32) war Pol-Artefakt, vom M1-Guard korrekt verhindert)) |
