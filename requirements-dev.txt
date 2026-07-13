@@ -2,7 +2,7 @@
 # Floor-Pins: kompatibel ueber die CI-Matrix Python 3.10-3.12. Die vollen
 # physikalischen Mess-Laeufe (slow) brauchen dieselben Pakete, laufen aber
 # lokal (siehe README "Reproduzieren").
-numpy>=1.26
+numpy>=2.5.1
 scipy>=1.11
 pytest>=9.1.1
 ruff>=0.15.20
