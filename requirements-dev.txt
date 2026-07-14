@@ -1,8 +1,10 @@
 # Dev-/CI-Abhaengigkeiten fuer die Korrektheits-Gates (pytest -m "not slow").
-# Floor-Pins: kompatibel ueber die CI-Matrix Python 3.10-3.12. Die vollen
+# Floor-Pins: kompatibel ueber die CI-Matrix Python 3.12-3.14. Die vollen
 # physikalischen Mess-Laeufe (slow) brauchen dieselben Pakete, laufen aber
 # lokal (siehe README "Reproduzieren").
-numpy>=1.26
+# numpy-Floor 2.5.1: numpy 2.5.x traegt Requires-Python >=3.12 (keine cp310/cp311-
+# Wheels) -- moeglich, seit py3.10/3.11 fleet-weit gedroppt sind (Marco-Entscheid 2026-07-14).
+numpy>=2.5.1
 scipy>=1.11
 pytest>=9.1.1
 ruff>=0.15.20

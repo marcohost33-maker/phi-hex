@@ -3,6 +3,15 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-07-14] Python-Floor 3.12 + numpy 2.5.1 (fleet-weiter py3.10/3.11-Drop)
+
+### Changed (Infra)
+- **CI-Matrix** `["3.10","3.11","3.12","3.13"]` -> `["3.12","3.13","3.14"]`; Lint-Job
+  py3.11 -> py3.12; `ruff.toml` `target-version` py310 -> py312.
+- **numpy-Floor** `>=1.26` -> `>=2.5.1` (numpy 2.5.x traegt Requires-Python >=3.12,
+  keine cp310/cp311-Wheels). Loest den geschlossenen Dependabot-Bump #28.
+- Grund: Marco-Entscheid 2026-07-14, py3.10/3.11 fleet-weit droppen.
+
 ## [2026-07-10] Code-Audit: P0-Geometrie-Fix square + Pol-Guards + Gate-/Test-/Infra-Haertung
 
 Drei unabhaengige Review-Passes ueber den ganzen Stack; jeder Befund vor dem

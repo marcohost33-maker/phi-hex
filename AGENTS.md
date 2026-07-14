@@ -10,7 +10,8 @@ KI-Coding-Agent-Anweisungen. Reihenfolge: §1 Working agreements > §2 Conventio
 
 ## Project
 - **Was:** XY-Modell / BKT-Physik auf Dreiecks- und Honeycomb-Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Finite-Size-Scaling.
-- **Stack:** Python >= 3.10 (numpy/scipy fuer volle Laeufe; CI = Syntax + Lint).
+- **Stack:** Python >= 3.12 (numpy/scipy fuer volle Laeufe; CI = Syntax + Lint). py3.10/3.11
+  fleet-weit gedroppt (Marco-Entscheid 2026-07-14) -> numpy >= 2.5.1 (Requires-Python >=3.12).
 - **Provenance:** `SOURCES.md` ist die Integritaets-Wahrheit (SHA-256 je Quelldatei). Quelle ist
   Drive `0Phi Hex` + `Universe 2.0\Hqstphi Hex` (KEINE dde-Doppelhaltung - anders als hex-hqst/u2/u6/hexa-ntk).
 
