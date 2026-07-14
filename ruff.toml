@@ -8,5 +8,5 @@
 # enthalten). Gefangen werden u.a. tote Importe, undefinierte Namen,
 # ungenutzte Variablen und Mehrfach-Statements pro Zeile (E701/E702). Der
 # Stack ist gegen diese Default-Auswahl vollstaendig sauber (keine Ausnahmen).
-target-version = "py310"
+target-version = "py312"
 line-length = 88
