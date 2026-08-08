@@ -1,0 +1,167 @@
+PHY043 - Konventionsfreier Quercheck triangular (U4 + xi_2/L)
+Coworker Research / Coworkerz, 2026-08-08
+======================================================================
+
+Zweck: Audit-Punkt O1 (spec/260710 §2) — liegt die konventionsfreie
+BKT-Signatur beim internen per-Site-Wert 1.4007 oder bei der Referenz 1.418?
+Spec (Vertragsquelle): spec/260808 PHI HEX phy043 triangular convention-free crossing method v01.md
+Methode: Binder U4 + second-moment xi_2/L auf triangular-Torus; adjacent-Crossings + persistente Splay-Temperatur (z=2), parametrischer Bootstrap
+
+Gitter L = [9, 13, 19, 25]
+T-Gitter = [1.36, 1.38, 1.4, 1.42, 1.44, 1.46, 1.48, 1.5, 1.52, 1.54, 1.56, 1.58, 1.6, 1.62, 1.64, 1.66, 1.68, 1.7]
+Wolff: n_measure=800, n_burn=300, n_seeds=8, master_seed=42
+Stream-Vertrag: 900 + s + 1000*L + 100000*t_idx (Audit O2: T-unabhaengige Streams)
+
+--- Messung ---
+  L=9:
+  T=1.36: U4=1.0160+-0.0005  xi/L=0.8060+-0.0049
+  T=1.38: U4=1.0158+-0.0004  xi/L=0.7956+-0.0034
+  T=1.40: U4=1.0175+-0.0006  xi/L=0.7771+-0.0050
+  T=1.42: U4=1.0188+-0.0005  xi/L=0.7669+-0.0055
+  T=1.44: U4=1.0200+-0.0003  xi/L=0.7570+-0.0041
+  T=1.46: U4=1.0217+-0.0005  xi/L=0.7451+-0.0043
+  T=1.48: U4=1.0230+-0.0006  xi/L=0.7404+-0.0059
+  T=1.50: U4=1.0247+-0.0006  xi/L=0.7244+-0.0058
+  T=1.52: U4=1.0278+-0.0007  xi/L=0.7030+-0.0030
+  T=1.54: U4=1.0288+-0.0009  xi/L=0.6959+-0.0055
+  T=1.56: U4=1.0323+-0.0011  xi/L=0.6814+-0.0038
+  T=1.58: U4=1.0357+-0.0009  xi/L=0.6634+-0.0059
+  T=1.60: U4=1.0366+-0.0009  xi/L=0.6606+-0.0067
+  T=1.62: U4=1.0420+-0.0016  xi/L=0.6417+-0.0060
+  T=1.64: U4=1.0450+-0.0011  xi/L=0.6346+-0.0028
+  T=1.66: U4=1.0448+-0.0016  xi/L=0.6208+-0.0052
+  T=1.68: U4=1.0516+-0.0007  xi/L=0.6114+-0.0046
+  T=1.70: U4=1.0581+-0.0014  xi/L=0.5849+-0.0034
+  L=13:
+  T=1.36: U4=1.0137+-0.0004  xi/L=0.8125+-0.0018
+  T=1.38: U4=1.0147+-0.0003  xi/L=0.7997+-0.0072
+  T=1.40: U4=1.0155+-0.0006  xi/L=0.7965+-0.0050
+  T=1.42: U4=1.0172+-0.0007  xi/L=0.7708+-0.0060
+  T=1.44: U4=1.0188+-0.0005  xi/L=0.7498+-0.0049
+  T=1.46: U4=1.0196+-0.0006  xi/L=0.7455+-0.0061
+  T=1.48: U4=1.0221+-0.0006  xi/L=0.7404+-0.0024
+  T=1.50: U4=1.0228+-0.0003  xi/L=0.7174+-0.0051
+  T=1.52: U4=1.0244+-0.0008  xi/L=0.7052+-0.0048
+  T=1.54: U4=1.0291+-0.0010  xi/L=0.6855+-0.0080
+  T=1.56: U4=1.0323+-0.0009  xi/L=0.6681+-0.0038
+  T=1.58: U4=1.0365+-0.0008  xi/L=0.6512+-0.0024
+  T=1.60: U4=1.0376+-0.0012  xi/L=0.6424+-0.0046
+  T=1.62: U4=1.0430+-0.0008  xi/L=0.6251+-0.0036
+  T=1.64: U4=1.0481+-0.0007  xi/L=0.6140+-0.0028
+  T=1.66: U4=1.0535+-0.0021  xi/L=0.5948+-0.0046
+  T=1.68: U4=1.0625+-0.0025  xi/L=0.5695+-0.0047
+  T=1.70: U4=1.0665+-0.0013  xi/L=0.5648+-0.0042
+  L=19:
+  T=1.36: U4=1.0130+-0.0003  xi/L=0.8129+-0.0049
+  T=1.38: U4=1.0128+-0.0003  xi/L=0.7928+-0.0032
+  T=1.40: U4=1.0138+-0.0003  xi/L=0.7897+-0.0046
+  T=1.42: U4=1.0157+-0.0006  xi/L=0.7781+-0.0058
+  T=1.44: U4=1.0167+-0.0003  xi/L=0.7588+-0.0054
+  T=1.46: U4=1.0189+-0.0003  xi/L=0.7389+-0.0046
+  T=1.48: U4=1.0202+-0.0006  xi/L=0.7309+-0.0058
+  T=1.50: U4=1.0236+-0.0004  xi/L=0.7088+-0.0048
+  T=1.52: U4=1.0255+-0.0009  xi/L=0.7005+-0.0057
+  T=1.54: U4=1.0282+-0.0009  xi/L=0.6771+-0.0065
+  T=1.56: U4=1.0320+-0.0009  xi/L=0.6637+-0.0034
+  T=1.58: U4=1.0365+-0.0017  xi/L=0.6391+-0.0037
+  T=1.60: U4=1.0434+-0.0013  xi/L=0.6224+-0.0019
+  T=1.62: U4=1.0490+-0.0013  xi/L=0.6056+-0.0044
+  T=1.64: U4=1.0536+-0.0017  xi/L=0.5852+-0.0055
+  T=1.66: U4=1.0627+-0.0021  xi/L=0.5640+-0.0054
+  T=1.68: U4=1.0774+-0.0026  xi/L=0.5404+-0.0032
+  T=1.70: U4=1.0850+-0.0013  xi/L=0.5185+-0.0026
+  L=25:
+  T=1.36: U4=1.0122+-0.0003  xi/L=0.8129+-0.0057
+  T=1.38: U4=1.0127+-0.0003  xi/L=0.8024+-0.0036
+  T=1.40: U4=1.0137+-0.0004  xi/L=0.7891+-0.0041
+  T=1.42: U4=1.0145+-0.0002  xi/L=0.7810+-0.0035
+  T=1.44: U4=1.0169+-0.0004  xi/L=0.7608+-0.0070
+  T=1.46: U4=1.0175+-0.0004  xi/L=0.7473+-0.0026
+  T=1.48: U4=1.0193+-0.0006  xi/L=0.7306+-0.0058
+  T=1.50: U4=1.0222+-0.0006  xi/L=0.7027+-0.0051
+  T=1.52: U4=1.0249+-0.0005  xi/L=0.6917+-0.0030
+  T=1.54: U4=1.0282+-0.0008  xi/L=0.6778+-0.0047
+  T=1.56: U4=1.0322+-0.0008  xi/L=0.6451+-0.0037
+  T=1.58: U4=1.0364+-0.0009  xi/L=0.6382+-0.0028
+  T=1.60: U4=1.0445+-0.0017  xi/L=0.6095+-0.0042
+  T=1.62: U4=1.0520+-0.0009  xi/L=0.5857+-0.0028
+  T=1.64: U4=1.0632+-0.0017  xi/L=0.5629+-0.0028
+  T=1.66: U4=1.0746+-0.0019  xi/L=0.5362+-0.0032
+  T=1.68: U4=1.0921+-0.0022  xi/L=0.5122+-0.0019
+  T=1.70: U4=1.1092+-0.0022  xi/L=0.4869+-0.0031
+
+--- Paar-Analyse (D = O(L2) - O(L1)) ---
+  Observable xi_ratio:
+    (9,13): T_splay=1.60  Bootstrap-CI=[1.543,1.680]  none_frac=0.04
+      Crossing T=1.4270 (Flanken-Signifikanz 1.2 sigma)
+      Crossing T=1.4589 (Flanken-Signifikanz 1.2 sigma)
+      Crossing T=1.4801 (Flanken-Signifikanz 0.9 sigma)
+      Crossing T=1.5152 (Flanken-Signifikanz 0.9 sigma)
+      Crossing T=1.5235 (Flanken-Signifikanz 1.1 sigma)
+    (9,19): T_splay=1.54  Bootstrap-CI=[1.540,1.600]  none_frac=0.00
+      Crossing T=1.3743 (Flanken-Signifikanz 1.0 sigma)
+      Crossing T=1.3836 (Flanken-Signifikanz 1.9 sigma)
+      Crossing T=1.4444 (Flanken-Signifikanz 1.0 sigma)
+    (9,25): T_splay=1.50  Bootstrap-CI=[1.480,1.600]  none_frac=0.00
+      Crossing T=1.4637 (Flanken-Signifikanz 1.2 sigma)
+    (13,19): T_splay=1.58  Bootstrap-CI=[1.560,1.640]  none_frac=0.00
+      Crossing T=1.3610 (Flanken-Signifikanz 0.9 sigma)
+      Crossing T=1.4096 (Flanken-Signifikanz 1.0 sigma)
+      Crossing T=1.4515 (Flanken-Signifikanz 1.3 sigma)
+    (13,25): T_splay=1.56  Bootstrap-CI=[1.480,1.600]  none_frac=0.00
+      Crossing T=1.3855 (Flanken-Signifikanz 1.1 sigma)
+      Crossing T=1.4084 (Flanken-Signifikanz 1.5 sigma)
+      Crossing T=1.4630 (Flanken-Signifikanz 1.6 sigma)
+    (19,25): T_splay=1.60  Bootstrap-CI=[1.560,1.660]  none_frac=0.00
+      Crossing T=1.3601 (Flanken-Signifikanz 2.0 sigma)
+      Crossing T=1.3989 (Flanken-Signifikanz 2.0 sigma)
+      Crossing T=1.4033 (Flanken-Signifikanz 0.4 sigma)
+      Crossing T=1.4793 (Flanken-Signifikanz 1.6 sigma)
+      Crossing T=1.5384 (Flanken-Signifikanz 1.4 sigma)
+      Crossing T=1.5408 (Flanken-Signifikanz 3.7 sigma)
+  Observable u4:
+    (9,13): T_splay=1.64  Bootstrap-CI=[1.620,1.680]  none_frac=0.03
+      Crossing T=1.5384 (Flanken-Signifikanz 3.1 sigma)
+      Crossing T=1.5561 (Flanken-Signifikanz 0.2 sigma)
+      Crossing T=1.5618 (Flanken-Signifikanz 0.6 sigma)
+    (9,19): T_splay=1.60  Bootstrap-CI=[1.580,1.640]  none_frac=0.00
+      Crossing T=1.5663 (Flanken-Signifikanz 0.4 sigma)
+    (9,25): T_splay=1.60  Bootstrap-CI=[1.580,1.600]  none_frac=0.00
+      Crossing T=1.5631 (Flanken-Signifikanz 0.5 sigma)
+    (13,19): T_splay=1.60  Bootstrap-CI=[1.600,1.680]  none_frac=0.02
+      Crossing T=1.4939 (Flanken-Signifikanz 2.2 sigma)
+      Crossing T=1.5307 (Flanken-Signifikanz 0.9 sigma)
+      Crossing T=1.5789 (Flanken-Signifikanz 0.2 sigma)
+    (13,25): T_splay=1.60  Bootstrap-CI=[1.580,1.620]  none_frac=0.00
+      Crossing T=1.5106 (Flanken-Signifikanz 0.9 sigma)
+      Crossing T=1.5276 (Flanken-Signifikanz 0.7 sigma)
+      Crossing T=1.5802 (Flanken-Signifikanz 3.4 sigma)
+    (19,25): T_splay=1.64  Bootstrap-CI=[1.600,1.652]  none_frac=0.01
+      Crossing T=1.4370 (Flanken-Signifikanz 1.8 sigma)
+      Crossing T=1.4425 (Flanken-Signifikanz 2.7 sigma)
+      Crossing T=1.5388 (Flanken-Signifikanz 0.5 sigma)
+      Crossing T=1.5753 (Flanken-Signifikanz 0.2 sigma)
+      Crossing T=1.5811 (Flanken-Signifikanz 0.6 sigma)
+
+--- PASS-Gates (Pipeline-Integritaet, kein Physik-Gate) ---
+  [PASS] PASS_INPUT_COMPLETE
+  [PASS] PASS_U4_RANGE
+  [PASS] PASS_HIGH_T_ORDERING_XI
+  [PASS] PASS_HIGH_T_ORDERING_U4
+  [PASS] PASS_LOW_T_MERGE_XI
+  [PASS] PASS_SPLAY_XI_LARGEST_PAIR
+  OVERALL: PASS
+  Laufzeit: 687.7s
+
+--- FINDING / Interpretation (Vertrag: Spec §6) ---
+  xi_2/L-Splay (19,25) beginnt bei T=1.60 (CI siehe oben).
+  Einordnung: intern per-Site 1.4007 | Referenz 1.418.
+  Splay-Temperaturen liegen konstruktionsbedingt OBERHALB von T_BKT
+  (obere Schranke der Merge-Region); ein Splay-Beginn deutlich unter
+  1.40 waere ein Signal GEGEN die Referenz-Lage gewesen.
+
+Grenzen (ehrlich):
+  - Kein T_BKT-Bestwert; Crossing-/Splay-Lagen driften logarithmisch.
+  - n_seeds=4, L<=19: keine 1%-Diskriminierung erwartbar (Spec §6).
+  - Universeller (xi_2/L)*-Anker bewusst NICHT verwendet (Rhombus-Torus,
+    tau=exp(i pi/3) — Hasenbusch-Wert gilt fuer tau=i).

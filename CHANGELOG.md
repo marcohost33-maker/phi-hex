@@ -3,6 +3,60 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-08-08] PHY043 O1-Quercheck + Review-Nachtrag + Lint-Baseline-Pin
+
+Vertragsquellen: `spec/260808 PHI HEX phy043 triangular convention-free
+crossing method v01.md` + `spec/260710 PHI HEX code audit v01.md` §4.
+
+### Added (PHY043 — Audit-Punkt O1, Finding, kein Bestwert)
+- **Konventionsfreier Quercheck triangular:** Binder U4 und
+  Korrelations-Ratio xi_2/L (Strukturfaktor, drei Minimalmoden des
+  Rhombus-Torus) auf L=9/13/19/25, T=1.36..1.70, 8 Seeds, 800 Messungen,
+  seed=42; Stream-Basis 900 MIT T-Index (Audit O2 umgesetzt, kein CRN).
+  Gate-Log: `results/260808 PHY043 triangular convention-free crossing
+  report.txt` (OVERALL PASS 6/6, ~688 s).
+- **Befund:** alle xi_2/L-Splay-Temperaturen 1.50..1.60, U4 1.60..1.64 —
+  oberhalb 1.41, Merge-Region intakt, KEIN Splay unter 1.40. Qualitativ
+  konsistent mit der Referenz-Lage 1.418; KEINE Stuetzung fuer ein wahres
+  T_BKT beim per-Site-Wert 1.4007 oder darunter.
+- **NR-PHY043-01:** keine 1%-Diskriminierung bei diesem Budget
+  (Splay-Lagen sind logarithmisch driftende obere Schranken). O1 bleibt
+  formal offen (naechster Pfad: Konventions-Nachweis je Referenz in
+  SOURCES.md); kein per-Site-Code-Fix bis dahin.
+- Methodische Leitplanken: adjacent-Crossings nach M1/P2-Vertrag,
+  persistente 2-sigma-Splays (min. 2-Punkte-Tail), parametrischer
+  Bootstrap; universeller (xi_2/L)*-Anker bewusst NICHT verwendet
+  (gilt fuer tau=i, nicht fuer den Rhombus-Torus tau=exp(i pi/3)).
+  Pilot mit PHY030-Budget dokumentiert (nicht diskriminierend ->
+  Power-Korrektur VOR dem Evidenz-Pin, Spec §4).
+- Test-Gates: exakte Orakel (iid-U4 = 2 - 1/N, Spin-Wellen-
+  Modenbuchhaltung, Geometrie-Summe), fails-closed-Vertraege der Finder,
+  Mini-MC-Smoke (`tests/test_phy043_convention_crossing.py`).
+
+### Fixed (Review-Nachtrag 2026-08-08, zwei unabhaengige Passes)
+- **N1 (P2, M3-Klasse) — PHY040:** BILANZ-Print crashte ohne
+  Paar-Crossing ({None:.4f} TypeError) VOR dem JSON-Report — None-Guard
+  wie in PHY041; Output im Valid-Pfad byte-identisch, Sampler
+  unveraendert.
+- **N2 (Lineage) — PHY029:** Docstring claimte den per Audit H1
+  zurueckgezogenen V&V-Anker "+0.16%" — nachgezogen.
+- **Lint-Baseline-Drift (Infra):** ruff 0.16.x erweiterte die
+  Default-Regelauswahl; das CI-Gate (installiert neuestes ruff) waere
+  ohne Code-Aenderung von 0 auf 119 Findings gesprungen (verifiziert mit
+  0.16.2). Regelauswahl in `ruff.toml` explizit gepinnt (E4/E7/E9/F).
+
+### Documented (offen, bewusst nicht still gefixt)
+- **O8:** PHY040-WL-Kernel teilt Stream (seed,1) ueber alle L
+  (O2/O3-Klasse, war nirgends inventarisiert; Bit-Repro-schonend nur
+  kommentiert).
+- **O9 (O7-Erweiterung):** DefectTracker-L_min in Roh-Schritten,
+  vacuous Torus-Ladungs-Gate, helicity_terms-Fallback 3x zu gross
+  (toter Pfad), required_sample_size-Stream-Kollision bei
+  n_trials > 1000.
+- Messpipeline erneut defektfrei verifiziert (edge_disp min-image 0/alle,
+  Wolff vs exakte Transfer-Matrix 0.4 sigma und vs unabhaengige
+  Metropolis-Referenz 0.56 sigma, F2/F4 vs exakte Quadratur 1e-11/1e-7).
+
 ## [2026-07-14] Python-Floor 3.12 + numpy 2.5.1 (fleet-weiter py3.10/3.11-Drop)
 
 ### Changed (Infra)
