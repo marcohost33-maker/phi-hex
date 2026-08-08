@@ -154,6 +154,13 @@ def wang_landau_helicity(L: int, e_lo_ps: float = -1.82, e_hi_ps: float = -0.75,
     E_lo, E_hi = e_lo_ps * n, e_hi_ps * n
     nbins = int(round(E_hi - E_lo))
     binw = (E_hi - E_lo) / nbins
+    # Stream-Inventar-Nachtrag 2026-08-08 (Review-Pass, O2/O3-Klasse): der
+    # WL-Kernel nutzt fuer ALLE L denselben Stream (seed, 1) - die per-L-
+    # Kurven und damit die Paar-Differenzen T_BKT(La,Lb) stammen aus
+    # stream-korrelierten Ketten (desynchronisieren durch unterschiedliches
+    # n je Sweep; Einzelketten unverzerrt). BEWUSST UNVERAENDERT (Bit-Repro
+    # der committeten Reports); PHY041 nutzt bereits 650+L. Bei Neu-
+    # Produktion L in den Stream aufnehmen.
     rng = make_rng(seed, stream=1)
     rand = rng.random
     randint = rng.integers
@@ -512,11 +519,22 @@ def run_phy040(Ls=(12, 16, 24), lnf_final=2e-4, prod_sweeps=30000,
     print("      die entropische Pipeline ist gegen-validiert (arXiv-unabhaengig).")
     print("    - Aus EINEM Lauf folgen GLATTE, rauschfreie Upsilon_2(T)/Upsilon_4(T):")
     print("      das STATISTISCHE Rauschen von PHY039 (Dip ~15-25%) ist eliminiert.")
-    print("    - ABER der T_BKT-Paar-Schaetzer UNTERSCHAETZT bei L<=24 noch")
-    print(f"      ({worst:.4f} -> {best:.4f}, -{abs(worst-ref)/ref*100:.0f}% ->")
-    print(f"       -{abs(best-ref)/ref*100:.0f}%): der finite-size-BIAS schrumpft")
-    print("      mit L, bleibt aber. Das entropische Sampling entfernt das")
-    print("      RAUSCHEN, NICHT den finite-size-Bias (deckt sich mit PHY037/038).")
+    # P2-Fix 2026-08-08 (Review-Pass, M3-Klasse wie PHY034-038): ohne
+    # jedes Paar-Crossing sind best/worst None - der ungeschuetzte f-String
+    # ({None:.4f}) crashte den Lauf VOR dem JSON-Report (= vor der
+    # Gate-Evidenz). PHY041 schuetzt denselben Pfad bereits; Output im
+    # Valid-Pfad byte-identisch.
+    if best is not None and worst is not None:
+        print("    - ABER der T_BKT-Paar-Schaetzer UNTERSCHAETZT bei L<=24 noch")
+        print(f"      ({worst:.4f} -> {best:.4f}, -{abs(worst-ref)/ref*100:.0f}% ->")
+        print(f"       -{abs(best-ref)/ref*100:.0f}%): der finite-size-BIAS schrumpft")
+        print("      mit L, bleibt aber. Das entropische Sampling entfernt das")
+        print("      RAUSCHEN, NICHT den finite-size-Bias (deckt sich mit PHY037/038).")
+    else:
+        print("    - KEIN Paar-Crossing im T-Fenster (best/worst=None) - "
+              "Bias-Bilanz")
+        print("      nicht bildbar; Gates oben tragen den FAIL, Report wird "
+              "trotzdem geschrieben.")
     print("    - EHRLICHE TRENNUNG der zwei Effekte: Statistik-Limit (PHY039) ist")
     print("      geloest; finite-size-Limit braucht groessere L (square: L>=32;")
     print("      vgl. PHY028 (16,32) ~1% nach Geometrie-Fix). Der validierte")

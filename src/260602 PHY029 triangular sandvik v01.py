@@ -11,7 +11,10 @@ C-freie Bedingung fuer ein Paar (L1, L2):
 T_BKT(L1,L2) ist die Temperatur, bei der diese Bedingung erfuellt ist.
 
 Referenz: T_BKT(triangular) = 1.418(2) (Sorokin; zitiert arXiv:2305.00651).
-Verifikation der Methode: PHY028 reproduziert T_BKT(square)=0.8935 auf 0.16%.
+Verifikation der Methode: PHY028 nach edge_disp-Geometrie-Fix 2026-07-10
+(Audit H1): 0.8841 vs 0.8935, ~1% - der fruehere Anker "+0.16%" war ein
+Zufallstreffer auf dem Wrap-Bond-Bug und ist ZURUECKGEZOGEN (der Laufzeit-
+Print unten war bereits korrigiert, dieser Docstring hinkte nach).
 """
 from __future__ import annotations
 import json
