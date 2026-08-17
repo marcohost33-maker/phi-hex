@@ -2,7 +2,7 @@
 
 > **Status:** Forschungs-Repo (privat) | XY/BKT-Physik auf Dreiecks-, Honeycomb- und Kagome-Gittern.  
 > **Lizenz:** Apache-2.0 | **Lineage/Provenance:** siehe `SOURCES.md`.  
-> **Aktueller Review-Stand:** Code-Audit 2026-07-10 (`spec/260710 PHI HEX code audit v01.md`): P0-Geometrie-Fix im Quadratgitter (PHY028/039/040 neu gerechnet, V&V-Anker ehrlich auf ~1% herabgestuft), Pol-Guards in allen Paar-Schaetzern, Gate-/Test-Haertung. Davor: PHY042/PR #20 (Voll-Lauf L=24/32/48) als Pipeline-Finding, **kein neuer T_BKT-Bestwert** (Grenzen NR-PHY042-02/03).
+> **Aktueller Review-Stand:** Review-Nachtrag 2026-08-08 (`spec/260710 ... v01.md` §4): Messpipeline erneut gegen unabhaengige Orakel defektfrei; PHY040-M3-Guard, Lint-Baseline-Pin, O8/O9 inventarisiert. PHY043 (Audit O1): konventionsfreier Quercheck triangular — qualitativ konsistent mit der Referenz-Lage, keine 1%-Diskriminierung (siehe unten). Davor: Code-Audit 2026-07-10: P0-Geometrie-Fix im Quadratgitter (PHY028/039/040 neu gerechnet, V&V-Anker ehrlich auf ~1% herabgestuft), Pol-Guards in allen Paar-Schaetzern; PHY042/PR #20 als Pipeline-Finding, **kein neuer T_BKT-Bestwert** (Grenzen NR-PHY042-02/03).
 
 Phi-Hex untersucht das 2D-XY-Modell und BKT-Physik auf periodischen Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Wang-Landau-DOS und Finite-Size-Scaling.
 
@@ -84,6 +84,34 @@ Ehrliche Grenzen:
 - **NR-PHY042-02:** Die Paare (24,48) und (32,48) crossen ausserhalb der gemeinsamen Validitaets-Domaene und sind bei diesem Statistik-Budget nicht belastbar (Walker-Spread 0.033 bzw. 0.039 in T_BKT vs. 0.013 fuer das quotable Paar (24,32)).
 - **NR-PHY042-03:** Der Upsilon_4-Dip ist bei L in {32,48} nicht walker-robust (L=24 robust bei T=0.65; L=32/48 walker-abhaengig). Upsilon_4-FSS oberhalb L=24 braucht mehr Produktion.
 
+## PHY043 — Konventionsfreier Quercheck triangular (Audit O1; Finding, kein Bestwert)
+
+Audit-Punkt O1 fragt, ob die per-Site-Normierung auf triangular
+(Flaeche/Site = sqrt(3)/2 < 1) das Helicity-Crossing im Limes nach UNTEN
+verschiebt — der interne per-Site-Wert 1.4007 liegt -1.22% unter der
+Referenz 1.418, konsistent mit genau so einem Restbias. PHY043 misst
+deshalb NORMIERUNGSFREIE Observablen (Binder U4, Korrelations-Ratio
+xi_2/L aus dem Strukturfaktor) auf L=9/13/19/25 mit derselben
+Wolff-Pipeline (8 Seeds, 800 Messungen, T=1.36..1.70, seed=42; Gate-Log:
+`results/260808 PHY043 triangular convention-free crossing report.txt`,
+OVERALL PASS 6/6, ~688 s).
+
+Ergebnis (vorab festgelegter Interpretations-Vertrag, Spec §6):
+
+- Alle xi_2/L-Splay-Temperaturen (persistenter 2-sigma-Splay) liegen bei
+  T = 1.50..1.60, die U4-Splays bei 1.60..1.64 — durchweg OBERHALB von
+  1.41; die Merge-Region (kritische Phase) ist bis dorthin intakt.
+- KEIN Splay-Beginn unterhalb von 1.40: die konventionsfreien Signaturen
+  stuetzen die Hypothese NICHT, das wahre T_BKT laege beim per-Site-Wert
+  1.4007 oder darunter — qualitativ konsistent mit der Referenz-Lage.
+- Adjacent-Crossings im Merge-Bereich sind ueberwiegend < 2 sigma
+  (Rauschen, ehrlich mit Flanken-Signifikanz berichtet).
+- **NR-PHY043-01 (Grenze):** Splay-Temperaturen sind obere Schranken der
+  Merge-Region und driften logarithmisch; eine 1%-Diskriminierung
+  zwischen 1.4007 und 1.418 leistet dieses Budget NICHT. O1 bleibt formal
+  offen; naechster Pfad ist der Konventions-Nachweis je Referenz in
+  SOURCES.md. Kein per-Site-Code-Fix ohne diesen Nachweis.
+
 ## Methodische Kernformeln
 
 ```text
@@ -107,6 +135,7 @@ python "src/260607 PHY032 honeycomb wm-logfit bootstrap v01.py"
 python "src/260616 PHY040 wang-landau entropic helicity v01.py"
 python "src/260702 PHY041 honeycomb wang-landau entropic helicity v01.py"
 python "src/260706 PHY042 honeycomb wl fss v01.py"
+python "src/260808 PHY043 triangular convention-free crossing v01.py"
 ```
 
 CI prueft Lint, Compile und schnelle Korrektheits-Gates. Slow-Messlaeufe bleiben lokal.
@@ -122,14 +151,15 @@ archive/    Vorgaenger-Versionen
 SOURCES.md  Provenance / SHA-256
 ```
 
-## Naechste Stufe nach PR #20 + Code-Audit 2026-07-10
+## Naechste Stufe nach PHY043 + Review-Nachtrag 2026-08-08
 
 1. Mehr Produktions-Statistik, damit die Crossings (24,48)/(32,48) in-Domaene und belastbar werden (NR-PHY042-02 aufloesen).
 2. Walker-robuster Upsilon_4-Dip fuer L>=32 (NR-PHY042-03 aufloesen), dann Dip-FSS Richtung T_BKT.
 3. Kein T_BKT-Bestwert-Claim ohne Cross-Family-Review.
 4. Square-V&V-Re-Baseline: mehr Statistik/groessere L, damit das 1%-Gate wieder belastbar bindet; PHY039-Dip-Fenster erweitern (Audit O-Punkte).
-5. Konventions-Quercheck per-Site-Upsilon vs NK-Gerade auf triangular (Binder/Korrelations-Ratio) — Audit-Punkt O1, vor jedem neuen triangular-Claim.
+5. O1 abschliessen: der MC-Quercheck-Teil ist mit PHY043 gelaufen (qualitativ konsistent mit Referenz-Lage, NR-PHY043-01: keine 1%-Diskriminierung); offen bleibt der Konventions-Nachweis je zitierter Referenz (per-Spin vs per-Flaeche) in SOURCES.md. Bis dahin kein per-Site-Code-Fix.
 6. Re-Run PHY030v02/PHY032/PHY033 mit Pol-Guard bei der naechsten Produktions-Runde (Audit-Punkt O4).
+7. Bei Neu-Produktion PHY040: L in den WL-Stream aufnehmen (O8) und PHY039 auf ungebuchte Stream-Basis 800+ heben (O3).
 
 ---
 *Coworker Research / Coworkerz | Repo-Anlage 2026-06-04 nach arbeitsschablone_forschungs-repo-anlage*

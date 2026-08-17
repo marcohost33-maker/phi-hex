@@ -209,3 +209,59 @@ und Bin-Randbehandlung in allen drei Kerneln, log-sum-exp-Rueckgewichtung,
 PHY039-F2/F4-Kumulanten (gegen unabhaengige Herleitung + numerisches
 Orakel), PHY037-Parser/Drift-Guard (fails-closed), PHY042-Walker-Streams
 (kollisionsfrei) — alle drei Passes ohne Defektbefund.
+
+## 4. Nachtrag Review-Pass 2026-08-08 (zwei unabhaengige Passes)
+
+Frischer Review (Kern+PHY026-030 / PHY039-042+Tests), jeder Befund vor
+Aufnahme numerisch bzw. per Code-Trace verifiziert. Die Messpipeline
+(Gitter -> Wolff -> Helicity -> Root-Finding/Fit) wurde erneut GEGEN
+UNABHAENGIGE ORAKEL geprueft und blieb ohne Defektbefund: edge_disp
+bond-weise gegen unabhaengige Min-Image-Suche (0 Mismatches, square +
+triangular), Wolff gegen exakte Transfer-Matrix (XY-Ring N=4, 0.4 sigma)
+und unabhaengige Metropolis-Referenz (square L=8, 0.56 sigma),
+PHY039/040-F2/F4-Kumulanten gegen exakte Quadratur (relerr 1e-11/1e-7),
+WM-Fit- und Paar-Root-Finder gegen Synthetik-Orakel.
+
+### GEFIXT 2026-08-08
+
+- **N1 (P2, M3-Klasse) — PHY040: BILANZ-Print crashte ohne Paar-Crossing
+  vor dem Report.** Liefert kein Paar ein Crossing (best/worst=None),
+  warf der ungeschuetzte f-String `{None:.4f}` einen TypeError VOR dem
+  JSON-Report (= vor der Gate-Evidenz; exakt die in §1 fuer PHY034-038
+  gefixte M3-Klasse, PHY040 war dort nicht erfasst; PHY041 schuetzt den
+  Pfad bereits). Repro: worst=None im exakten f-String -> TypeError.
+  Fix: None-Guard + ehrliche No-Crossing-Zeile; Output im Valid-Pfad
+  byte-identisch (committeter Report unberuehrt).
+- **N2 (Doku/Lineage) — PHY029-Docstring claimte den zurueckgezogenen
+  V&V-Anker "+0.16%"** (H1-Zufallstreffer); der Laufzeit-Print war seit
+  2026-07-10 korrigiert, der Docstring nicht. Nachgezogen.
+- **Lint-Baseline-Drift (Infra):** ruff 0.16.x hat die Default-Regelauswahl
+  erweitert; der CI-Lint-Job installiert das neueste ruff -> das Gate
+  waere ohne Code-Aenderung von 0 auf 119 Findings gesprungen (verifiziert
+  mit ruff 0.16.2). Fix: Regelauswahl in ruff.toml explizit gepinnt
+  (E4/E7/E9/F); Baseline-Erweiterung = separate bewusste Entscheidung.
+
+### OFFEN (dokumentiert, bewusst NICHT still gefixt)
+
+- **O8 — PHY040-WL-Kernel teilt Stream (seed,1) ueber alle L** (O2/O3-
+  Klasse, war nirgends inventarisiert; PHY041 nutzt bereits 650+L).
+  Per-L-Kurven und Paar-Differenzen stammen aus stream-korrelierten
+  Ketten (desynchronisieren durch unterschiedliches n je Sweep;
+  Einzelketten unverzerrt). Bewusst unveraendert (Bit-Repro der
+  committeten Reports); als Kommentar am Kernel inventarisiert; bei
+  Neu-Produktion L in den Stream aufnehmen.
+- **O9 — Kern-Diagnostik (O7-Erweiterung, LOW, nicht messungsrelevant):**
+  (a) DefectTrackerV2-Lifetimes sind in ROH-Schritten, `L_min` vergleicht
+  dagegen — die persistent/transient-Trennung haengt still von
+  `measure_every` ab (verifiziert: identische 2-Frame-Historie kippt
+  zwischen persistent und transient). (b) `check_charge_conservation` ist
+  auf dem Torus eine mathematische Identitaet (jede gerichtete Kante
+  genau einmal traversiert, wrap_to_pi ungerade -> Summe konstruktiv 0;
+  500/500 Zufallskonfigurationen net=0) — als Validierungs-Gate vacuous
+  (L3-Klasse). (c) `helicity_terms`-Fallback bei disp=None nutzt die rohe
+  axial_to_xy-Differenz OHNE sqrt(3)-Normierung -> Upsilon exakt 3x zu
+  gross, still; mit den ausgelieferten Buildern unerreichbar (toter
+  Pfad), aber fails-silent fuer extern konstruierte Gitter.
+  (d) `required_sample_size`: Stream `1000*n + trial` kollidiert fuer
+  n_trials > 1000*(n2-n1) (Default 200 sicher). Fix-Politik wie O7:
+  nur zusammen mit einem Re-Run des Kern-Selftest-Reports.
