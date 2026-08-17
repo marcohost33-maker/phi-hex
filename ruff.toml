@@ -4,8 +4,8 @@
 # "non-blocking bis Lint-Baseline gesetzt"). `ruff check` ist ein
 # blockierendes Gate.
 #
-# Haertung 2026-08-08: Die Regelauswahl ist EXPLIZIT gepinnt statt auf die
-# ruff-Default-Auswahl zu vertrauen. Hintergrund: ruff 0.16.x hat die
+# REGELAUSWAHL (Haertung 2026-08-08). Die Auswahl ist EXPLIZIT gepinnt statt
+# auf die ruff-Default-Auswahl zu vertrauen. Hintergrund: ruff 0.16.x hat die
 # Default-Auswahl erweitert (u.a. I, UP, RUF aktiv) — der CI-Lint-Job
 # installiert das jeweils neueste ruff, damit waere das Gate ohne Code-
 # Aenderung von 0 auf 119 Findings gesprungen (Version-Drift, verifiziert
@@ -14,11 +14,36 @@
 # E4/E7/E9 — das ist NICHT das gesamte pycodestyle-Regelwerk (E1/E2/E3/E5
 # + W sind nicht enthalten). Gefangen werden u.a. tote Importe, undefinierte
 # Namen, ungenutzte Variablen und Mehrfach-Statements pro Zeile (E701/E702).
-# Der Stack ist gegen diese Auswahl vollstaendig sauber (keine Ausnahmen).
 # Baseline-Erweiterung (I/UP/RUF) = bewusste separate Entscheidung, nicht
 # Nebenwirkung eines ruff-Releases.
+#
+# REICHWEITE (Korrektur 2026-08-17). Hier stand: "Der Stack ist gegen diese
+# Auswahl vollstaendig sauber (keine Ausnahmen)." Das war unwahr.
+# `ruff check .` meldete 9 Befunde (2x F841, 7x E701) - alle in der einen
+# Datei unter `archive/`. Unbemerkt blieb es, weil ci.yml nur `ruff check
+# src tests` faehrt: die Konfiguration beschrieb eine groessere Reichweite,
+# als das Gate je geprueft hat.
+#
+# `archive/` ist jetzt ausgeschlossen, und zwar nicht aus Bequemlichkeit:
+# der Inhalt ist ein eingefrorenes historisches Artefakt, dessen BYTES in
+# SOURCES.md per SHA-256 gepinnt sind (Zeile `| FFC892838CFECAE4 | ... |
+# archive |`) und von tests/test_sources_integrity.py byte-genau bewacht
+# werden. Die 9 Stellen zu korrigieren hiesse, ein Archiv zu veraendern,
+# um einen Stilcheck zu befriedigen - der Pin braeche, und AGENTS.md
+# §Working-agreements-2 ("Lineage ehrlich", nie still ersetzen) waere
+# verletzt. Lint zielt auf Code, den man noch aendern DARF; auf ein Archiv
+# angewandt ist er ein Kategorienfehler. Die Integritaets-Deckung von
+# `archive/` bleibt davon unberuehrt - sie liegt beim SOURCES-Gate, nicht
+# beim Linter.
+#
+# force-exclude, damit der Ausschluss auch dann gilt, wenn die Datei
+# explizit auf der Kommandozeile steht (ohne das Flag ueberspringt ruff
+# nur beim Verzeichnis-Durchlauf - die Konfiguration wuerde ihre eigene
+# Reichweite erneut falsch beschreiben).
 target-version = "py312"
 line-length = 88
+extend-exclude = ["archive"]
+force-exclude = true
 
 [lint]
 select = ["E4", "E7", "E9", "F"]
