@@ -4,7 +4,7 @@
 # lokal (siehe README "Reproduzieren").
 # numpy-Floor 2.5.1: numpy 2.5.x traegt Requires-Python >=3.12 (keine cp310/cp311-
 # Wheels) -- moeglich, seit py3.10/3.11 fleet-weit gedroppt sind (Marco-Entscheid 2026-07-14).
-numpy>=2.5.1
+numpy>=2.5.2
 scipy>=1.11
 pytest>=9.1.1
 ruff>=0.15.20
