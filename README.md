@@ -6,6 +6,21 @@
 
 Phi-Hex untersucht das 2D-XY-Modell und BKT-Physik auf periodischen Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Wang-Landau-DOS und Finite-Size-Scaling.
 
+## Was Phi-Hex ausdruecklich NICHT ist
+
+- **Keine publizierte Arbeit und kein Referenzwert.** Die Tabelle unter *Mess-Stand*
+  zeigt **interne** Staende, eingeordnet relativ zu Literaturankern — kein neuer
+  T_BKT-Bestwert. Ein Bestwert-Claim braucht Cross-Family-Review (siehe letzter Abschnitt).
+- **Keine Bibliothek.** Kein PyPI-Paket, keine stabile API, keine SemVer-Zusage; die
+  Module sind Experiment-Skripte mit Datums-Praefix im Dateinamen.
+- **Kein allgemeiner MC-Baukasten.** Der Code ist auf XY/BKT auf den hier genannten
+  Gittern zugeschnitten.
+- **Gruene Gates sind kein Physik-Beweis.** Die Pipeline-Gates pruefen Integritaet
+  (Determinismus, Orakel, Rand-Leak, Domaenen-Guards), nicht die Richtigkeit einer
+  physikalischen Aussage. Wo ein Gate ehrlich FAIL meldet, steht das so im README.
+- **Kein Ersatz fuer die Specs.** Jede Zahl hier hat ihren Vertrag in `spec/` und ihren
+  Lauf in `results/`; ohne diese beiden ist eine Zahl aus diesem README nicht zitierfaehig.
+
 ## Konvention: Helicity-Modulus per Site
 
 Seit dem Audit vom 2026-06-04 wird der Helicity-Modulus per Site normiert. Das ersetzt die fruehere Flaechen-Normierung, die T_BKT um etwa 15 % ueberschaetzt hatte.
