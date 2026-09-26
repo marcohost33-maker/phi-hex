@@ -1,0 +1,35 @@
+PHY045 - Audit O1: Helicity-Normierung im NK-Kriterium
+Coworker Research / Coworkerz, 2026-09-26
+======================================================================
+Frage: per Site (Repo seit 2026-06-04) oder per Flaeche?
+Upsilon_site = a_s * Upsilon_area, a_s = Flaeche/Site (NN=1).
+
+--- Teil A: harmonisches Gitter, exakte Green-Funktion ---
+  square     a_s=1.0000  K_fit=1.00133  K/Y0_area=1.00133  K/Y0_site=1.00133
+  triangular a_s=0.8660  K_fit=1.73279  K/Y0_area=1.00043  K/Y0_site=1.15520
+  honeycomb  a_s=1.2990  K_fit=0.57760  K/Y0_area=1.00043  K/Y0_site=0.77013
+  kagome     a_s=1.1547  K_fit=0.86665  K/Y0_area=1.00072  K/Y0_site=0.86665
+
+--- Teil B: XY-Wolff-MC, R = 2 pi eta Upsilon_site / T ---
+  (per Site korrekt -> R = 1; per Flaeche korrekt -> R = a_s)
+  square     T=0.45  L=[16, 32, 64, 128] eta=0.08108+-0.00026 (chi2 5.91/1)
+             R=0.9885+-0.0031  a_s=1.0000  z(per Site)=-3.7  z(per Flaeche)=-3.66
+  triangular T=0.7   L=[17, 33, 65, 129] eta=0.07386+-0.00038 (chi2 0.48/1)
+             R=0.8649+-0.0045  a_s=0.8660  z(per Site)=-30.2  z(per Flaeche)=-0.25
+  honeycomb  T=0.29  L=[16, 32, 64, 128] eta=0.08899+-0.00037 (chi2 0.02/1)
+             R=1.2892+-0.0054  a_s=1.2990  z(per Site)=+53.8  z(per Flaeche)=-1.83
+  kagome     T=0.42  L=[16, 32, 64, 128] eta=0.08728+-0.00052 (chi2 0.11/1)
+             R=1.1519+-0.0068  a_s=1.1547  z(per Site)=+22.3  z(per Flaeche)=-0.41
+
+--- Teil C (Nachtrag, blind): Wolff-Effizienz honeycomb, Upsilon per Flaeche, T=[0.56, 0.58, 0.6] ---
+  Ziel-SE je T-Punkt: 0.002 (keine Mittelwerte berichtet)
+  L=  32: sigma/Sample=0.1290 tau_int=0.65 Sweeps Wall/Sweep=0.35 ms -> 2 s je T-Punkt
+  L=  64: sigma/Sample=0.1465 tau_int=0.65 Sweeps Wall/Sweep=1.28 ms -> 9 s je T-Punkt
+  L= 128: sigma/Sample=0.1680 tau_int=0.58 Sweeps Wall/Sweep=5.22 ms -> 43 s je T-Punkt
+
+--- Gates (Schwellen post-hoc, siehe gates_note) ---
+  [PASS] PASS_A_HARMONIC_STIFFNESS_IS_PER_AREA
+  [PASS] PASS_B_SQUARE_CONTROL_WITHIN_2PCT
+  [PASS] PASS_B_PER_SITE_FALSIFIED_NON_SQUARE
+  [PASS] PASS_B_PER_AREA_CONSISTENT_WITHIN_CONTROL_SYST
+  OVERALL: PASS  -> Entscheid: per_area

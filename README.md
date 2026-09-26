@@ -2,6 +2,7 @@
 
 > **Status:** Forschungs-Repo (oeffentlich seit 2026-08-17) | XY/BKT-Physik auf Dreiecks-, Honeycomb- und Kagome-Gittern.  
 > **Lizenz:** Apache-2.0 | **Lineage/Provenance:** siehe `SOURCES.md`.  
+> **Stand 2026-09-26b (Selbstpruefung PR #50):** **Audit O1 entschieden - das NK-Kriterium verlangt Upsilon PRO FLAECHE** (PHY045: exakt + MC, per Site mit 22-54 sigma widerlegt). Alle per-Site-T_BKT-Werte auf triangular/honeycomb/kagome in diesem README sind damit konventions-verzerrt (Lineage bleibt; Neuauswertung separat). W4 laeuft nach Vorregistrierung v02 (Upsilon pro Flaeche, Wolff, HKS).  
 > **Stand 2026-09-26 (Issue #45, PR #50):** Integritaets-Reparatur (PHY042-Domaenen-Semantik, Referenzband-Provenienz, PHY043-Text-Drift), W4-Vorregistrierung (vor der Kalibrierung committet) und blinde WL-Kalibrierung PHY044 mit bit-identischem Numba-Kernel: **W4-GO** mit Rezept "4x Produktion" (ohne Marge), kein T_BKT-Wert (Blind-Vertrag). Details: Abschnitt PHY044 unten.  
 > **Aktueller Review-Stand:** Review-Nachtrag 2026-08-08 (`spec/260710 ... v01.md` §4): Messpipeline erneut gegen unabhaengige Orakel defektfrei; PHY040-M3-Guard, Lint-Baseline-Pin, O8/O9 inventarisiert. PHY043 (Audit O1): konventionsfreier Quercheck triangular — qualitativ konsistent mit der Referenz-Lage, keine 1%-Diskriminierung (siehe unten). Davor: Code-Audit 2026-07-10: P0-Geometrie-Fix im Quadratgitter (PHY028/039/040 neu gerechnet, V&V-Anker ehrlich auf ~1% herabgestuft), Pol-Guards in allen Paar-Schaetzern; PHY042/PR #20 als Pipeline-Finding, **kein neuer T_BKT-Bestwert** (Grenzen NR-PHY042-02/03).
 
@@ -159,7 +160,8 @@ identischem RNG-Verbrauch und identischer Arithmetik je Update:
   identischer L=24-Produktionsjob, Speedup 5.6x);
 - reproduziert alle 7 committeten PHY042-Walker mit **exakt gleicher
   Trajektorie** (wl_sweeps, Bin-Belegung) - Kurven bis rtol 1e-12 (ULP-Ebene
-  der numpy-Reduktionen, Plattform); PHY042 neu in 231 s statt ~3500 s.
+  der numpy-Reduktionen, Plattform); PHY042 neu in 231 s (Originallauf
+  ~3500 s auf ANDERER Hardware - kein Speedup-Mass; gleiche Maschine: 5.6x).
 
 | K1 Kosten je Walker (PHY042-Rezept) | L=24 | L=32 | L=48 | L=64 |
 |---|---:|---:|---:|---:|

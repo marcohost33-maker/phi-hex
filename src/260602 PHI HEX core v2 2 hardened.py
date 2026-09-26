@@ -437,7 +437,21 @@ def helicity_from_ensemble(t1_samples: list[float],
     Diese Definition ist NICHT der Nelson-Kosterlitz-Standard und wurde
     ersetzt.
 
-    Am BKT-Uebergang schneidet Upsilon(T) die universelle Gerade 2*T/pi
+    KORREKTUR 2026-09-26 (Audit O1, PHY045; spec/260926 ... O1 helicity
+    normalization decision v01.md): der Absatz oben ist FALSIFIZIERT. Das
+    NK-Kriterium Upsilon(T_BKT) = 2 T_BKT / pi gilt fuer die Steifigkeit PRO
+    FLAECHE (Kontinuumsdefinition (1/A) d^2F/dk^2). Belegt exakt (harmonisches
+    Gitter: langreichweitige Steifigkeit = Upsilon_area(0) auf <= 0.13 %) und
+    per MC (eta = T / (2 pi Upsilon): per Site mit 22-54 sigma widerlegt).
+    Der "~15 %"-Befund verglich driftende per-L-Crossings bei L = 9..19 mit
+    einer Helicity-Referenz (1.418) unbelegter Normierung; normierungsfrei
+    liegt triangular bei ~1.465 (Hochtemperatur-Reihe). Diese Funktion
+    liefert WEITERHIN die per-Site-Rohgroesse (Bit-Kompatibilitaet aller
+    bisherigen Reports); fuer NK-/WM-Auswertungen auf nicht-quadratischen
+    Gittern ist sie durch die Flaeche je Site a_s zu teilen
+    (triangular sqrt(3)/2, honeycomb 3 sqrt(3)/4, kagome 2/sqrt(3)).
+
+    Am BKT-Uebergang schneidet Upsilon_area(T) die universelle Gerade 2*T/pi
     (Nelson-Kosterlitz). Darueber faellt Upsilon gegen null bzw. negativ.
     """
     mean_t1 = float(np.mean(t1_samples))

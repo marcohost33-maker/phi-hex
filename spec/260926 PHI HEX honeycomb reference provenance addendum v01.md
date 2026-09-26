@@ -107,3 +107,35 @@ Kanal dieser Status-Klassen darf allein einen Claim tragen.
   pruefen: jeder Kanal-Wert steht zeichengenau in 260703 **oder** in diesem
   Nachtrag; beta-Kanaele sind korrekt konvertiert; 0.576 erscheint nur in
   explizit als direkte T-Kanaele attribuierten Eintraegen.
+
+## 6. Nachtrag 2 (2026-09-26, Selbstpruefung F9/F10)
+
+**Zirkularitaets-Warnung:** das oeffentliche phi-hex-Repo ist selbst von
+Suchmaschinen indexiert. Die Werte 1.687/1.635/0.5928 stehen im README und in
+den Specs; Such-Zusammenfassungen koennen sie aus dem Repo statt aus der Quelle
+beziehen. Eine zweite, unabhaengige Recherche (~70 Suchlaeufe) fand:
+
+- arXiv:2406.12076 **v1** (Abstract): T_BKT = 0.576 +/- 0.001 (SA), 2mu = 4.0(5).
+- **v2** (2024-11-27): beta_BKT = 1.696(3) (Upsilon), 1.67(1) (Upsilon_4),
+  1.724(2) (Binder).
+- **Journal-Fassung** (Phys. Scr. 100 065953): 0.575(8) (SA), 0.576(3) (WL),
+  2mu = 5.80(12).
+- Die Werte **1.687(3) / 1.635(11)** (Vertrag 260703) konnten **nicht
+  unabhaengig bestaetigt** werden. Ihre Herkunft (v3/v4?) ist offen, eine
+  Kontamination durch das Repo ist nicht ausgeschlossen. Status der Kanaele
+  `upsilon_beta` / `upsilon4_beta` damit: **ungeprueft**. Sie tragen keinen
+  Claim und sind nicht Teil von Band B.
+- Auffaellig, aber unbelegt: 1/1.696 = 0.5896 liegt beim internen
+  per-Site-Crossing (0.588-0.592). Ob beta-Kanaele der Quelle per-Site-
+  normierte Crossings sind, ist offen (Normierung im Primaertext pruefen).
+
+**Normierung (Audit O1 entschieden, per Flaeche):** fuer jeden Helicity-
+basierten Literaturwert ist zu klaeren, ob per Site oder per Flaeche normiert
+wurde. Normierungsfreie Kanaele (Correlation-Ratio 0.573, NN 0.572) sind davon
+unberuehrt.
+
+**triangular:** die normierungsfreie Hochtemperatur-Reihe (Butera & Pernici,
+arXiv:0806.1496) gibt beta_c = 0.3412(4) in ihrer Konvention. Deren square-Wert
+0.5599(7) = 1.1199/2 belegt den Faktor 2, also T_BKT = 1/0.6824 = 1.465(1).
+Die bisherige Repo-Referenz 1.418 (Helicity-Crossing, Normierung unbelegt)
+gilt als konventions-abhaengig.

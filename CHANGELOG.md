@@ -3,6 +3,53 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-09-26b] Selbstpruefung PR #50: Audit O1 entschieden (Upsilon pro Flaeche) + W4 v02
+
+Vertragsquellen: `spec/260926 PHI HEX PR50 self-review v01.md`,
+`spec/260926 PHI HEX O1 helicity normalization decision v01.md`,
+`spec/260926 PHI HEX w4 honeycomb preregistration v02.md`.
+
+### Decided (Audit O1 - BREAKING fuer die Interpretation, nicht fuer Rohdaten)
+- **Das NK-Kriterium verlangt Upsilon PRO FLAECHE**, nicht pro Site. PHY045
+  (`results/260926 PHY045 helicity normalization O1 report.*`, OVERALL PASS):
+  - A exakt (harmonisches Gitter, L~96): langreichweitige Steifigkeit =
+    Upsilon_area(0) auf <= 0.13 % (alle 4 Gitter); per Site weicht um 1/a_s ab.
+  - B MC (eta aus <m^2> ~ L^-eta, L bis 128, bei T ~ 0.5 T_BKT):
+    R = 2 pi eta Upsilon_site / T = 0.865 / 1.289 / 1.152
+    (triangular / honeycomb / kagome) vs a_s = 0.866 / 1.299 / 1.155;
+    per Site mit 30 / 54 / 22 sigma widerlegt; square-Kontrolle 0.989.
+- **Befund S2 vom 2026-06-04 ("per Site ist NK-Standard") ist falsifiziert.**
+  Alle per-Site-T_BKT-Werte auf triangular, honeycomb und kagome sind
+  konventions-verzerrt. Die Vorzeichen passen: triangular zu tief (1.4007 vs
+  normierungsfrei ~1.465), honeycomb und kagome zu hoch. Die Werte bleiben als
+  Lineage stehen; die Neuauswertung folgt separat. Core-Docstring mit
+  datiertem Korrektur-Vermerk; die Rohgroesse bleibt per Site
+  (Bit-Kompatibilitaet).
+
+### Added
+- PHY045 Teil C (blind, K4): kanonischer Numba-Wolff erreicht SE(Upsilon_A)
+  = 0.002 je T-Punkt in 2 / 9 / 43 s (L = 32 / 64 / 128), tau_int ~ 0.6
+  Sweeps - WL braucht dafuer Stunden. Validiert: T->0-Orakel <= 0.05 %,
+  gegen PHY031-Python-Wolff 0.6 sigma.
+- **W4 v02** (vor jeder W4-Datennahme):
+  - Upsilon pro Flaeche;
+  - Wolff statt WL;
+  - Leiter 32..256 mit 5 HKS-Paaren (L, 2L), ln^2-Extrapolation plus Varianten;
+  - Jackknife ueber 8 Seeds;
+  - Band und Regeln S1/S2/C/I unveraendert.
+  PHY046 implementiert das Protokoll; Konstanten per Test an die Spec
+  gebunden.
+
+### Fixed (Selbstpruefung)
+- README: "PHY042 in 231 s statt ~3500 s" war ein Vergleich ueber zwei
+  Maschinen (F5).
+- Provenienz-Nachtrag 2 (F9/F10):
+  - Zirkularitaets-Warnung (Repo indexiert);
+  - Werte je Fassung von arXiv:2406.12076 (v1 0.576(1), v2 beta
+    1.696/1.67/1.724, Journal 0.575(8)/0.576(3));
+  - beta 1.687(3)/1.635(11) ungeprueft;
+  - triangular normierungsfrei 1.465 (Butera & Pernici).
+
 ## [2026-09-26] Issue #45: Integritaets-Reparatur + W4-Vorregistrierung + PHY044-Kalibrierung
 
 Vertragsquellen: Issue #45 (W4-Machbarkeit 2026-09-11), `spec/260926 PHI HEX
