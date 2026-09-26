@@ -62,6 +62,7 @@ Methodik-Vorbild honeycomb (WL + Y2/Y4): arXiv:2406.12076.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import time
@@ -109,6 +110,52 @@ REF_BAND = {  # T-Form, aus spec/260703 (beta-Kanaele konvertiert)
     "upsilon_beta": (0.5928, 0.0011),
     "upsilon4_beta": (0.6116, 0.0041),
     "binder_beta": (0.5800, 0.0007),
+    # Nachtrag 2026-09-26 (Issue #45 §3, spec/260926 ... provenance addendum):
+    # DIREKT berichtete T-Kanaele. 0.576(3) war bis dahin gar nicht im Band
+    # (PR #18 hatte es als "unattribuiert" gefuehrt); es ist der WL-Upsilon-
+    # T-Wert derselben Quelle wie die beta-Kanaele. Die Journal-Fassung von
+    # arXiv:2406.14812 (PTEP) berichtet andere Werte als arXiv v1 - beide
+    # Fassungen bleiben getrennt stehen (keine stille Ersetzung).
+    "upsilon_wl_T": (0.576, 0.003),
+    "upsilon_sa_T": (0.575, 0.008),
+    "upsilon4_wl_T": (0.568, 0.001),
+    "upsilon4_sa_T": (0.551, 0.011),
+    "helicity_ptep": (0.576, 0.004),
+    "nn_ptep": (0.572, 0.003),
+}
+
+# Provenienz je Band-Kanal (Issue #45 §3). status:
+#   "contract_260703"  - Eintrag des Vertrags spec/260703 (Stand 2026-07-03)
+#   "search_corroborated" - durch >= 2 unabhaengige Web-Such-Snapshots des
+#       Abstracts belegt; Primaertext in dieser Umgebung NICHT abrufbar
+#       (Egress-Policy blockt arxiv.org/iopscience/oup, 2026-09-26)
+#   "version_unclear"  - Wert belegt, Fassung (v1..v4) nicht eindeutig
+# Offene Pflicht: Primaertext-Abgleich je Fassung (Spec 260926 §4).
+REF_PROVENANCE = {
+    "multi_lattice": ("arXiv:2501.07388 v1 = J.Phys.A 58 065003 (2025)",
+                      "T, ohne Fehlerbalken", "contract_260703"),
+    "helicity_direct": ("arXiv:2406.14812 v1", "T, Helicity",
+                        "contract_260703"),
+    "nn_mc": ("arXiv:2406.14812 v1", "T, NN", "contract_260703"),
+    "upsilon_beta": ("arXiv:2406.12076 v3/v4 = Phys.Scr. 100 065953 (2025)",
+                     "beta=1.687(3), Upsilon", "contract_260703"),
+    "upsilon4_beta": ("arXiv:2406.12076 v3/v4 = Phys.Scr. 100 065953 (2025)",
+                      "beta=1.635(11), Upsilon_4", "contract_260703"),
+    "binder_beta": ("arXiv:2406.12076 v2..v4 Abstract",
+                    "beta=1.724(2), Binder", "search_corroborated"),
+    "upsilon_wl_T": ("arXiv:2406.12076 Abstract (v4) = Phys.Scr. 100 065953",
+                     "T=0.576(3), Upsilon, Wang-Landau", "search_corroborated"),
+    "upsilon_sa_T": ("arXiv:2406.12076 Abstract (v4) = Phys.Scr. 100 065953",
+                     "T=0.575(8), Upsilon, sim. annealing",
+                     "search_corroborated"),
+    "upsilon4_wl_T": ("arXiv:2406.12076 Haupttext", "T=0.568(1), Upsilon_4, WL",
+                      "version_unclear"),
+    "upsilon4_sa_T": ("arXiv:2406.12076 Haupttext",
+                      "T=0.551(11), Upsilon_4, SA", "version_unclear"),
+    "helicity_ptep": ("PTEP 2024(10) 103A02 (Journal-Fassung arXiv:2406.14812)",
+                      "T=0.576(4), Helicity", "search_corroborated"),
+    "nn_ptep": ("PTEP 2024(10) 103A02 (Journal-Fassung arXiv:2406.14812)",
+                "T=0.572(3), NN", "search_corroborated"),
 }
 
 # PHY041-Bruecke: committed Reportwerte (results/260702 PHY041 ... report.txt)
@@ -155,6 +202,140 @@ def _validity_domain(spread: np.ndarray, thr: float) -> np.ndarray:
     return mask
 
 
+# Domaenen-Semantik (Issue #45 §2, 2026-09-26). Bis dahin setzte der
+# Einzel-Walker-Pfad spread=0, Domaene="alles gueltig" und T_max=Gitterende.
+# Der JSON-Report fuehrte L=24 dadurch als "domain_tmax_spread004": 0.67 in
+# derselben Form wie die GEMESSENEN 0.60 (L32) / 0.585 (L48) - eine
+# Nicht-Messung, die wie eine Messung aussah. Jetzt: None + Grund. Die
+# Gate-Maske bleibt fuer ungemessene L "alles True" - das macht das
+# Coverage-Gate STRENGER (bindet ueber das ganze Gitter), nicht laxer.
+DOMAIN_THRESHOLD = 0.04  # VAL-A-Y2-Toleranz (Lauf-1-Haertung)
+_UNMEASURED_REASON = (
+    "n_walkers={n} < 2: walker spread undefined, no sampler validity "
+    "domain measured (single-walker L; PHY041 bridge). Not a measurement.")
+
+
+def _walker_domain(y2_curves: list, t_grid: np.ndarray,
+                   thr: float = DOMAIN_THRESHOLD) -> dict:
+    """Sampler-Validitaets-Domaene EINES L aus den Y2-Kurven seiner Walker.
+
+    >= 2 Walker -> gemessen: spread = max-min je T, mask = _validity_domain,
+    tmax = groesstes T der Domaene bzw. None, wenn die gemessene Domaene
+    LEER ist (dann ist jedes Paar mit diesem L fail-closed NICHT quotierbar).
+    < 2 Walker -> NICHT gemessen: spread = tmax = None, reason gesetzt;
+    mask = alles True nur als konservative Gate-Maske.
+    """
+    n = len(y2_curves)
+    if n < 2:
+        return {"measured": False, "n_walkers": n, "spread": None,
+                "mask": np.ones(len(t_grid), dtype=bool), "tmax": None,
+                "reason": _UNMEASURED_REASON.format(n=n)}
+    stack = np.stack([np.asarray(c, dtype=float) for c in y2_curves])
+    spread = stack.max(axis=0) - stack.min(axis=0)
+    mask = _validity_domain(spread, thr)
+    tmax = float(t_grid[mask].max()) if mask.any() else None
+    return {"measured": True, "n_walkers": n, "spread": spread, "mask": mask,
+            "tmax": tmax,
+            "reason": None if tmax is not None else
+            f"measured: walker spread >= {thr} already at the lowest T "
+            "(empty validity domain)"}
+
+
+def _pair_domain_limit(dom_a: dict, dom_b: dict) -> tuple:
+    """(T-Grenze, Basis) fuer die Quotierbarkeit eines Paar-Crossings.
+
+    Fail-closed und reihenfolge-unabhaengig. Vorher `min(tmax_a, tmax_b)`
+    mit NaN fuer eine leere Domaene: `min(0.6, nan)` = 0.6, aber
+    `min(nan, 0.6)` = nan - je nach Paar-Reihenfolge haette eine LEERE
+    Domaene das Paar quotierbar gelassen (latenter Fail-open, im Lauf
+    2026-07-06 nicht bindend, weil keine Domaene leer war).
+
+    Basis: "both_measured" | "partial" (ein L ungemessen - die Grenze
+    stammt nur vom gemessenen L; die ungemessene Seite traegt keine
+    Sampler-Evidenz) | "empty" (gemessene leere Domaene -> None) |
+    "unmeasured" (keine Seite gemessen -> None: ohne Sampler-Evidenz
+    kein quotierbares Paar).
+    """
+    for d in (dom_a, dom_b):
+        if d["measured"] and d["tmax"] is None:
+            return None, "empty"
+    measured = [d["tmax"] for d in (dom_a, dom_b) if d["measured"]]
+    if not measured:
+        return None, "unmeasured"
+    return min(measured), ("both_measured" if len(measured) == 2
+                           else "partial")
+
+
+def _domain_status(d: dict) -> dict:
+    """JSON-taugliche Sicht auf _walker_domain (ohne Arrays)."""
+    return {"measured": d["measured"], "n_walkers": d["n_walkers"],
+            "tmax": d["tmax"],
+            "max_spread": (None if d["spread"] is None
+                           else float(np.max(d["spread"]))),
+            "reason": d["reason"]}
+
+
+def reanalyse_domains(report: dict, thr: float = DOMAIN_THRESHOLD) -> dict:
+    """Domaenen + Paar-Quotierbarkeit aus einem COMMITTETEN PHY042-Report
+    neu ableiten (MC-frei: nutzt nur die gespeicherten Walker-Kurven).
+
+    Zweck (Issue #45 §2): der Report 260707 ist per voller SHA-256 gepinnt
+    und wird NICHT umgeschrieben (AGENTS.md: Lineage ehrlich). Diese
+    Funktion liefert die korrigierte Domaenen-Semantik als separates,
+    reproduzierbares Erratum und prueft zugleich, dass die gemessenen
+    Domaenen (L32/L48) und die Quotierbarkeits-Urteile aus den Kurven
+    folgen.
+    """
+    Ls = [int(x) for x in report["Ls"]]
+    t_grid = None
+    dom = {}
+    for L in Ls:
+        nw = int(report["n_walkers"][str(L)])
+        cs = [report["curves"][f"{L}_{w}"] for w in range(nw)]
+        t_grid = np.asarray(cs[0]["T"], dtype=float)
+        dom[L] = _walker_domain([c["y2"] for c in cs], t_grid, thr)
+    pairs = {}
+    for key, tb in report["pair_tbkt_mean_curves"].items():
+        a, b = (int(x) for x in key.split("_"))
+        q, limit, basis = _pair_quotable(tb, dom[a], dom[b])
+        pairs[key] = {"tbkt": tb, "quotable": q, "limit_tmax": limit,
+                      "basis": basis,
+                      "quotable_as_committed": bool(
+                          report["pair_quotable"][key])}
+    return {"threshold": thr,
+            "domain_status": {str(L): _domain_status(dom[L]) for L in Ls},
+            "committed_domain_tmax_spread004":
+                report["domain_tmax_spread004"],
+            "pairs": pairs}
+
+
+def _pair_quotable(tb, dom_a: dict, dom_b: dict) -> tuple:
+    """(quotierbar, T-Grenze, Basis): Crossing existiert UND liegt in der
+    fail-closed Paar-Grenze (_pair_domain_limit)."""
+    limit, basis = _pair_domain_limit(dom_a, dom_b)
+    q = tb is not None and limit is not None and tb <= limit
+    return bool(q), limit, basis
+
+
+def _walker_plan(Ls, n_walkers: int, min_walkers: int | None = None) -> dict:
+    """Walker je L: n_walkers fuer L>=32, 1 fuer L<32 (PHY041-Bruecke).
+
+    min_walkers (W4-Vertrag, Issue #45 §2: >= 3 Walker an JEDEM L eines
+    W4-Laufs) prueft fail-closed VOR jeder Rechnung - ein Einzel-Walker-L
+    darf in einem W4-Lauf nicht still mitlaufen.
+    """
+    walkers = {L: (n_walkers if L >= 32 else 1) for L in Ls}
+    if min_walkers is not None:
+        short = {L: w for L, w in walkers.items() if w < min_walkers}
+        if short:
+            raise ValueError(
+                f"Walker-Vertrag verletzt: min_walkers={min_walkers}, "
+                f"aber {short} (L -> Walker). L<32 laeuft in PHY042 als "
+                "Einzel-Walker-Bruecke; ein W4-Lauf braucht einen eigenen "
+                "Walker-Plan.")
+    return walkers
+
+
 def _uncovered_mass(res, T: float) -> float:
     """Kanonische Gewichtsmasse auf produktions-UNBESETZTEN Bins, mit der
     VOLLEN lng (alle Bins; die WL-Phase hat alle Bins besucht). Verallgemeinert
@@ -184,8 +365,11 @@ def _wl_job(args: tuple) -> tuple:
 
 
 def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
-               max_workers=4) -> dict:
+               max_workers=4, min_walkers: int | None = None) -> dict:
     t_grid = _T_GRID
+    # Walker-Plan zuerst: ein verletzter min_walkers-Vertrag muss VOR den
+    # teuren Anker-/WL-Laeufen scheitern (fail-closed, Issue #45 §2).
+    walkers = _walker_plan(Ls, n_walkers, min_walkers)
     print("PHY042: honeycomb WL-FSS L=24/32/48 + Y2/Y4-Kanaele + Multi-Walker")
     print("Coworker Research / Coworkerz, 6. Juli 2026")
     print("=" * 72)
@@ -215,8 +399,8 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
     # --- WL-Jobs: (L, walker) parallel, deterministisch je (seed, stream) --
     # Multi-Walker an BEIDEN grossen L (Lauf-1-Haertung): der Sampler-
     # Systematik-Check muss jede Gitter-Groesse abdecken, deren Kurven in
-    # Paar-Schaetzer eingehen. L=24 bleibt Einzel-Walker (PHY041-Bruecke).
-    walkers = {L: (n_walkers if L >= 32 else 1) for L in Ls}
+    # Paar-Schaetzer eingehen. L=24 bleibt Einzel-Walker (PHY041-Bruecke);
+    # Plan oben via _walker_plan (fail-closed gegen min_walkers).
     jobs = []
     for L in Ls:
         e_lo, e_hi = windows[L]["window_ps"]
@@ -273,28 +457,26 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
     # Y2-Kurven sampler-limitiert sind. Schwelle 0.04 = VAL-A-Y2-Toleranz;
     # 0.02/0.01 werden als strengere Domaenen mit ausgewiesen.
     print("\n[DOMAIN] Validitaets-Domaenen aus Walker-Spread (L>=32):")
-    spreads: dict[int, np.ndarray] = {}
-    domains: dict[int, np.ndarray] = {}
-    domain_tmax: dict[int, float] = {}
+    dom: dict[int, dict] = {}
+    domains: dict[int, np.ndarray] = {}   # Gate-Maske (ungemessen: alles)
     for L in Ls:
-        if walkers[L] < 2:
-            spreads[L] = np.zeros(len(t_grid))
-            domains[L] = np.ones(len(t_grid), dtype=bool)
-            domain_tmax[L] = float(t_grid[-1])
+        dom[L] = _walker_domain([curves[(L, w)]["y2"]
+                                 for w in range(walkers[L])], t_grid)
+        domains[L] = dom[L]["mask"]
+        if not dom[L]["measured"]:
+            print(f"      L={L}: NICHT GEMESSEN ({walkers[L]} Walker) - "
+                  "Report fuehrt T_max=null + Grund; Sampler-Guard fuer "
+                  "L=24 ist VAL-B (PHY032-Gitter bis T=0.6475).")
             continue
-        stack = np.stack([curves[(L, w)]["y2"] for w in range(walkers[L])])
-        spreads[L] = stack.max(axis=0) - stack.min(axis=0)
-        domains[L] = _validity_domain(spreads[L], 0.04)
-        domain_tmax[L] = (float(t_grid[domains[L]].max())
-                          if domains[L].any() else float("nan"))
-        strict = {thr: (float(t_grid[_validity_domain(spreads[L], thr)].max())
-                        if _validity_domain(spreads[L], thr).any() else None)
+        sp = dom[L]["spread"]
+        strict = {thr: (float(t_grid[_validity_domain(sp, thr)].max())
+                        if _validity_domain(sp, thr).any() else None)
                   for thr in (0.01, 0.02)}
-        print(f"      L={L}: T<= {domain_tmax[L]:.4f} (Spread<0.04); "
+        tmax_txt = ("LEER" if dom[L]["tmax"] is None
+                    else f"{dom[L]['tmax']:.4f}")
+        print(f"      L={L}: T<= {tmax_txt} (Spread<{DOMAIN_THRESHOLD}); "
               f"strenger: <0.02 -> T<={strict[0.02]}, <0.01 -> T<={strict[0.01]}; "
-              f"max Spread {spreads[L].max():.4f}")
-    print("      L=24: Einzel-Walker (PHY041-Bruecke) - Domaene formal voll;"
-          " Sampler-Guard ist VAL-B (PHY032-Gitter bis T=0.6475).")
+              f"max Spread {sp.max():.4f}")
 
     # --- Coverage-Massen-Gate (nur innerhalb der Domaene bindend) ----------
     unc_max = 0.0
@@ -373,19 +555,22 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
              if Ls[j] > Ls[i]]
     pair_tbkt = {}
     pair_quotable = {}
+    pair_basis = {}
     for La, Lb in pairs:
         tb = tbkt_pair_from_curves(t_grid, main_curve[La]["y2"], La,
                                    main_curve[Lb]["y2"], Lb)
         pair_tbkt[(La, Lb)] = tb
-        q = (tb is not None
-             and tb <= min(domain_tmax[La], domain_tmax[Lb]))
+        q, limit, basis = _pair_quotable(tb, dom[La], dom[Lb])
         pair_quotable[(La, Lb)] = q
+        pair_basis[(La, Lb)] = {"limit_tmax": limit, "basis": basis}
         if tb is None:
             print(f"      T_BKT({La},{Lb}): kein Nulldurchgang im T-Fenster")
         else:
+            lim_txt = "keine" if limit is None else f"{limit:.4f}"
             tag = ("QUOTIERBAR" if q else
                    f"NR: Crossing ausserhalb Domaene "
-                   f"(min T_max={min(domain_tmax[La], domain_tmax[Lb]):.4f})")
+                   f"(min T_max={lim_txt})")
+            tag += f", Basis {basis}"
             print(f"      T_BKT({La},{Lb}) = {tb:.4f}  "
                   f"(vs Multi-Lattice 0.573: "
                   f"{(tb - 0.573) / 0.573 * 100:+.2f}%)  [{tag}]")
@@ -473,7 +658,8 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
               f"unterhalb PHY041 (16,24)=0.6087.")
     # Haertung 2026-07-10 (Code-Audit L2): default schuetzt den
     # n_walkers=1-Pfad (leerer Generator -> ValueError VOR dem Report).
-    max_spread = max((spreads[L].max() for L in Ls if walkers[L] > 1),
+    max_spread = max((dom[L]["spread"].max() for L in Ls
+                      if dom[L]["measured"]),
                      default=float("nan"))
     print("    - NR-PHY042-01: Y2 ist bei L>=32 oberhalb T~0.60 "
           "sampler-limitiert (Walker-Spread bis "
@@ -517,8 +703,14 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
                     for (L, w) in results},
         "leak_max": leak_max,
         "uncovered_mass_max_in_domain": unc_max,
-        "walker_spread": {str(L): spreads[L].tolist() for L in Ls},
-        "domain_tmax_spread004": {str(L): domain_tmax[L] for L in Ls},
+        # Issue #45 §2: ungemessene L -> null + Grund (nicht 0 / Gitterende)
+        "walker_spread": {str(L): (None if dom[L]["spread"] is None
+                                   else dom[L]["spread"].tolist())
+                          for L in Ls},
+        "domain_tmax_spread004": {str(L): dom[L]["tmax"] for L in Ls},
+        "domain_status": {str(L): _domain_status(dom[L]) for L in Ls},
+        "pair_domain_basis": {f"{a}_{b}": v
+                              for (a, b), v in pair_basis.items()},
         "validation_vs_wolff_L32": val_rows,
         "validation_vs_phy032_grid": grid_rows,
         "phy041_bridge": {"y4_dip_L24": y4_dip_24,
@@ -563,7 +755,41 @@ def _clean(o):
     return o
 
 
+PHY042_REPORT_V01 = ("results/260707 PHY042 honeycomb wl-fss L24-32-48 "
+                     "gate report.json")
+
+
+def domain_erratum(report_path: Path = _ROOT / PHY042_REPORT_V01) -> dict:
+    """Maschinenlesbares Erratum zum committeten PHY042-Report (Issue #45
+    §2): korrigierte Domaenen-Semantik, abgeleitet via reanalyse_domains.
+    Der Quell-Report bleibt unveraendert; seine SHA-256 (ueber LF-normierte
+    Bytes = committete Bytes, plattform-portabel) bindet das Erratum."""
+    raw = Path(report_path).read_bytes().replace(b"\r\n", b"\n")
+    rep = json.loads(raw)
+    return {
+        "module": "PHY042_domain_semantics_erratum",
+        "attribution": "Coworker Research / Coworkerz",
+        "date": "2026-09-26",
+        "issue": "#45 section 2",
+        "source_report": PHY042_REPORT_V01,
+        "source_sha256": hashlib.sha256(raw).hexdigest(),
+        "note": ("Committed report lists domain_tmax_spread004['24'] = 0.67 "
+                 "and walker_spread['24'] = 0.0 x31. Both are construction "
+                 "artefacts of the single-walker path (grid end / zero), "
+                 "not measurements. Corrected semantics: null + reason. "
+                 "Measured domains (L32, L48) and all pair-quotability "
+                 "verdicts are unchanged (re-derived from stored curves)."),
+        **reanalyse_domains(rep),
+    }
+
+
 if __name__ == "__main__":
-    report = run_phy042()
-    print("\n--- JSON-Report ---")
-    print(json.dumps(_clean(report), indent=2, allow_nan=False))
+    if len(sys.argv) >= 2 and sys.argv[1] == "--reanalyse":
+        src = Path(sys.argv[2]) if len(sys.argv) > 2 else (
+            _ROOT / PHY042_REPORT_V01)
+        print(json.dumps(_clean(domain_erratum(src)), indent=2,
+                         allow_nan=False))
+    else:
+        report = run_phy042()
+        print("\n--- JSON-Report ---")
+        print(json.dumps(_clean(report), indent=2, allow_nan=False))

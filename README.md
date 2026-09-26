@@ -43,8 +43,23 @@ Ab PR #18/PHY041 gilt `spec/260703 PHI HEX honeycomb reference conventions audit
 | arXiv:2406.12076 | beta_BKT = 1.687(3) | 0.5928 +/- 0.0011 | Upsilon / WL-Honeycomb |
 | arXiv:2406.12076 | beta_BKT = 1.635(11) | 0.6116 +/- 0.0041 | Upsilon_4 |
 | arXiv:2406.12076 | beta_BKT = 1.724(2) | 0.5800 +/- 0.0007 | Binder |
+| arXiv:2406.12076 (v4 / Phys. Scr. 100 065953) | T_BKT = 0.576(3) | 0.576 +/- 0.003 | Upsilon, Wang-Landau (direkt T) |
+| arXiv:2406.12076 (v4 / Phys. Scr. 100 065953) | T_BKT = 0.575(8) | 0.575 +/- 0.008 | Upsilon, sim. annealing (direkt T) |
+| PTEP 2024 103A02 (Journal-Fassung 2406.14812) | T_BKT = 0.576(4) | 0.576 +/- 0.004 | Helicity |
+| PTEP 2024 103A02 (Journal-Fassung 2406.14812) | T_BKT = 0.572(3) | 0.572 +/- 0.003 | NN |
 
 Konversion: `T = 1 / beta`, `sigma_T = sigma_beta / beta^2`.
+
+**Provenienz-Nachtrag 2026-09-26 (Issue #45 §3):**
+`spec/260926 PHI HEX honeycomb reference provenance addendum v01.md`.
+0.576(3) ist der direkt berichtete WL-T-Wert von arXiv:2406.12076 (vorher als
+"unattribuierter Legacy-Anker" gefuehrt) und stand bis dahin gar nicht im
+Band; die Journal-Fassung von arXiv:2406.14812 berichtet andere Werte als
+arXiv v1 - beide Fassungen stehen getrennt. Die beta-Kanaele (0.580..0.612 in
+T-Form) sind eine quellen-interne Spannung zu den direkten T-Werten
+(0.560..0.576) und werden nie ineinander umgerechnet. Die neuen Zeilen sind
+**search_corroborated** (Primaertext war in der Arbeitsumgebung nicht
+abrufbar) - Primaertext-Abgleich steht aus; allein tragen sie keinen Claim.
 
 ## Mess-Stand
 
@@ -97,6 +112,7 @@ Ehrliche Grenzen:
 
 - **Kein neuer Bestwert / kein finaler T_BKT-Claim.** L=48 bleibt endlich; die Walker-Systematik misst nur den Sampler (g(E)-Bias), nicht den finite-size-Bias. Ein neuer Bestwert braucht Cross-Family-Review.
 - **NR-PHY042-02:** Die Paare (24,48) und (32,48) crossen ausserhalb der gemeinsamen Validitaets-Domaene und sind bei diesem Statistik-Budget nicht belastbar (Walker-Spread 0.033 bzw. 0.039 in T_BKT vs. 0.013 fuer das quotable Paar (24,32)).
+- **Erratum 2026-09-26 (Issue #45 §2):** L=24 lief als Einzel-Walker; der Report fuehrt dafuer `domain_tmax_spread004 = 0.67` und `walker_spread = 0` - beides Konstruktions-Artefakte (Gitterende/Null), **keine Messung**. Korrigierte Semantik (`null` + Grund) in `results/260926 PHY042 domain semantics erratum.json`, MC-frei aus den gespeicherten Kurven abgeleitet; alle Quotierbarkeits-Urteile bleiben gleich. Ehrliche Folge: das einzige quotierbare Paar (24,32) hat nur **einseitig** (L=32) gemessene Sampler-Evidenz (Basis `partial`). Der gepinnte Report bleibt byte-unveraendert.
 - **NR-PHY042-03:** Der Upsilon_4-Dip ist bei L in {32,48} nicht walker-robust (L=24 robust bei T=0.65; L=32/48 walker-abhaengig). Upsilon_4-FSS oberhalb L=24 braucht mehr Produktion.
 
 ## PHY043 — Konventionsfreier Quercheck triangular (Audit O1; Finding, kein Bestwert)

@@ -35,3 +35,13 @@ PHY041-L<=24 ist ein Pipeline-Finding. Die Paare 0.5951, 0.6029 und 0.6087 werde
 2. L=32/48 mit demselben Kernel laufen lassen.
 3. Upsilon_2- und Upsilon_4-FSS getrennt auswerten.
 4. Danach gemeinsame Interpretation.
+
+## Nachtrag 2026-09-26 (Issue #45 §3)
+
+Die Zeile "Legacy-Anker 0.576 +/- 0.003" ist ueberholt: 0.576(3) ist der direkt
+berichtete Wang-Landau-T-Wert von arXiv:2406.12076 (Abstract v4 / Physica
+Scripta 100 065953) und steht jetzt als eigener T-Kanal `upsilon_wl_T` im Band.
+Die Journal-Fassung von arXiv:2406.14812 (PTEP 2024 103A02) berichtet 0.576(4)
+(Helicity) und 0.572(3) (NN). Die Regel dieser Spec (beta und T nie vermischen)
+gilt unveraendert. Details, Fassungen und Beleg-Status:
+`spec/260926 PHI HEX honeycomb reference provenance addendum v01.md`.

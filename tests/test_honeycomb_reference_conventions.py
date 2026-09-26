@@ -41,23 +41,34 @@ def test_production_ref_band_uses_converted_beta_channels():
         assert math.isclose(sig, sig_t, abs_tol=2e-4), key
 
 
-def test_production_refs_keep_legacy_0576_out_of_band_channels():
-    """Kein REF_BAND-Kanal darf der Legacy-Direktlesart 0.576 entsprechen;
-    PHY041 fuehrt 0.576 nur als explizit benannten 'dedicated'-Anker."""
+def test_production_refs_keep_0576_out_of_beta_channels():
+    """0.576 darf NUR in explizit als direkt berichtete T-Kanaele
+    attribuierten Eintraegen stehen - nie als (Fehl-)Umrechnung eines
+    beta-Kanals. Nachtrag 2026-09-26 (spec/260926 provenance addendum):
+    0.576(3) ist der WL-T-Wert von arXiv:2406.12076 (vorher faelschlich
+    "unattribuiert"), 0.576(4) der Helicity-Wert der PTEP-Fassung von
+    arXiv:2406.14812."""
     for key, v in phy042.REF_BAND.items():
         val = v[0] if isinstance(v, tuple) else v
-        if key == "multi_lattice":
-            continue
-        assert not math.isclose(val, 0.576, abs_tol=1e-9), key
+        if math.isclose(val, 0.576, abs_tol=1e-9):
+            assert key in ("upsilon_wl_T", "helicity_ptep"), key
+            assert phy042.REF_PROVENANCE[key][1].startswith("T="), key
+        if key.endswith("_beta"):
+            assert abs(val - 0.576) > 0.003, key
     assert phy041.REF_MULTI == 0.573
     assert phy041.REF_DEDIC == 0.576
 
 
 def test_arxiv_2406_12076_beta_values_are_not_legacy_0576() -> None:
-    """de Andrade/Jorge/DaSilva berichten beta_BKT, nicht direkt T=0.576.
+    """Die beta-Kanaele von de Andrade/Jorge/DaSilva sind NICHT 0.576.
 
     Die umgerechneten T-Werte liegen bei ca. 0.593, 0.612 und 0.580. Damit darf
-    `0.576(3)` nicht als direkter Y2/Y4-Wert dieser Quelle gefuehrt werden.
+    `0.576(3)` nicht als Umrechnung eines beta-Kanals gefuehrt werden.
+    Korrektur 2026-09-26 (spec/260926 provenance addendum §3): hier stand
+    "berichten beta_BKT, nicht direkt T=0.576" - das Abstract (v4 / Physica
+    Scripta) berichtet BEIDES; 0.576(3) ist ihr direkter WL-T-Wert und steht
+    als eigener Kanal `upsilon_wl_T` im Band. Die Zusicherung dieses Tests
+    (beta-Kanaele != 0.576) bleibt unveraendert gueltig.
     """
     y2_t, y2_sigma = _beta_to_t(1.687, 0.003)
     y4_t, y4_sigma = _beta_to_t(1.635, 0.011)
@@ -83,18 +94,20 @@ def test_honeycomb_reference_band_keeps_sources_separate() -> None:
         "andrade_jorge_dasilva_y2_beta_as_T": _beta_to_t(1.687, 0.003)[0],
         "andrade_jorge_dasilva_y4_beta_as_T": _beta_to_t(1.635, 0.011)[0],
         "andrade_jorge_dasilva_binder_beta_as_T": _beta_to_t(1.724, 0.002)[0],
-        "legacy_dedicated_anchor_unattributed": 0.576,
+        # Nachtrag 2026-09-26: direkt berichteter WL-T-Wert derselben Quelle
+        # (vorher als "legacy ... unattributed" gefuehrt, spec/260926 §3)
+        "andrade_jorge_dasilva_wl_direct_T": 0.576,
     }
 
     assert refs["jiang_helicity_direct_T"] < refs["andrade_jorge_dasilva_y2_beta_as_T"]
     assert refs["okabe_otsuka_multi_lattice"] < refs["andrade_jorge_dasilva_y2_beta_as_T"]
     assert not math.isclose(
-        refs["legacy_dedicated_anchor_unattributed"],
+        refs["andrade_jorge_dasilva_wl_direct_T"],
         refs["andrade_jorge_dasilva_y2_beta_as_T"],
         abs_tol=0.003,
     )
     assert not math.isclose(
-        refs["legacy_dedicated_anchor_unattributed"],
+        refs["andrade_jorge_dasilva_wl_direct_T"],
         refs["andrade_jorge_dasilva_y4_beta_as_T"],
         abs_tol=0.003,
     )

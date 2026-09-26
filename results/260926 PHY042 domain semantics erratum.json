@@ -1,0 +1,61 @@
+{
+  "module": "PHY042_domain_semantics_erratum",
+  "attribution": "Coworker Research / Coworkerz",
+  "date": "2026-09-26",
+  "issue": "#45 section 2",
+  "source_report": "results/260707 PHY042 honeycomb wl-fss L24-32-48 gate report.json",
+  "source_sha256": "19a9ce3c799401dbb55e519c09b390bee9dfbe23792f99b2e7c650c3eeefa3cf",
+  "note": "Committed report lists domain_tmax_spread004['24'] = 0.67 and walker_spread['24'] = 0.0 x31. Both are construction artefacts of the single-walker path (grid end / zero), not measurements. Corrected semantics: null + reason. Measured domains (L32, L48) and all pair-quotability verdicts are unchanged (re-derived from stored curves).",
+  "threshold": 0.04,
+  "domain_status": {
+    "24": {
+      "measured": false,
+      "n_walkers": 1,
+      "tmax": null,
+      "max_spread": null,
+      "reason": "n_walkers=1 < 2: walker spread undefined, no sampler validity domain measured (single-walker L; PHY041 bridge). Not a measurement."
+    },
+    "32": {
+      "measured": true,
+      "n_walkers": 3,
+      "tmax": 0.6,
+      "max_spread": 0.14413404943244387,
+      "reason": null
+    },
+    "48": {
+      "measured": true,
+      "n_walkers": 3,
+      "tmax": 0.585,
+      "max_spread": 0.24704715861023518,
+      "reason": null
+    }
+  },
+  "committed_domain_tmax_spread004": {
+    "24": 0.67,
+    "32": 0.6,
+    "48": 0.585
+  },
+  "pairs": {
+    "24_32": {
+      "tbkt": 0.5874696919460917,
+      "quotable": true,
+      "limit_tmax": 0.6,
+      "basis": "partial",
+      "quotable_as_committed": true
+    },
+    "24_48": {
+      "tbkt": 0.5897713423044898,
+      "quotable": false,
+      "limit_tmax": 0.585,
+      "basis": "partial",
+      "quotable_as_committed": false
+    },
+    "32_48": {
+      "tbkt": 0.5916117874413226,
+      "quotable": false,
+      "limit_tmax": 0.585,
+      "basis": "both_measured",
+      "quotable_as_committed": false
+    }
+  }
+}

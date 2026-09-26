@@ -79,9 +79,11 @@ def test_phy041_bridge_constants_match_committed_report():
 def test_reference_band_matches_conventions_audit_spec():
     """REF_BAND (T-Form) muss mit der Vertragsquelle
     spec/260703 ... reference conventions audit uebereinstimmen."""
-    spec = (ROOT / "spec" /
-            "260703 PHI HEX honeycomb reference conventions audit v01.md"
-            ).read_text(encoding="utf-8")
+    # Vertrag = 260703 + Provenienz-Nachtrag 260926 (Issue #45 §3)
+    spec = "\n".join(
+        (ROOT / "spec" / name).read_text(encoding="utf-8") for name in (
+            "260703 PHI HEX honeycomb reference conventions audit v01.md",
+            "260926 PHI HEX honeycomb reference provenance addendum v01.md"))
     band = phy042.REF_BAND
     assert band["multi_lattice"] == 0.573 and "0.573" in spec
     # Haertung 2026-07-10 (Code-Audit): exakte Token statt rstrip("0")-
@@ -146,3 +148,172 @@ def test_wl_job_smoke_small_lattice():
         assert phy042.canonical_edge_leak(res, T) < 1e-3
     c = phy042.upsilon_curves(res, phy042._T_GRID)
     assert c["y2"][0] > c["y2"][-1] + 0.1                # klar fallend
+
+
+# ---------------------------------------------------------------------------
+# Issue #45 §2 (2026-09-26): Einzel-Walker-L ist KEINE Messung.
+# ---------------------------------------------------------------------------
+
+ERRATUM = ROOT / "results" / "260926 PHY042 domain semantics erratum.json"
+
+
+def _dom(tmax, measured=True):
+    """Minimal-Domaene fuer die Paar-Grenzen-Orakel."""
+    return {"measured": measured, "tmax": tmax}
+
+
+def test_single_walker_domain_is_null_with_reason():
+    """< 2 Walker: spread/tmax None + Grund; die Gate-Maske bleibt voll
+    (konservativ: Coverage-Gate bindet dann ueber das ganze Gitter)."""
+    t = phy042._T_GRID
+    d = phy042._walker_domain([np.linspace(1.0, 0.2, len(t))], t)
+    assert d["measured"] is False and d["n_walkers"] == 1
+    assert d["spread"] is None and d["tmax"] is None
+    assert "Not a measurement" in d["reason"]
+    assert d["mask"].all()
+    st = phy042._domain_status(d)
+    assert st["tmax"] is None and st["max_spread"] is None
+
+
+def test_multi_walker_domain_measured_and_empty_domain_is_explicit():
+    t = phy042._T_GRID
+    base = np.linspace(1.0, 0.2, len(t))
+    bump = np.where(t > 0.60, 0.1, 0.0)          # Spread 0.1 ab T>0.60
+    d = phy042._walker_domain([base, base + bump, base], t)
+    assert d["measured"] is True and d["reason"] is None
+    assert d["tmax"] == pytest.approx(0.60)
+    # gemessen, aber schon am unteren Rand ueber der Schwelle -> LEER
+    d0 = phy042._walker_domain([base, base + 0.05], t)
+    assert d0["measured"] is True and d0["tmax"] is None
+    assert "empty validity domain" in d0["reason"]
+
+
+def test_pair_domain_limit_fail_closed_and_order_independent():
+    """Regression gegen den latenten Fail-open: frueher min(tmax_a, tmax_b)
+    mit NaN fuer leere Domaenen -> min(0.6, nan) = 0.6 (quotierbar!),
+    min(nan, 0.6) = nan. Jetzt symmetrisch fail-closed."""
+    full, empty = _dom(0.60), _dom(None)
+    unmeasured = _dom(None, measured=False)
+    for a, b in ((full, empty), (empty, full)):
+        assert phy042._pair_domain_limit(a, b) == (None, "empty")
+        assert phy042._pair_quotable(0.55, a, b)[0] is False
+    for a, b in ((full, unmeasured), (unmeasured, full)):
+        assert phy042._pair_domain_limit(a, b) == (0.60, "partial")
+    assert phy042._pair_domain_limit(unmeasured, unmeasured) == (
+        None, "unmeasured")
+    assert phy042._pair_quotable(0.55, unmeasured, unmeasured)[0] is False
+    assert phy042._pair_domain_limit(_dom(0.585), full) == (
+        0.585, "both_measured")
+    assert phy042._pair_quotable(None, full, full)[0] is False
+    assert phy042._pair_quotable(0.60, full, full)[0] is True     # Rand ok
+    assert phy042._pair_quotable(0.6001, full, full)[0] is False
+
+
+def test_walker_plan_min_walkers_is_fail_closed():
+    """W4-Vertrag: >= 3 Walker an JEDEM L - Einzel-Walker-Bruecke L=24
+    muss laut scheitern, nicht still mitlaufen."""
+    assert phy042._walker_plan((24, 32, 48), 3) == {24: 1, 32: 3, 48: 3}
+    with pytest.raises(ValueError, match="24"):
+        phy042._walker_plan((24, 32, 48), 3, min_walkers=3)
+    assert phy042._walker_plan((32, 48), 3, min_walkers=3) == {32: 3, 48: 3}
+    with pytest.raises(ValueError):
+        phy042._walker_plan((32, 48), 2, min_walkers=3)
+
+
+def test_reanalysis_of_committed_report_reproduces_measured_domains():
+    """Bindet die neue Semantik an die committete Evidenz: aus den
+    gespeicherten Walker-Kurven folgen exakt die gemessenen Domaenen
+    L32=0.60 / L48=0.585 und alle Paar-Urteile; L=24 wird ungemessen."""
+    import json
+    rep = json.loads(
+        (ROOT / phy042.PHY042_REPORT_V01).read_text(encoding="utf-8"))
+    out = phy042.reanalyse_domains(rep)
+    st = out["domain_status"]
+    assert st["24"]["measured"] is False and st["24"]["tmax"] is None
+    assert st["32"]["tmax"] == rep["domain_tmax_spread004"]["32"] == 0.6
+    assert st["48"]["tmax"] == rep["domain_tmax_spread004"]["48"] == 0.585
+    for key, p in out["pairs"].items():
+        assert p["quotable"] == p["quotable_as_committed"], key
+    assert out["pairs"]["24_32"]["quotable"] is True
+    # ehrliche Einordnung: das einzige quotierbare Paar hat nur EINSEITIG
+    # Sampler-Evidenz (L=24 ungemessen)
+    assert out["pairs"]["24_32"]["basis"] == "partial"
+    assert out["pairs"]["32_48"]["basis"] == "both_measured"
+
+
+def test_committed_erratum_matches_regeneration():
+    """Drift-Guard: das committete Erratum ist exakt die Ausgabe von
+    `--reanalyse` auf dem gepinnten Report (inkl. dessen SHA-256)."""
+    import json
+    committed = json.loads(ERRATUM.read_text(encoding="utf-8"))
+    regen = json.loads(json.dumps(phy042._clean(phy042.domain_erratum())))
+    assert committed == regen
+    assert committed["source_sha256"] == (
+        "19a9ce3c799401dbb55e519c09b390bee9dfbe23792f99b2e7c650c3eeefa3cf")
+
+
+def test_run_phy042_report_path_emits_null_for_single_walker(monkeypatch):
+    """Integrations-Gate durch den ECHTEN run_phy042-Pfad (MC ersetzt durch
+    synthetische, deterministische Kurven): der JSON-Report fuehrt L=24
+    als ungemessen (null + Grund) statt 0.67/0.0, bleibt allow_nan-frei
+    serialisierbar, und die gemessenen L tragen ihre Domaene."""
+    import json
+    from types import SimpleNamespace
+
+    t = phy042._T_GRID
+
+    def fake_job(args):
+        L, w, e_lo, e_hi, seed = args
+        nb = 8
+        return (L, w, SimpleNamespace(
+            L=L, n=2 * L * L, wl_sweeps=100 + w, lng=np.zeros(nb),
+            centers=np.arange(nb, dtype=float), mask=np.ones(nb, bool)))
+
+    def fake_curves(res, t_grid):
+        L = res.L
+        # WM-artige Kurven: fallen, ab T>0.60 walker-abhaengig (Spread 0.1)
+        y2 = 1.2 - 1.1 * (t_grid - 0.52) - 0.02 * math.log(L)
+        y2 = y2 + np.where(t_grid > 0.60, 0.05 * (res.wl_sweeps - 100), 0.0)
+        y4 = np.abs(t_grid - 0.62)                   # Dip bei T=0.62
+        return {"T": t_grid, "y2": y2, "y4_scaled": y4,
+                "E": -1.2 * res.n * np.ones(len(t_grid))}
+
+    monkeypatch.setattr(phy042, "wolff_anchor",
+                        lambda L, T, master_seed=42: (-1.3 + T, 0.01))
+    monkeypatch.setattr(phy042, "_wl_job", fake_job)
+    monkeypatch.setattr(phy042, "upsilon_curves", fake_curves)
+    monkeypatch.setattr(phy042, "canonical_edge_leak", lambda res, T: 0.0)
+    monkeypatch.setattr(phy042, "_uncovered_mass", lambda res, T: 0.0)
+    monkeypatch.setattr(phy042, "wolff_reference", lambda L, T, master_seed=42:
+                        {"E_ps": -1.2, "y2": 0.9, "y2_sem": 0.01})
+    rep = phy042.run_phy042(max_workers=1)
+    out = json.loads(json.dumps(phy042._clean(rep), allow_nan=False))
+    assert out["walker_spread"]["24"] is None
+    assert out["domain_tmax_spread004"]["24"] is None
+    assert out["domain_status"]["24"]["measured"] is False
+    assert "Not a measurement" in out["domain_status"]["24"]["reason"]
+    for L in ("32", "48"):
+        assert out["domain_status"][L]["measured"] is True
+        assert out["domain_tmax_spread004"][L] == pytest.approx(0.60)
+        assert len(out["walker_spread"][L]) == len(t)
+    assert out["pair_domain_basis"]["24_32"]["basis"] == "partial"
+    assert out["pair_domain_basis"]["32_48"]["basis"] == "both_measured"
+    with pytest.raises(ValueError):
+        phy042.run_phy042(max_workers=1, min_walkers=3)
+
+
+def test_every_band_channel_has_provenance_row():
+    """Issue #45 §3: jeder Band-Kanal fuehrt Quelle, berichtete Groesse und
+    Beleg-Status; der Nachtrag-Spec listet jeden Kanal-Namen."""
+    assert set(phy042.REF_PROVENANCE) == set(phy042.REF_BAND)
+    allowed = {"contract_260703", "search_corroborated", "version_unclear"}
+    addendum = (ROOT / "spec" /
+                "260926 PHI HEX honeycomb reference provenance addendum v01.md"
+                ).read_text(encoding="utf-8")
+    for key, (src, reported, status) in phy042.REF_PROVENANCE.items():
+        assert status in allowed, key
+        assert src and reported, key
+        assert f"| {key} |" in addendum, key
+    # die im Issue fehlenden Werte sind jetzt im Band
+    assert phy042.REF_BAND["upsilon_wl_T"] == (0.576, 0.003)
+    assert "binder_beta" in phy042.REF_BAND

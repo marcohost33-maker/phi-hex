@@ -583,8 +583,13 @@ def write_report(report: dict, path: Path) -> None:
     lines.append("Grenzen (ehrlich):")
     lines.append("  - Kein T_BKT-Bestwert; Crossing-/Splay-Lagen driften "
                  "logarithmisch.")
-    lines.append("  - n_seeds=4, L<=19: keine 1%-Diskriminierung erwartbar "
-                 "(Spec §6).")
+    # Issue #45 §3 (2026-09-26): hier stand hart kodiert "n_seeds=4, L<=19"
+    # (Pilot-/PHY030-Budget) - der Finallauf 2026-08-08 hatte n_seeds=8,
+    # L<=25 (Kopfzeile desselben Reports). Grenzen-Text jetzt aus den
+    # tatsaechlichen Laufparametern abgeleitet (Erratum: results/260926).
+    lines.append(f"  - n_seeds={w['n_seeds']}, "
+                 f"L<={max(report['lattices_L'])}: keine "
+                 "1%-Diskriminierung erwartbar (Spec §6).")
     lines.append("  - Universeller (xi_2/L)*-Anker bewusst NICHT verwendet "
                  "(Rhombus-Torus,")
     lines.append("    tau=exp(i pi/3) — Hasenbusch-Wert gilt fuer tau=i).")
