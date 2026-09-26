@@ -40,6 +40,27 @@ Vertragsquellen: `spec/260926 PHI HEX PR50 self-review v01.md`,
   PHY046 implementiert das Protokoll; Konstanten per Test an die Spec
   gebunden.
 
+### Result (W4 v02, vorregistriert; FINDING)
+- PHY046 (Wolff, Upsilon pro Flaeche, L = 32..256, 8 Seeds, 2.9 CPU-h):
+  - Paare T*(L,2L) = 0.5658 / 0.5655 / 0.5657 / 0.5649 / 0.5663 (flach).
+  - T_W4 = 0.5649, sigma_tot = 0.0040 -> **CONSISTENT** mit B = [0.560, 0.580]
+    (Regel C). Flag: HKS-b am Bereichsrand.
+  - Per Site (Quercheck): HKS 0.5713.
+- PHY048 (post-hoc, NICHT vorregistriert): dieselbe Pipeline auf square,
+  L = 32..256.
+  - Paar-Crossings auf <= 0.5 % bei 0.893.
+  - Der 3-Parameter-HKS-Fit ist rauschverstaerkend (+0.45 %, sigma 0.009) ->
+    Lehre fuer kuenftige Protokolle.
+- PHY047: Neuauswertung der committeten Daten pro Flaeche.
+  - Die per-Site-Spalte reproduziert die Original-Reports.
+  - Pro Flaeche liegen alle Gitter bei kleinem L leicht unter den
+    normierungsfreien Referenzen: triangular 1.4447 vs 1.465, kagome 0.819 vs
+    0.825, honeycomb 0.558-0.560 vs 0.573. Das Vorzeichen stimmt mit der
+    square-Kontrolle ueberein.
+- Offene Spannung honeycomb: ~1.3 % (~2 sigma) unter 0.572-0.573
+  (normierungsfrei). Einordnung in `results/260926 PHY046 W4 v02
+  interpretation note.md`.
+
 ### Fixed (Selbstpruefung)
 - README: "PHY042 in 231 s statt ~3500 s" war ein Vergleich ueber zwei
   Maschinen (F5).

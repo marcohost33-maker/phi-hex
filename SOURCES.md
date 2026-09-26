@@ -248,3 +248,14 @@ bleiben unveraendert als Lineage stehen; letzte Zeile pro Pfad gewinnt.
 | 576889F9831734A9 | 2026-09-26 | tests | repo-native: `tests/test_phy046_w4_v02.py` (NEU: Spec-v02-Bindung, Seed-Vertrag, HKS-/WM-Orakel, Stop-Regel S1, exakte WM-Rekonstruktion, Mini-Produktion) |
 | F5F2A18A69AA228A | 2026-09-26 | results | repo-native: `results/260926 PHY045 helicity normalization O1 report.json` (NEU: Gate-Log PHY045 (OVERALL PASS, Entscheid per_area; Teil C blind)) |
 | 0FFE11B90C32396B | 2026-09-26 | results | repo-native: `results/260926 PHY045 helicity normalization O1 report.txt` (NEU: Text-Gate-Log PHY045 (inhaltsgleich zum JSON)) |
+| F513B3445850F3B3 | 2026-09-26 | results | repo-native: `results/260926 PHY046 honeycomb w4 wolff area-helicity report.json` (NEU: W4-v02-Gate-Log (vorregistriert; Wolff, Upsilon pro Flaeche, L=32..256, 8 Seeds): Paare 0.5649..0.5663, T_W4=0.5649, sigma_tot=0.0040, CONSISTENT (Regel C); per-Site-Quercheck 0.5713; Rohdaten je Seed) |
+| A34821E0F912ED20 | 2026-09-26 | results | repo-native: `results/260926 PHY046 honeycomb w4 wolff area-helicity report.txt` (NEU: Text-Gate-Log W4 v02) |
+| 0793319D0496CDF8 | 2026-09-26 | results | repo-native: `results/260926 PHY046 W4 v02 interpretation note.md` (NEU: Einordnung W4 v02 (vorregistriert vs post-hoc, Flags, ~1.3%-Spannung, Hypothese per-Site-Literatur, naechste Schritte)) |
+| 849AA2379D254194 | 2026-09-26 | src | repo-native: `src/260926 PHY047 per-area reanalysis committed v01.py` (NEU: Neuauswertung committeter Daten pro Flaeche (PHY042/032/033/030v02), nach v02-Commit 82e2738) |
+| 41149CA07A6ADD03 | 2026-09-26 | results | repo-native: `results/260926 PHY047 per-area reanalysis committed report.json` (NEU: PHY047-Report (per Site reproduziert Originale; pro Flaeche alle Gitter leicht unter normierungsfreien Referenzen)) |
+| AB7B37037D1DA13C | 2026-09-26 | results | repo-native: `results/260926 PHY047 per-area reanalysis committed report.txt` (NEU: Text-Report PHY047) |
+| 611BDD28FCB0F757 | 2026-09-26 | tests | repo-native: `tests/test_phy047_reanalysis.py` (NEU: Drift-Guard (per-Site-Spalte = Originale), reine Umskalierung, Vorzeichen-Vorhersage O1, Report-Regeneration) |
+| ED913808D3A94A24 | 2026-09-26 | src | repo-native: `src/260926 PHY048 square pipeline validation v01.py` (NEU: POST-HOC V&V der W4-v02-Pipeline auf square (gleiche Leiter/Statistik)) |
+| 6B73D8D63F2D31A3 | 2026-09-26 | results | repo-native: `results/260926 PHY048 square pipeline validation report.json` (NEU: PHY048-Report (post-hoc): Paare <= 0.5% bei 0.893; HKS-3-Parameter rauschverstaerkend (+0.45%, sigma 0.009)) |
+| 87DC36DF3125E000 | 2026-09-26 | results | repo-native: `results/260926 PHY048 square pipeline validation report.txt` (NEU: Text-Report PHY048) |
+| C5EBD3BB8506F64C | 2026-09-26 | tests | repo-native: `tests/test_phy048_square_validation.py` (NEU: gleiche Leiter/Statistik wie W4; committeter Report post_hoc + Paare <= 0.5%) |

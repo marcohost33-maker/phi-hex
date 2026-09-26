@@ -1,0 +1,32 @@
+PHY046 - W4 v02: honeycomb T_BKT (Upsilon pro Flaeche, Wolff, HKS)
+Coworker Research / Coworkerz, 2026-09-26
+======================================================================
+Spec: spec/260926 PHI HEX w4 honeycomb preregistration v02.md
+Leiter [32, 48, 64, 96, 128, 192, 256], T-Gitter 0.545..0.62 (16 Punkte), 8 Seeds x (500+1500) Sweeps
+Wall 2628 s auf 4 Prozessen, CPU 2.89 h
+
+--- Paar-Crossings T*(L,2L) (Upsilon pro Flaeche) ---
+  (32,64): 0.5658 +- 0.0004
+  (48,96): 0.5655 +- 0.0009
+  (64,128): 0.5657 +- 0.0003
+  (96,192): 0.5649 +- 0.0010
+  (128,256): 0.5663 +- 0.0020
+
+--- Schaetzer ---
+  PRIMAER HKS (T_c, a, b frei): 0.5649 (chi2 0.69)
+  v1 HKS b=1: 0.5652
+  v2 HKS ohne kleinstes Paar: 0.5646
+  v3 groesstes Paar: 0.5663
+  v4 WM freies C: 0.5673
+  sigma_sampler (Jackknife) = 0.0026
+  sigma_FSS (halbe Spannweite, vor Floor) = 0.0014
+
+--- Vorregistriertes Verdikt (w4_verdict) ---
+  Band B = [0.56, 0.58]
+  -> {'verdict': 'CONSISTENT', 'rule': 'C', 'sigma_tot': 0.0039649317939866625, 'interval': [0.5569216299741357, 0.5727813571500824]}
+
+--- Konventions-Quercheck (per Site; NICHT entscheidend) ---
+  T_W4(per Site) = 0.5713; Paare {'32_64': '0.5946', '48_96': '0.5916', '64_128': '0.5903', '96_192': '0.5873', '128_256': '0.5865'}
+
+Grenzen: FINDING relativ zum vorregistrierten Band, kein Bestwert;
+externe Aussage erst nach Cross-Family-Review.

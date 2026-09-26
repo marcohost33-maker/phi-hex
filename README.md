@@ -65,7 +65,25 @@ abrufbar) - Primaertext-Abgleich steht aus; allein tragen sie keinen Claim.
 
 ## Mess-Stand
 
-| Gitter | aktueller interner Stand | externe Einordnung | Methode |
+**Konventions-Hinweis 2026-09-26 (Audit O1 entschieden, PHY045).** Die erste
+Tabelle unten ist per Site normiert und auf triangular, honeycomb und kagome
+konventions-verzerrt. Sie bleibt als Lineage stehen. Die per-Flaeche-
+Neuauswertung derselben committeten Daten (PHY047, kleine L, ohne
+Extrapolation; FINDING, kein Bestwert):
+
+| Gitter | a_s | per Site (bisher) | per Flaeche (PHY047) | normierungsfreie Referenz |
+|---|---:|---:|---:|---:|
+| square | 1 | Paar (16,32) 0.8841 | identisch | 0.8929-0.8935 |
+| triangular | 0.866 | WM 1.4008 (-4.4 %) | WM 1.4447 (-1.4 %) | 1.465 (HT-Reihe, arXiv:0806.1496) |
+| honeycomb (WL, PHY042) | 1.299 | Paare 0.588-0.592 | Paare 0.558-0.560 | 0.573 (Corr.-Ratio, arXiv:2501.07388) |
+| kagome | 1.155 | WM 0.850 (+3.0 %) | WM 0.819 (-0.7 %) | 0.825 (grob, arXiv:2501.07388) |
+
+Pro Flaeche liegen alle vier Gitter bei kleinem L leicht UNTERHALB der
+normierungsfreien Werte, im selben Vorzeichen wie die square-Kontrolle. Per
+Site streute das gitterabhaengig um +/-3-4 %. Details:
+`results/260926 PHY047 per-area reanalysis committed report.txt`.
+
+| Gitter | aktueller interner Stand (per Site, Lineage) | externe Einordnung | Methode |
 |---|---:|---|---|
 | square | 0.8841 (Paar (16,32), -1.05% vs 0.8935) | V&V-Anker ~1% (nach edge_disp-Fix 2026-07-10; das fruehere +0.16% war Bug-Artefakt) | Sandvik-Paar / V&V, PHY028 |
 | triangular | 1.4007 +/- 0.0081 | nahe 1.418 | Wolff + Weber-Minnhagen |
@@ -144,6 +162,37 @@ Ergebnis (vorab festgelegter Interpretations-Vertrag, Spec §6):
   zwischen 1.4007 und 1.418 leistet dieses Budget NICHT. O1 bleibt formal
   offen; naechster Pfad ist der Konventions-Nachweis je Referenz in
   SOURCES.md. Kein per-Site-Code-Fix ohne diesen Nachweis.
+
+## W4 v02 — honeycomb T_BKT mit Upsilon pro Flaeche (PHY046, vorregistriert; FINDING)
+
+Protokoll: `spec/260926 PHI HEX w4 honeycomb preregistration v02.md`
+(committet vor der Datennahme). Kanonischer Wolff (Numba), Leiter 32..256,
+16 T-Punkte, 8 Seeds, 2.9 CPU-h. Gate-Log: `results/260926 PHY046 honeycomb
+w4 wolff area-helicity report.*`; Einordnung: `results/260926 PHY046 W4 v02
+interpretation note.md`.
+
+| Paar (L, 2L) | (32,64) | (48,96) | (64,128) | (96,192) | (128,256) |
+|---|---:|---:|---:|---:|---:|
+| T*, Upsilon pro Flaeche | 0.5658 | 0.5655 | 0.5657 | 0.5649 | 0.5663 |
+| T*, per Site (Quercheck) | 0.5946 | 0.5916 | 0.5903 | 0.5873 | 0.5865 |
+
+- **T_W4 = 0.5649, sigma_tot = 0.0040 -> vorregistriertes Verdikt CONSISTENT**
+  mit B = [0.560, 0.580].
+  - Flag: der HKS-Fit liegt am b-Rand, weil die Paare flach sind.
+  - Die Varianten 0.5646..0.5673 stimmen ueberein.
+- **Post-hoc-V&V (PHY048, square, gleiche Leiter):**
+  - Die Paar-Crossings liegen auf <= 0.5 % bei T_BKT = 0.893.
+  - Der 3-Parameter-HKS-Fit ist rauschverstaerkend (+0.45 %, sigma 0.009).
+  - Lehre fuer kuenftige Protokolle: groesstes Paar bzw. Paar-Mittel als
+    Primaer-Schaetzer.
+- **Offene Spannung:** ~1.3 % (~2 sigma) unter den normierungsfreien
+  Literaturwerten (0.572-0.573). Die per-Site-Werte der Pipeline treffen
+  dagegen die Helicity-Literatur (HKS per Site 0.5713; Paare L=24..48 bei
+  ~0.589). Hypothese, am Primaertext zu pruefen: diese Literaturwerte sind per
+  Site normiert.
+- Kein Bestwert. Vor einer externen Aussage braucht es einen eigenen
+  normierungsfreien Schaetzer, den Primaertext-Abgleich und ein
+  Cross-Family-Review.
 
 ## PHY044 — W4-Kalibrierung honeycomb (blind; Budget, kein T_BKT)
 
@@ -226,6 +275,10 @@ python "src/260702 PHY041 honeycomb wang-landau entropic helicity v01.py"
 python "src/260706 PHY042 honeycomb wl fss v01.py"
 python "src/260808 PHY043 triangular convention-free crossing v01.py"
 python "src/260706 PHY042 honeycomb wl fss v01.py" --reanalyse   # Domaenen-Erratum
+python "src/260926 PHY045 helicity normalization O1 test v01.py" all > ab.json   # O1-Nachweis
+python "src/260926 PHY046 honeycomb w4 wolff area-helicity v01.py"               # W4 v02 (~45 min)
+python "src/260926 PHY047 per-area reanalysis committed v01.py"                  # Neuauswertung
+python "src/260926 PHY048 square pipeline validation v01.py"                     # post-hoc V&V
 # PHY044 (numba empfohlen; Stufen je ~4..21 min auf 4 Kernen)
 M="src/260926 PHY044 honeycomb wl calibration v01.py"
 for st in ladder levers valbit speed; do python "$M" $st --out stages/; done
@@ -245,7 +298,14 @@ archive/    Vorgaenger-Versionen
 SOURCES.md  Provenance / SHA-256
 ```
 
-## Naechste Stufe nach Issue #45 / PHY044 (2026-09-26)
+## Naechste Stufe nach Selbstpruefung / W4 v02 (2026-09-26b)
+
+1. **Normierungsfreier honeycomb-Schaetzer** (Correlation-Ratio oder eta = 1/4 mit multiplikativer Log-Korrektur) auf derselben Leiter/Seeds - vorher vorregistrieren (v03), um die ~1.3-%-Spannung zu W4 aufzuklaeren.
+2. **Primaertext-Abgleich** der Literatur-Normierungen (Jiang, de Andrade et al., Sorokin, Okabe/Otsuka) und der beta-Werte 1.687/1.635.
+3. **triangular und kagome pro Flaeche neu messen** (Wolff-Numba, Leiter bis 256, T-Gitter um 1.465 bzw. 0.82); triangular gegen die normierungsfreie Reihe 1.465.
+4. Protokoll-Lehre aus PHY048: in kuenftigen Vorregistrierungen das groesste Paar bzw. das Paar-Mittel als Primaer-Schaetzer, HKS-3-Parameter nur als Variante.
+
+## Naechste Stufe nach Issue #45 / PHY044 (2026-09-26, teilweise ueberholt)
 
 1. **W4-Produktionslauf** nach Vorregistrierung: Leiter {32, 48, 64, 96} (L=128 zulaessig, Projektion 5.2 h/Walker <= 24 h), je 3 Walker, prod 4x, Numba-Kernel mit BLAS-Pin; Stop-Regeln S1/S2 und T_req-Messung je L (Spec §4.4). Ein Budget-Nachtrag (z. B. prod 8x fuer L>=64) nur VOR Sicht auf W4-Daten und als v02 der Spec.
 2. **Primaertext-Abgleich** der `search_corroborated`-Referenzkanaele (arXiv:2406.12076 v1..v4, PTEP-Abstract von 2406.14812) - in einer Umgebung mit arXiv-Zugang.
