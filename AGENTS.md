@@ -12,6 +12,10 @@ KI-Coding-Agent-Anweisungen. Reihenfolge: §1 Working agreements > §2 Conventio
 - **Was:** XY-Modell / BKT-Physik auf Dreiecks- und Honeycomb-Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Finite-Size-Scaling.
 - **Stack:** Python >= 3.12 (numpy/scipy fuer volle Laeufe; CI = Syntax + Lint). py3.10/3.11
   fleet-weit gedroppt (Marco-Entscheid 2026-07-14) -> numpy >= 2.5.1 (Requires-Python >=3.12).
+  numba optional (seit 2026-09-26, PHY044): WL-Kernel-Zwilling, nur mit Bit-Identitaets-Gate
+  gegen den Python-Kernel einsetzen; fuer reproduzierbare Laeufe BLAS auf 1 Thread pinnen
+  (`OPENBLAS_NUM_THREADS=1`): verifiziert 2026-09-26 (OpenBLAS 0.3.34) haengt np.dot ab
+  n=12288 (honeycomb L=64) bitweise von der Thread-Zahl ab, bis n=6912 (L=48) nicht.
 - **Provenance:** `SOURCES.md` ist die Integritaets-Wahrheit (SHA-256 je Quelldatei). Quelle ist
   Drive `0Phi Hex` + `Universe 2.0\Hqstphi Hex` (KEINE dde-Doppelhaltung - anders als hex-hqst/u2/u6/hexa-ntk).
 

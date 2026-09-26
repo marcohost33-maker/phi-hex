@@ -24,10 +24,18 @@ def _read(path: Path) -> str:
 
 
 def test_no_stale_single_anchor_attribution() -> None:
+    """Kein Einzelanker-Vergleich ("vs 0.576") in den Vertrags-Dokumenten.
+
+    Nachtrag 2026-09-26 (Issue #45 §3, spec/260926 provenance addendum §3):
+    bis dahin verbot dieses Gate zusaetzlich jede Naehe von "0.576(3)" und
+    "2406.12076" - auf der Annahme, 0.576(3) sei dieser Quelle faelschlich
+    zugeschrieben. Das Abstract (v4 / Physica Scripta) berichtet 0.576(3)
+    aber direkt als WL-T-Wert. Das Attributions-Verbot ist deshalb durch
+    die Positiv-Pruefung unten ersetzt (0.576(3) nur als direkter T-Kanal
+    IM Band); das Einzelanker-Verbot bleibt unveraendert.
+    """
     offenders: list[str] = []
     stale_patterns = [
-        re.compile(r"0\.576\(3\).{0,40}2406\.12076"),
-        re.compile(r"2406\.12076.{0,40}0\.576\(3\)"),
         re.compile(r"vs\s+0\.576(?:\(3\))?"),
     ]
     for path in DOC_PATHS:
@@ -43,3 +51,13 @@ def test_reference_band_contract_is_present() -> None:
     combined = "\n".join(_read(path).lower() for path in DOC_PATHS)
     for token in ["reference", "beta", "t = 1 / beta", "0.5928", "0.6116", "0.5800"]:
         assert token in combined
+
+
+def test_0576_is_attributed_only_as_direct_t_channel_in_band() -> None:
+    """Nachtrag 2026-09-26: README fuehrt 0.576(3) als eigene Bandzeile
+    (direkter T-Kanal, WL) - nie als Umrechnung eines beta-Kanals."""
+    readme = _read(ROOT / "README.md")
+    row = re.search(r"^\| arXiv:2406\.12076[^|]*\| T_BKT = 0\.576\(3\) \|"
+                    r"[^|]*\|[^|]*direkt T[^|]*\|$", readme, re.MULTILINE)
+    assert row, "0.576(3)-Bandzeile (direkter T-Kanal) fehlt im README"
+    assert not re.search(r"beta_BKT = [0-9.()]+ \| 0\.576", readme)

@@ -17,6 +17,8 @@ convention-free crossing method v01.md):
 from __future__ import annotations
 
 import math
+import re
+from pathlib import Path
 
 import numpy as np
 
@@ -197,3 +199,53 @@ def test_run_phy043_smoke_structure(tmp_path) -> None:
     phy043.write_report(report, out)
     text = out.read_text(encoding="utf-8")
     assert "PASS-Gates" in text and "FINDING" in text
+
+
+# ---------------------------------------------------------------------------
+# Issue #45 §3 (2026-09-26): Grenzen-Text im Report aus Laufparametern.
+# ---------------------------------------------------------------------------
+
+def _minimal_report(n_seeds: int, Ls: list) -> dict:
+    ci = {"ci_low": 1.5, "ci_high": 1.6, "none_frac": 0.1}
+    key = f"({Ls[-2]},{Ls[-1]})"
+    pa = {"T_splay": 1.6, "splay_ci": ci, "crossings": []}
+    return {"spec": "spec", "method": "method", "lattices_L": Ls,
+            "temperatures": [1.4, 1.5],
+            "wolff": {"n_measure": 800, "n_burn": 300, "n_seeds": n_seeds,
+                      "master_seed": 42, "stream_contract": "s"},
+            "measurements": {}, "pair_analysis": {"xi_ratio": {key: pa},
+                                                  "u4": {key: pa}},
+            "pass_gates": {"G": True}, "overall_pass": True,
+            "runtime_s": 1.0}
+
+
+def test_limits_text_follows_run_parameters(tmp_path):
+    """Frueher hart kodiert "n_seeds=4, L<=19" (Pilot-Budget) - der
+    Finallauf hatte n_seeds=8, L<=25. Jetzt aus dem Report abgeleitet."""
+    out = tmp_path / "r.txt"
+    phy043.write_report(_minimal_report(8, [9, 13, 19, 25]), out)
+    text = out.read_text(encoding="utf-8")
+    assert "n_seeds=8, L<=25: keine 1%-Diskriminierung" in text
+    assert "n_seeds=4, L<=19" not in text
+    phy043.write_report(_minimal_report(3, [9, 13]), out)
+    assert "n_seeds=3, L<=13:" in out.read_text(encoding="utf-8")
+
+
+def test_committed_report_drift_is_documented_by_erratum():
+    """Lineage ehrlich: der committete Report bleibt byte-unveraendert und
+    traegt den alten Drift; das Erratum nennt die korrekten Werte, die aus
+    der Kopfzeile DESSELBEN Reports folgen."""
+    root = Path(__file__).resolve().parents[1]
+    rep = (root / "results" /
+           "260808 PHY043 triangular convention-free crossing report.txt"
+           ).read_text(encoding="utf-8")
+    m = re.search(r"n_seeds=(\d+), master_seed", rep)
+    Ls = re.search(r"Gitter L = \[([0-9, ]+)\]", rep)
+    assert m and Ls
+    n_seeds = int(m.group(1))
+    L_max = max(int(x) for x in Ls.group(1).split(","))
+    assert (n_seeds, L_max) == (8, 25)
+    assert "n_seeds=4, L<=19" in rep            # alter Drift bleibt sichtbar
+    err = (root / "results" / "260926 PHY043 report erratum.md"
+           ).read_text(encoding="utf-8")
+    assert f"n_seeds={n_seeds}, L<={L_max}: keine 1%-Diskriminierung" in err
