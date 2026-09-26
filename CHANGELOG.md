@@ -3,6 +3,105 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-09-26] Issue #45: Integritaets-Reparatur + W4-Vorregistrierung + PHY044-Kalibrierung
+
+Vertragsquellen: Issue #45 (W4-Machbarkeit 2026-09-11), `spec/260926 PHI HEX
+w4 honeycomb preregistration v01.md`, `spec/260926 PHI HEX honeycomb
+reference provenance addendum v01.md`. Kein neuer T_BKT-Wert, kein Bestwert.
+
+### Fixed (Issue #45 §2 — PHY042 Domaenen-Semantik)
+- Einzel-Walker-L (L=24, PHY041-Bruecke) fuehrte `walker_spread = 0.0 x31`
+  und `domain_tmax_spread004 = 0.67` (Gitterende) - Konstruktions-Artefakte
+  in derselben Form wie die GEMESSENEN 0.60 (L32) / 0.585 (L48). Jetzt
+  `null` + Grund (`domain_status`), Gate-Maske bleibt konservativ voll.
+- **Latenter Fail-open:** die Paar-Grenze `min(tmax_a, tmax_b)` mit NaN fuer
+  leere Domaenen war reihenfolge-abhaengig (`min(0.6, nan) = 0.6` ->
+  quotierbar trotz LEERER Domaene). Jetzt `_pair_domain_limit`, fail-closed
+  und symmetrisch; im Lauf 2026-07-06 nicht bindend (keine Domaene leer).
+- `min_walkers`-Guard (`_walker_plan`): W4 verlangt >= 3 Walker an JEDEM L,
+  fail-closed vor jeder Rechnung.
+- Erratum statt Umschreiben: `results/260926 PHY042 domain semantics
+  erratum.json` (CLI `--reanalyse`), MC-frei aus den gespeicherten Kurven
+  des SHA-gepinnten Reports abgeleitet; reproduziert L32 = 0.60, L48 = 0.585
+  und alle Paar-Urteile. **Ehrliche Folge:** das einzige quotierbare Paar
+  (24,32) hat nur einseitig gemessene Sampler-Evidenz (Basis `partial`).
+
+### Fixed (Issue #45 §3 — Referenzband-Provenienz)
+- 0.576(3) fehlte im Band. Befund der Web-Recherche 2026-09-26: das Abstract
+  von arXiv:2406.12076 (v4 / Physica Scripta 100 065953) berichtet 0.576(3)
+  DIREKT als WL-T-Wert (neben beta 1.687(3)/1.635(11)/1.724(2)) - die
+  PR-#18-Einordnung "unattribuierter Legacy-Anker" war falsch, die
+  urspruengliche Attribution (PHY035/PHY041) richtig. Neuer Kanal
+  `upsilon_wl_T`; beta-Kanaele weiterhin getrennt (quellen-interne Spannung
+  0.576 vs 1/1.687 = 0.5928).
+- arXiv:2406.14812: Journal-Fassung PTEP 2024 103A02 berichtet 0.576(4)
+  (Helicity) / 0.572(3) (NN) statt arXiv v1 0.571(8) / 0.560(9) - beide
+  Fassungen getrennt im Band. Fassungs-Drift 2406.12076 v2 (beta 1.696(3)/
+  1.67(1)) -> v3/v4 (1.687(3)/1.635(11)) dokumentiert; `binder_beta` 1.724(2)
+  ueber v2..v4 im Abstract stabil.
+- `REF_PROVENANCE` je Band-Kanal (Quelle, Fassung, berichtete Groesse,
+  Status). **Grenze:** arxiv.org/iop/oup waren in der Arbeitsumgebung per
+  Egress-Policy gesperrt; die neuen Kanaele sind `search_corroborated`
+  (>= 2 unabhaengige Such-Snapshots), Primaertext-Abgleich steht aus.
+- Doku-Drift-Gate (`test_phy041_doc_drift.py`): Attributions-Verbot
+  0.576(3)<->2406.12076 durch Positiv-Pruefung ersetzt (nur als direkter
+  T-Kanal im Band); Einzelanker-Verbot ("vs 0.576") unveraendert.
+
+### Fixed (Issue #45 §3 — PHY043 Text-Drift)
+- Report-Grenzen-Zeile war hart kodiert "n_seeds=4, L<=19" (Pilot-Budget);
+  Finallauf hatte n_seeds=8, L<=25. Generator leitet sie jetzt aus den
+  Laufparametern ab; Erratum `results/260926 PHY043 report erratum.md`,
+  Report byte-unveraendert.
+
+### Added (Issue #45 §1 — W4-Vorregistrierung)
+- `spec/260926 PHI HEX w4 honeycomb preregistration v01.md`, **separat und
+  vor den Kalibrier-Laeufen committet**: Ziel (i) 0.573-vs-0.576-Trennung
+  gestrichen; Band B = [0.560, 0.580]; Primaer-Schaetzer, Leiter {32, 48, 64,
+  96}, >= 3 Walker je L, T_req = 0.62, sigma_tot = hypot(sampler, FSS) mit
+  FSS-Floor 0.003, Stop-Regeln S0/S1/S2; maschinell gebunden (`W4_*`,
+  `w4_verdict`, Test gegen die Spec-Zahlen).
+
+### Added (PHY044 — blinde W4-Kalibrierung + Numba-Kernel)
+- `src/260926 PHY044 honeycomb wl calibration v01.py`: `wl_entropic_fast`,
+  Numba-Zwilling des PHY041-Kernels (identischer RNG-Verbrauch und
+  Update-Arithmetik; Aggregate weiter ueber dieselben numpy-Funktionen).
+  **VAL-BIT:** bit-identisch zum Original auf derselben Maschine (CI: kleine
+  Gitter, Python-Fallback und kompiliert; Gate-Log: identischer
+  L=24-Produktionsjob, Speedup 5.6x); alle 7 committeten PHY042-Walker mit
+  exakt gleicher Trajektorie (wl_sweeps, Belegung), Kurven bis rtol 1e-12
+  (ULP-Ebene der numpy-Reduktionen auf anderer Plattform). PHY042 in 231 s
+  statt ~3500 s.
+- Gate-Log `results/260926 PHY044 honeycomb wl calibration report.{json,txt}`:
+  OVERALL PASS 7/7, blind (kein Lagewert, `assert_blind` fails-closed).
+  - **K1:** Kosten ~L^3.3 Spin-Updates (lokal 3.6); Numba 25/48/215/600 s je
+    Walker fuer L=24/32/48/64.
+  - **K2:** T_max(L) = 0.575/0.630/0.610/0.615 beim PHY042-Rezept (3 Walker).
+  - **K3 (L=48, gepaart):** prod 4x -> max Spread 0.268 -> 0.074, T_max 0.62
+    = T_req (**W4-GO, ohne Marge**); lnf 1e-6 (1/t greift) -> keine
+    Verbesserung; Zerlegung: 94 % des Spreads bei FESTER g(E) ->
+    produktions-dominiert. W4-Rezept-Projektion: L=64 0.4 h, L=96 1.8 h,
+    L=128 5.2 h je Walker (Numba).
+- **NR-PHY044-01:** lnf_final = 1e-5 erreicht die 1/t-Phase bei L>=48 nicht
+  (auch 2/3 committete PHY042-L=48-Walker); nach K3 nicht limitierend.
+- **NR-PHY044-02:** T_max(L=24) = 0.575 (3 Walker, PHY042-Rezept) liegt unter
+  dem committeten PHY042-Crossing (24,32) = 0.5875 -> dessen Quotierbarkeit
+  haelt der W4-Regel "beidseitig gemessen" nicht stand.
+- `numba>=0.67` in `requirements-dev.txt` (Wheels cp312-cp314 verifiziert),
+  damit CI den Bit-Identitaets-Gate kompiliert prueft; kein anderes Modul
+  haengt davon ab.
+
+### Fixed (Reproduzierbarkeit, beim Kalibrieren gefunden)
+- OpenBLAS startete je Prozess-Pool-Worker einen eigenen Thread-Pool (Last 13
+  auf 4 Kernen): verfaelschte Wall-Zeiten, und np.dot haengt ab n=12288
+  (honeycomb L=64) bitweise von der Thread-Zahl ab (verifiziert, OpenBLAS
+  0.3.34; bis n=6912 = L=48 identisch -> PHY042 unberuehrt). PHY044 pinnt
+  BLAS vor dem numpy-Import auf 1 Thread und protokolliert die Einstellung.
+  Der erste Leiter-Lauf wurde verworfen und vollstaendig wiederholt.
+- Ad-hoc-Gate "volle Bin-Belegung" (strenger als jeder Vertrag, fuer Rand-Bins
+  ohne kanonisches Gewicht falsch gestellt) durch den PHY042-Vertrag
+  "unbesetzte kanonische Masse in-Domaene < 1e-3" ersetzt; Belegung wird als
+  Befund berichtet (L=64: 60..98 %).
+
 ## [2026-08-08] PHY043 O1-Quercheck + Review-Nachtrag + Lint-Baseline-Pin
 
 Vertragsquellen: `spec/260808 PHI HEX phy043 triangular convention-free

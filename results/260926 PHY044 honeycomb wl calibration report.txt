@@ -1,0 +1,81 @@
+PHY044 - W4-Kalibrierung honeycomb Wang-Landau (BLIND)
+Coworker Research / Coworkerz, 2026-09-26
+======================================================================
+Spec: spec/260926 PHI HEX w4 honeycomb preregistration v01.md (§5)
+Blind-Vertrag: no pair-crossing location is computed into, printed to or stored in this report; only spreads
+T_req = 0.62, Domaenen-Schwelle Walker-Spread < 0.04
+
+--- VAL-BIT-P: Numba reproduziert committeten PHY042 ---
+Quelle sha256 19a9ce3c799401dbb55e519c09b390bee9dfbe23792f99b2e7c650c3eeefa3cf
+Trajektorie exakt (wl_sweeps, Belegung); Kurven bis rtol 1e-12 (numpy-Reduktionen, Plattform)
+   24_0: wl_sweeps 100000 (committed 100000) Belegung == dY2 2.1e-16 dY4 7.1e-14 t=25s
+   32_0: wl_sweeps 103060 (committed 103060) Belegung == dY2 1.6e-14 dY4 1.1e-13 t=50s
+   32_1: wl_sweeps 100000 (committed 100000) Belegung == dY2 2.2e-16 dY4 1.3e-13 t=51s
+   32_2: wl_sweeps 110795 (committed 110795) Belegung == dY2 1.3e-15 dY4 1.9e-13 t=54s
+   48_0: wl_sweeps 126074 (committed 126074) Belegung == dY2 3.9e-16 dY4 2.3e-13 t=171s
+   48_1: wl_sweeps 158981 (committed 158981) Belegung == dY2 3.7e-16 dY4 7.9e-14 t=194s
+   48_2: wl_sweeps 214219 (committed 214219) Belegung == dY2 1.4e-15 dY4 1.4e-13 t=231s
+  Wall gesamt 231s auf 4 Prozessen (PHY042-Original 2026-07-06: ~3498 s auf 4)
+
+--- Speedup auf identischem Produktions-Job (L=24) ---
+  Python 138.9s | Numba 24.9s | Speedup 5.6x | 1.08e+06 vs 6e+06 Spin-Updates/s
+
+--- K1 Kosten je Walker (PHY042-Rezept, Numba) ---
+     L      n  nbins   wl_sweeps (3 Walker)        prod   Updates    Wall[s]
+    24   1152    512   [100000, 100000, 100000]     30000 1.498e+08       25
+    32   2048    755   [100000, 100000, 103433]     45300 2.999e+08       48
+    48   4608   1641   [187483, 176798, 180204]     98460 1.290e+09      215
+    64   8192   2887   [263153, 267556, 280182]    173220 3.633e+09      600
+  Fit Spin-Updates ~ L^3.30 (lokal: 2.41, 3.60, 3.60)
+  Fit wl_sweeps    ~ L^1.08 (lokal: 0.04, 1.44, 1.38)
+  Fit Wall (Numba) ~ L^3.30 (lokal: 2.24, 3.70, 3.56)
+  Projektion L=96: Numba 0.7 h (lokaler Exp. 3.56) / 0.6 h (Gesamt-Fit); Python-Modell 4 h
+  Projektion L=128: Numba 2.0 h (lokaler Exp. 3.56) / 1.5 h (Gesamt-Fit); Python-Modell 11 h
+
+--- K2 Praezision (Walker-Spread-Domaene, blind) ---
+  L= 24: T_max=0.5750 (max Spread 0.1014) T_req erfuellt: False
+         1/t gegriffen [True, True, True] (ab Sweep [55689, 48648, 55438]); Belegung 1.00, 1.00, 1.00; unbesetzte Masse in-Domaene 0.0e+00
+  L= 32: T_max=0.6300 (max Spread 0.1157) T_req erfuellt: True
+         1/t gegriffen [True, True, True] (ab Sweep [86378, 83951, 103433]); Belegung 0.91, 1.00, 1.00; unbesetzte Masse in-Domaene 2.1e-15
+  L= 48: T_max=0.6100 (max Spread 0.2682) T_req erfuellt: False
+         1/t gegriffen [False, False, False] (ab Sweep [None, None, None]); Belegung 1.00, 1.00, 1.00; unbesetzte Masse in-Domaene 0.0e+00
+  L= 64: T_max=0.6150 (max Spread 0.3406) T_req erfuellt: False
+         1/t gegriffen [False, False, False] (ab Sweep [None, None, None]); Belegung 0.65, 0.60, 0.98; unbesetzte Masse in-Domaene 2.8e-09
+  Walker-Streuung der Paar-Crossings (max-min, KEINE Lage):
+    24_32: 0/9 Kombos mit Crossing, Streuung null
+    24_48: 6/9 Kombos mit Crossing, Streuung 0.0125
+    24_64: 2/9 Kombos mit Crossing, Streuung 0.0026
+    32_48: 9/9 Kombos mit Crossing, Streuung 0.0157
+    32_64: 9/9 Kombos mit Crossing, Streuung 0.0191
+    48_64: 5/9 Kombos mit Crossing, Streuung 0.0248
+
+--- K3 Hebel bei L=48 ---
+  baseline_1x_lnf1e-5    T_max=0.6100 max Spread 0.2682 Updates 1.290e+09 Wall 215s T_req: False
+                         1/t [False, False, False] wl_sweeps [187483, 176798, 180204]
+  prod_x4_lnf1e-5        T_max=0.6200 max Spread 0.0736 Updates 2.651e+09 Wall 478s T_req: True
+                         1/t [False, False, False] wl_sweeps [187483, 176798, 180204]
+  prod_x1_lnf1e-6        T_max=0.6000 max Spread 0.2056 Updates 5.062e+09 Wall 770s T_req: False
+                         1/t [True, True, True] wl_sweeps [1000000, 1000000, 1000000]
+  Zerlegung (1 g(E), 3 Produktionen): T_max=0.6050 max Spread 0.2031
+  -> Anteil Produktions-Rauschen am Spread (bis T_req): 0.94
+  Budget-Regel: smallest calibrated budget with T_max(L) >= T_req (Spec §5)
+  -> guenstigste Variante mit T_req: prod_x4_lnf1e-5; W4-GO fuer L>=48: True
+  W4-Rezept: prod x4, lnf_final 1e-05; Numba-Wall je Walker (Projektion):
+    L=48: 0.13 h
+    L=64: 0.39 h
+    L=96: 1.78 h
+    L=128: 5.21 h
+
+--- PASS-Gates (Integritaet, keine Physik) ---
+  [PASS] PASS_VAL_BIT_PHY042_ALL_7_WALKERS
+  [PASS] PASS_BIT_IDENTICAL_L24_SPEED_JOB
+  [PASS] PASS_WALKER_CONTRACT_GE3_EVERY_L
+  [PASS] PASS_NO_EDGE_LEAK_LADDER
+  [PASS] PASS_NO_UNCOVERED_MASS_IN_DOMAIN_LADDER
+  [PASS] PASS_NO_EDGE_LEAK_LEVERS
+  [PASS] PASS_NO_UNCOVERED_MASS_IN_DOMAIN_LEVERS
+  OVERALL: PASS
+
+Grenzen (ehrlich): Kosten-Projektionen sind Extrapolationen aus L<=64;
+die Domaenen-Aussage gilt fuer das kalibrierte Budget und diese Streams;
+kein T_BKT-Wert, keine Band-Aussage (Blind-Vertrag).

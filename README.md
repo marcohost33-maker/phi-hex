@@ -2,6 +2,7 @@
 
 > **Status:** Forschungs-Repo (oeffentlich seit 2026-08-17) | XY/BKT-Physik auf Dreiecks-, Honeycomb- und Kagome-Gittern.  
 > **Lizenz:** Apache-2.0 | **Lineage/Provenance:** siehe `SOURCES.md`.  
+> **Stand 2026-09-26 (Issue #45, PR #50):** Integritaets-Reparatur (PHY042-Domaenen-Semantik, Referenzband-Provenienz, PHY043-Text-Drift), W4-Vorregistrierung (vor der Kalibrierung committet) und blinde WL-Kalibrierung PHY044 mit bit-identischem Numba-Kernel: **W4-GO** mit Rezept "4x Produktion" (ohne Marge), kein T_BKT-Wert (Blind-Vertrag). Details: Abschnitt PHY044 unten.  
 > **Aktueller Review-Stand:** Review-Nachtrag 2026-08-08 (`spec/260710 ... v01.md` §4): Messpipeline erneut gegen unabhaengige Orakel defektfrei; PHY040-M3-Guard, Lint-Baseline-Pin, O8/O9 inventarisiert. PHY043 (Audit O1): konventionsfreier Quercheck triangular — qualitativ konsistent mit der Referenz-Lage, keine 1%-Diskriminierung (siehe unten). Davor: Code-Audit 2026-07-10: P0-Geometrie-Fix im Quadratgitter (PHY028/039/040 neu gerechnet, V&V-Anker ehrlich auf ~1% herabgestuft), Pol-Guards in allen Paar-Schaetzern; PHY042/PR #20 als Pipeline-Finding, **kein neuer T_BKT-Bestwert** (Grenzen NR-PHY042-02/03).
 
 Phi-Hex untersucht das 2D-XY-Modell und BKT-Physik auf periodischen Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Wang-Landau-DOS und Finite-Size-Scaling.
@@ -143,6 +144,61 @@ Ergebnis (vorab festgelegter Interpretations-Vertrag, Spec §6):
   offen; naechster Pfad ist der Konventions-Nachweis je Referenz in
   SOURCES.md. Kein per-Site-Code-Fix ohne diesen Nachweis.
 
+## PHY044 — W4-Kalibrierung honeycomb (blind; Budget, kein T_BKT)
+
+Vertrag: `spec/260926 PHI HEX w4 honeycomb preregistration v01.md` (separat
+und **vor** den Laeufen committet). Gate-Log: `results/260926 PHY044 honeycomb
+wl calibration report.{json,txt}` (OVERALL PASS 7/7, seed=42, BLAS auf 1 Thread
+gepinnt, ~47 min auf 4 Kernen). **Blind:** der Report enthaelt keinen
+T_BKT-Lagewert (maschinell geprueft), nur Kosten, Domaenen und Streuungen.
+
+**Kernel.** `wl_entropic_fast` ist ein Numba-Zwilling des PHY041-Kernels mit
+identischem RNG-Verbrauch und identischer Arithmetik je Update:
+
+- **bit-identisch** zum Original auf derselben Maschine (kleine Gitter in CI;
+  identischer L=24-Produktionsjob, Speedup 5.6x);
+- reproduziert alle 7 committeten PHY042-Walker mit **exakt gleicher
+  Trajektorie** (wl_sweeps, Bin-Belegung) - Kurven bis rtol 1e-12 (ULP-Ebene
+  der numpy-Reduktionen, Plattform); PHY042 neu in 231 s statt ~3500 s.
+
+| K1 Kosten je Walker (PHY042-Rezept) | L=24 | L=32 | L=48 | L=64 |
+|---|---:|---:|---:|---:|
+| Spin-Updates | 1.5e8 | 3.0e8 | 1.3e9 | 3.6e9 |
+| Wall Numba [s] | 25 | 48 | 215 | 600 |
+| T_max der Walker-Spread-Domaene (3 Walker) | 0.575 | 0.630 | 0.610 | 0.615 |
+| 1/t-Phase erreicht | 3/3 | 3/3 | **0/3** | **0/3** |
+
+Kosten ~L^3.3 (lokal 3.6). **K3 Hebel bei L=48** (gepaart, gleiche g(E)):
+
+| Variante | max. Walker-Spread | T_max | Wall/Walker |
+|---|---:|---:|---:|
+| Basis (prod 1x, lnf 1e-5) | 0.268 | 0.610 | 215 s |
+| **prod 4x** | **0.074** | **0.620 = T_req** | 478 s |
+| lnf 1e-6 (1/t greift) | 0.206 | 0.600 | 770 s |
+| Zerlegung: 1 g(E), 3 Produktionen | 0.203 | 0.605 | - |
+
+Befunde (ehrlich):
+
+- **Der Walker-Spread ist produktions-dominiert** (Zerlegung: 94 % des Spreads
+  bis T_req bei FESTER g(E)); laengere WL/1-t-Politur hilft nicht, mehr
+  Produktion schon. Budget-Regel der Spec -> **W4-GO mit prod 4x** - bei L=48
+  **ohne Marge** (T_max = T_req); ab L=64 muss der W4-Lauf T_req je L selbst
+  messen (Spec §4.4), sonst Stop.
+- **NR-PHY044-01:** mit lnf_final = 1e-5 erreicht WL bei L>=48 die 1/t-Phase
+  nicht (endet im Halbierungs-Regime); betrifft auch 2 der 3 committeten
+  PHY042-L=48-Walker. Nach K3 ist das nicht der limitierende Fehler.
+- **NR-PHY044-02:** erstmals mit 3 Walkern gemessen liegt T_max(L=24) beim
+  PHY042-Rezept bei 0.575 - **unter** dem committeten PHY042-Crossing
+  (24,32) = 0.5875. Das einzige als QUOTIERBAR gefuehrte PHY042-Paar haelt der
+  W4-Regel "beidseitig gemessene Domaene" nicht stand (Evidenz bleibt als
+  Finding mit Basis `partial` stehen).
+- Walker-Streuung der Paar-Crossings beim Basis-Rezept 0.013..0.025
+  (-> sigma_sampler ~0.006..0.012, nahe an der Stop-Schwelle sigma_tot 0.010).
+- Projektion W4-Rezept (Numba, je Walker): L=64 0.4 h, L=96 1.8 h, L=128 5.2 h
+  (Extrapolation; Python-Kernel ~5.6x laenger).
+- Reproduzierbarkeit: np.dot haengt ab n=12288 (L=64) bitweise von der
+  BLAS-Thread-Zahl ab (verifiziert) -> PHY044 pinnt BLAS auf 1 Thread.
+
 ## Methodische Kernformeln
 
 ```text
@@ -167,6 +223,11 @@ python "src/260616 PHY040 wang-landau entropic helicity v01.py"
 python "src/260702 PHY041 honeycomb wang-landau entropic helicity v01.py"
 python "src/260706 PHY042 honeycomb wl fss v01.py"
 python "src/260808 PHY043 triangular convention-free crossing v01.py"
+python "src/260706 PHY042 honeycomb wl fss v01.py" --reanalyse   # Domaenen-Erratum
+# PHY044 (numba empfohlen; Stufen je ~4..21 min auf 4 Kernen)
+M="src/260926 PHY044 honeycomb wl calibration v01.py"
+for st in ladder levers valbit speed; do python "$M" $st --out stages/; done
+python "$M" report --out stages/
 ```
 
 CI prueft Lint, Compile und schnelle Korrektheits-Gates. Slow-Messlaeufe bleiben lokal.
@@ -182,15 +243,16 @@ archive/    Vorgaenger-Versionen
 SOURCES.md  Provenance / SHA-256
 ```
 
-## Naechste Stufe nach PHY043 + Review-Nachtrag 2026-08-08
+## Naechste Stufe nach Issue #45 / PHY044 (2026-09-26)
 
-1. Mehr Produktions-Statistik, damit die Crossings (24,48)/(32,48) in-Domaene und belastbar werden (NR-PHY042-02 aufloesen).
-2. Walker-robuster Upsilon_4-Dip fuer L>=32 (NR-PHY042-03 aufloesen), dann Dip-FSS Richtung T_BKT.
-3. Kein T_BKT-Bestwert-Claim ohne Cross-Family-Review.
-4. Square-V&V-Re-Baseline: mehr Statistik/groessere L, damit das 1%-Gate wieder belastbar bindet; PHY039-Dip-Fenster erweitern (Audit O-Punkte).
-5. O1 abschliessen: der MC-Quercheck-Teil ist mit PHY043 gelaufen (qualitativ konsistent mit Referenz-Lage, NR-PHY043-01: keine 1%-Diskriminierung); offen bleibt der Konventions-Nachweis je zitierter Referenz (per-Spin vs per-Flaeche) in SOURCES.md. Bis dahin kein per-Site-Code-Fix.
-6. Re-Run PHY030v02/PHY032/PHY033 mit Pol-Guard bei der naechsten Produktions-Runde (Audit-Punkt O4).
-7. Bei Neu-Produktion PHY040: L in den WL-Stream aufnehmen (O8) und PHY039 auf ungebuchte Stream-Basis 800+ heben (O3).
+1. **W4-Produktionslauf** nach Vorregistrierung: Leiter {32, 48, 64, 96} (L=128 zulaessig, Projektion 5.2 h/Walker <= 24 h), je 3 Walker, prod 4x, Numba-Kernel mit BLAS-Pin; Stop-Regeln S1/S2 und T_req-Messung je L (Spec §4.4). Ein Budget-Nachtrag (z. B. prod 8x fuer L>=64) nur VOR Sicht auf W4-Daten und als v02 der Spec.
+2. **Primaertext-Abgleich** der `search_corroborated`-Referenzkanaele (arXiv:2406.12076 v1..v4, PTEP-Abstract von 2406.14812) - in einer Umgebung mit arXiv-Zugang.
+3. Walker-robuster Upsilon_4-Dip fuer L>=32 (NR-PHY042-03) im W4-Lauf als Sekundaer-Kanal mitfuehren.
+4. Kein T_BKT-Bestwert-Claim ohne Cross-Family-Review.
+5. Square-V&V-Re-Baseline: mehr Statistik/groessere L, damit das 1%-Gate wieder belastbar bindet; PHY039-Dip-Fenster erweitern (Audit O-Punkte).
+6. O1 abschliessen: der MC-Quercheck-Teil ist mit PHY043 gelaufen (qualitativ konsistent mit Referenz-Lage, NR-PHY043-01: keine 1%-Diskriminierung); offen bleibt der Konventions-Nachweis je zitierter Referenz (per-Spin vs per-Flaeche) in SOURCES.md. Bis dahin kein per-Site-Code-Fix.
+7. Re-Run PHY030v02/PHY032/PHY033 mit Pol-Guard bei der naechsten Produktions-Runde (Audit-Punkt O4).
+8. Bei Neu-Produktion PHY040: L in den WL-Stream aufnehmen (O8) und PHY039 auf ungebuchte Stream-Basis 800+ heben (O3).
 
 ---
 *Coworker Research / Coworkerz | Repo-Anlage 2026-06-04 nach arbeitsschablone_forschungs-repo-anlage*

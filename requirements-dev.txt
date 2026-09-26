@@ -4,7 +4,14 @@
 # lokal (siehe README "Reproduzieren").
 # numpy-Floor 2.5.1: numpy 2.5.x traegt Requires-Python >=3.12 (keine cp310/cp311-
 # Wheels) -- moeglich, seit py3.10/3.11 fleet-weit gedroppt sind (Marco-Entscheid 2026-07-14).
+# numba (seit 2026-09-26, PHY044): optionaler Beschleuniger des WL-Kernels.
+# Hier gelistet, damit CI den Bit-Identitaets-Gate Original vs Numba
+# (tests/test_phy044_wl_calibration.py) KOMPILIERT prueft statt ihn zu
+# ueberspringen. Binaer-Wheels fuer cp312/cp313/cp314 (manylinux) verifiziert
+# 2026-09-26 (numba 0.67.0 / llvmlite 0.49.0, kompatibel mit numpy 2.5.3).
+# Kein anderes Modul haengt von numba ab (Fallback = reines Python).
 numpy>=2.5.2
 scipy>=1.11
+numba>=0.67
 pytest>=9.1.1
 ruff>=0.16.5
