@@ -583,8 +583,9 @@ def write_report(report: dict, path: Path) -> None:
     lines.append("Grenzen (ehrlich):")
     lines.append("  - Kein T_BKT-Bestwert; Crossing-/Splay-Lagen driften "
                  "logarithmisch.")
-    lines.append("  - n_seeds=4, L<=19: keine 1%-Diskriminierung erwartbar "
-                 "(Spec §6).")
+    lines.append(
+        f"  - n_seeds={w['n_seeds']}, L<={max(report['lattices_L'])}: "
+        "keine 1%-Diskriminierung aus diesem Budget ableiten (Spec §6).")
     lines.append("  - Universeller (xi_2/L)*-Anker bewusst NICHT verwendet "
                  "(Rhombus-Torus,")
     lines.append("    tau=exp(i pi/3) — Hasenbusch-Wert gilt fuer tau=i).")
