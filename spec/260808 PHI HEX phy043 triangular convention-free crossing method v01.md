@@ -143,9 +143,13 @@ gegatet; Reality-Anchor: der Report in `results/` ist die Evidenz).
   1.4007 oder darunter. Umgekehrt waere ein belastbarer Splay-Beginn
   deutlich UNTER 1.40 ein Signal gegen die Referenz-Lage.
 - Die Aussage "keine Diskriminierung auf 1-%-Niveau zu erwarten" ist
-  **nur** fuer den dokumentierten Pilotvertrag mit 4 Seeds und L <= 19
-  vorregistriert. Sie darf nicht durch blosses Einsetzen anderer
-  Laufmetadaten generalisiert werden. Fuer Produktionsbudgets (z.B. 8 Seeds,
+  **nur** fuer den exakten dokumentierten Pilotvertrag vorregistriert:
+  L={9,13,19}, T={1.36,1.38,...,1.58}, n_measure=400, n_burn=300,
+  n_seeds=4, master_seed=42, Stream-Vertrag
+  `900 + s + 1000*L + 100000*t_idx`, Bootstrap n=300/stream=99043.
+  Schon eine Abweichung in einem dieser Felder macht die 1-%-Power
+  **UNASSESSED**. Sie darf nicht aus Seedzahl und max(L) allein abgeleitet
+  werden. Fuer Produktionsbudgets (z.B. 8 Seeds,
   L bis 25) ist die 1-%-Power **UNASSESSED**, solange keine eigene
   Unsicherheits-/Poweranalyse vorliegt.
 - Ist ein Lauf nach seiner dafuer gueltigen Poweranalyse nicht
