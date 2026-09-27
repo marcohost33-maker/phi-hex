@@ -205,6 +205,8 @@ fail-open paths. They are now part of the binding contract:
 - **Exact production contract:** G0 requires n_seeds=12, n_therm=1000,
   n_meas=4000, exactly 5*29*12 raw rows, `complete is True`,
   `unmeasured == []`, exact row identity, and finite parseable moments.
+  It also requires the exact persisted PHY049 preflight gate map with every
+  VAL-BIT/G1-G4 verdict literally true.
   Extra rows, altered budgets, missing metadata and malformed moments fail
   closed.
 - **Bootstrap contract:** `assess_production()` authorizes production
