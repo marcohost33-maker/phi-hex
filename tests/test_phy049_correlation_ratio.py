@@ -80,3 +80,15 @@ def test_preflight_is_fail_closed_until_fss_recovery_exists():
     assert out["gates"]["G4_fss_recovery"] is False
     assert out["overall_interpretation_enabled"] is False
     assert "NO_PHYSICS_INTERPRETATION" in out["claim_ceiling"]
+
+
+def test_tiny_measurement_job_compiles_and_returns_finite_correlations():
+    """Exercise the actual Wolff + correlation path, including Numba when present."""
+    row = phy049._job((8, 0, 0.57, 0, 2, 3))
+    assert row["L"] == 8
+    assert row["t_idx"] == 0
+    assert np.isfinite(row["g_quarter"])
+    assert np.isfinite(row["g_half"])
+    assert -1.0 <= row["g_quarter"] <= 1.0
+    assert -1.0 <= row["g_half"] <= 1.0
+    assert row["wall_s"] >= 0.0
