@@ -14,6 +14,9 @@ Format lose an Keep-a-Changelog angelehnt.
   belegten Domaenen quotierbar.
 - **PHY043 Report-Metadaten:** Seedzahl und maximales L werden aus dem
   Lauf-Report gelesen; der veraltete Hardcode `n_seeds=4, L<=19` ist weg.
+- **PHY041 1/t-Instrumentierung:** echte B&P-Aktivierung und Umschalt-Sweep
+  werden jetzt im `WLResult` persistiert; zuvor blieben die geerbten
+  Defaultwerte `False/0` trotz aktiver 1/t-Politur stehen.
 
 ### Changed
 - Honeycomb-Literaturledger auf aktuelle Quellenfassungen rebaselined:
@@ -24,6 +27,9 @@ Format lose an Keep-a-Changelog angelehnt.
 - W4 ist in `spec/260927 PHI HEX w4 preregistration v01.md`
   vorregistriert: >=3 Walker je produktivem L, L64-Kalibrierung vor
   L96/128, explizite Modellwahl-Systematik und INCONCLUSIVE-Stopregeln.
+- **PHY044** als ausfuehrbarer Kalibrierungsrunner: L=64/2-Walker-WL/1-t
+  plus Wolff-Quercheck auf identischen T-Punkten; misst Kosten, Coverage,
+  1/t-Aktivierung und Y2-Disagreement, ohne einen T_BKT-Claim zu erzeugen.
 
 ## [2026-08-08] PHY043 O1-Quercheck + Review-Nachtrag + Lint-Baseline-Pin
 
