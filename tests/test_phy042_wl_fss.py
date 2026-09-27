@@ -355,3 +355,13 @@ def test_pair_inside_effective_bounds_checks_lower_and_upper_edges():
     assert not phy042._pair_inside_bounds(0.61, a, b)
     assert not phy042._pair_inside_bounds(0.575, None, b)
     assert not phy042._pair_inside_bounds(None, a, b)
+
+
+def test_reanalysis_rejects_truthy_string_as_phy032_gate_evidence():
+    import json
+    rep = json.loads(
+        (ROOT / phy042.PHY042_REPORT_V01).read_text(encoding="utf-8"))
+    rep["validation_vs_phy032_grid"][0]["ok"] = "false"
+    out = phy042.reanalyse_domains(rep)
+    assert out["effective_domain_bounds"]["24"] is None
+    assert out["pairs"]["24_32"]["quotable"] is False
