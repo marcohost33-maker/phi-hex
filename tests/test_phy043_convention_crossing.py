@@ -294,3 +294,22 @@ def test_power_limit_note_is_scoped_to_exact_fixed_pilot_contract():
     altered_boot["bootstrap"]["n_boot"] = phy043.N_BOOT - 1
     assert phy043._is_preregistered_pilot(altered_boot) is False
     assert "UNASSESSED" in phy043._power_limit_note(altered_boot)
+
+
+def test_preregistered_pilot_rejects_stringified_numeric_metadata():
+    pilot = _minimal_report(4, [9, 13, 19])
+    pilot["temperatures"] = list(phy043.PILOT_TEMPS)
+    pilot["wolff"].update({
+        "n_measure": phy043.PILOT_N_MEASURE,
+        "n_burn": phy043.PILOT_N_BURN,
+        "n_seeds": phy043.PILOT_N_SEEDS,
+        "master_seed": phy043.PILOT_MASTER_SEED,
+        "stream_contract": phy043.PILOT_STREAM_CONTRACT,
+    })
+    pilot["bootstrap"] = {
+        "n_boot": phy043.N_BOOT,
+        "stream": phy043.BOOT_STREAM,
+    }
+    pilot["wolff"]["n_measure"] = str(phy043.PILOT_N_MEASURE)
+    assert phy043._is_preregistered_pilot(pilot) is False
+    assert "UNASSESSED" in phy043._power_limit_note(pilot)
