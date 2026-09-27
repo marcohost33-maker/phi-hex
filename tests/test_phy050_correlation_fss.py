@@ -77,7 +77,9 @@ def _synthetic_product_for_validation():
     return {
         "ladder": list(phy050.W4V3_LADDER),
         "t_grid": list(phy050.W4V3_T_GRID),
-        "n_seeds": 12,
+        "n_seeds": phy050.W4V3_N_SEEDS,
+        "n_therm": phy050.W4V3_N_THERM,
+        "n_meas": phy050.W4V3_N_MEAS,
         "rows": rows,
         "complete": True,
         "unmeasured": [],
@@ -114,5 +116,54 @@ def test_assess_production_fails_closed_on_incomplete_input():
     prod["complete"] = False
     out = phy050.assess_production(prod, n_boot=20)
     assert out["gates"]["G0_input"] is False
+    assert out["decision"] == "INCONCLUSIVE"
+    assert out["physics_interpretation_enabled"] is False
+
+
+def test_g0_requires_exact_preregistered_budget_and_row_count():
+    prod = _synthetic_product_for_validation()
+    assert phy050._product_groups(prod) is not None
+
+    wrong_seeds = {**prod, "n_seeds": 2}
+    assert phy050._product_groups(wrong_seeds) is None
+
+    wrong_therm = {**prod, "n_therm": phy050.W4V3_N_THERM - 1}
+    assert phy050._product_groups(wrong_therm) is None
+
+    wrong_meas = {**prod, "n_meas": phy050.W4V3_N_MEAS - 1}
+    assert phy050._product_groups(wrong_meas) is None
+
+    extra = {**prod, "rows": [dict(r) for r in prod["rows"]]}
+    extra["rows"].append(dict(extra["rows"][0]))
+    assert phy050._product_groups(extra) is None
+
+    missing_complete = dict(prod)
+    missing_complete.pop("complete")
+    assert phy050._product_groups(missing_complete) is None
+
+    missing_unmeasured = dict(prod)
+    missing_unmeasured.pop("unmeasured")
+    assert phy050._product_groups(missing_unmeasured) is None
+
+
+@pytest.mark.parametrize("value", [None, "not-a-number", float("nan"), float("inf")])
+def test_malformed_seed_moments_fail_g0_without_raising(value):
+    prod = _synthetic_product_for_validation()
+    prod["rows"] = [dict(r) for r in prod["rows"]]
+    prod["rows"][0]["g_quarter"] = value
+    assert phy050._product_groups(prod) is None
+    assert phy050.product_to_aggregate(prod) is None
+    out = phy050.assess_production(prod)
+    assert out["gates"]["G0_input"] is False
+    assert out["decision"] == "INCONCLUSIVE"
+
+
+def test_nonpreregistered_bootstrap_cannot_enable_production_adjudication():
+    prod = _synthetic_product_for_validation()
+    out = phy050.assess_production(prod, n_boot=20)
+    assert out["gates"]["G0_input"] is True
+    assert out["gates"]["G5_power"] is False
+    assert out["gates"]["G6_robustness"] is False
+    assert out["bootstrap_required"] == phy050.W4V3_N_BOOT == 1000
     assert out["decision"] == "INCONCLUSIVE"
     assert out["physics_interpretation_enabled"] is False
