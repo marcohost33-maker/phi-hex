@@ -425,26 +425,47 @@ def g4_synthetic_recovery() -> dict:
     }
 
 
+def _is_json_int(value: object) -> bool:
+    return type(value) is int
+
+
+def _is_json_number(value: object) -> bool:
+    return (
+        type(value) in (int, float)
+        and math.isfinite(float(value))
+    )
+
+
 def _product_groups(prod: dict) -> dict[tuple[int, int], list[dict]] | None:
     """Validate the exact preregistered raw-production contract, fail closed."""
     try:
-        ladder = tuple(int(x) for x in prod["ladder"])
-        t_grid = tuple(float(x) for x in prod["t_grid"])
-        n_seeds = int(prod["n_seeds"])
-        n_therm = int(prod["n_therm"])
-        n_meas = int(prod["n_meas"])
+        ladder_raw = prod["ladder"]
+        t_grid_raw = prod["t_grid"]
         rows = list(prod["rows"])
-    except (KeyError, TypeError, ValueError):
+    except (KeyError, TypeError):
         return None
 
+    if (
+        not isinstance(ladder_raw, (list, tuple))
+        or not isinstance(t_grid_raw, (list, tuple))
+        or any(not _is_json_int(x) for x in ladder_raw)
+        or any(not _is_json_number(x) for x in t_grid_raw)
+        or not _is_json_int(prod.get("n_seeds"))
+        or not _is_json_int(prod.get("n_therm"))
+        or not _is_json_int(prod.get("n_meas"))
+    ):
+        return None
+
+    ladder = tuple(ladder_raw)
+    t_grid = tuple(float(x) for x in t_grid_raw)
     if ladder != W4V3_LADDER or not np.allclose(
         t_grid, W4V3_T_GRID, atol=0.0, rtol=0.0
     ):
         return None
     if (
-        n_seeds != W4V3_N_SEEDS
-        or n_therm != W4V3_N_THERM
-        or n_meas != W4V3_N_MEAS
+        prod["n_seeds"] != W4V3_N_SEEDS
+        or prod["n_therm"] != W4V3_N_THERM
+        or prod["n_meas"] != W4V3_N_MEAS
     ):
         return None
     if prod.get("complete") is not True or prod.get("unmeasured") != []:
@@ -461,29 +482,39 @@ def _product_groups(prod: dict) -> dict[tuple[int, int], list[dict]] | None:
                 rr = [
                     r
                     for r in rows
-                    if int(r.get("L", -1)) == L
-                    and int(r.get("t_idx", -1)) == k
+                    if isinstance(r, dict)
+                    and r.get("L") == L
+                    and r.get("t_idx") == k
                 ]
                 if len(rr) != W4V3_N_SEEDS:
                     return None
-                rr.sort(key=lambda r: int(r.get("s", -1)))
-                if [int(r.get("s", -1)) for r in rr] != list(
-                    range(W4V3_N_SEEDS)
+                if any(
+                    not _is_json_int(r.get("L"))
+                    or not _is_json_int(r.get("t_idx"))
+                    or not _is_json_int(r.get("s"))
+                    or not _is_json_int(r.get("seed"))
+                    for r in rr
                 ):
+                    return None
+                rr.sort(key=lambda r: r["s"])
+                if [r["s"] for r in rr] != list(range(W4V3_N_SEEDS)):
                     return None
                 expected_t = t_grid[k]
                 for r in rr:
-                    seed_idx = int(r.get("s", -1))
+                    seed_idx = r["s"]
                     expected_seed = (
                         W4V3_SEED_BASE + 1000 * L + 100 * k + seed_idx
                     )
-                    if float(r.get("T", math.nan)) != expected_t:
+                    if not _is_json_number(r.get("T")):
                         return None
-                    if int(r.get("seed", -1)) != expected_seed:
+                    if float(r["T"]) != expected_t:
                         return None
-                    q = float(r["g_quarter"])
-                    h = float(r["g_half"])
-                    if not math.isfinite(q) or not math.isfinite(h):
+                    if r["seed"] != expected_seed:
+                        return None
+                    if (
+                        not _is_json_number(r.get("g_quarter"))
+                        or not _is_json_number(r.get("g_half"))
+                    ):
                         return None
                 groups[(L, k)] = rr
     except (KeyError, TypeError, ValueError, OverflowError):
@@ -664,7 +695,7 @@ def assess_production(prod: dict, *, n_boot: int = W4V3_N_BOOT) -> dict:
             "claim_ceiling": "G0 failed: incomplete or invalid production evidence.",
         }
 
-    if n_boot != W4V3_N_BOOT:
+    if type(n_boot) is not int or n_boot != W4V3_N_BOOT:
         return {
             "gates": {
                 "G0_input": True,
