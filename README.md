@@ -302,13 +302,15 @@ SOURCES.md  Provenance / SHA-256
 
 ## Naechste Stufe nach Selbstpruefung / W4 v02 (2026-09-26b)
 
-1. **W4-v03 / PHY049:** normierungsfreier Correlation-Ratio-Quercheck ist
-   vorregistriert und als fail-closed Mess-Engine angelegt. Naechster Code-Gate:
-   synthetische BKT-FSS-Recovery implementieren; bis dahin explizit
-   NO_PHYSICS_INTERPRETATION. Erst danach Produktionsdaten rechnen.
-2. **Primaertext-Abgleich:** Jiang/PTEP ist fuer Helicity-Wert und
-   Honeycomb-Dichtefaktor geschlossen; offen bleiben insbesondere die genaue
-   Fassung/Normierung der de-Andrade-beta-Werte 1.687/1.635.
+1. **W4-v03a / PHY049+PHY050:** normierungsfreier Correlation-Ratio-Quercheck
+   ist vorregistriert; der deterministische FSS-Estimator und G4-Synthetic-
+   Recovery inklusive adversarial Nullkontrollen sind implementiert. G4
+   autorisiert nur die Produktionsmessung: NO_PHYSICS_INTERPRETATION bleibt
+   bis G0/G5/G6 auf echten PHY049-Daten und committetem Gate-Log bestehen.
+2. **Primaertext-Abgleich:** Jiang/PTEP und de Andrade v4 sind fuer
+   Honeycomb-Geometriefaktor und aktuelle direkte T-Kanaele geschlossen.
+   Historische de-Andrade-beta-Werte bleiben versionsspezifische Lineage
+   (v2 primaer verifiziert; 1.687/1.635 ohne aktuellen Referenz-Claim).
 3. **triangular und kagome pro Flaeche neu messen** (Wolff-Numba, Leiter bis 256, T-Gitter um 1.465 bzw. 0.82); triangular gegen die normierungsfreie Reihe 1.465.
 4. Protokoll-Lehre aus PHY048: in kuenftigen Vorregistrierungen das groesste Paar bzw. das Paar-Mittel als Primaer-Schaetzer, HKS-3-Parameter nur als Variante.
 
