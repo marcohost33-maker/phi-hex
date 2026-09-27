@@ -111,15 +111,16 @@ def test_numba_backend_is_bit_identical_when_available():
 
 
 def test_persistent_splay_rejects_nonfinite_and_wrong_sign():
-    t = [0.54, 0.55, 0.56, 0.57]
-    r1 = [0.80, 0.79, 0.76, 0.70]
-    e = [0.005] * 4
-    good = [0.80, 0.79, 0.72, 0.64]
+    t = [0.54, 0.55, 0.56, 0.57, 0.58]
+    r1 = [0.80, 0.79, 0.76, 0.70, 0.66]
+    e = [0.005] * 5
+    # Drei persistente, signifikante negative D-Punkte ab T=0.56.
+    good = [0.80, 0.79, 0.72, 0.64, 0.58]
     assert phy049.persistent_splay(t, r1, e, good, e) == pytest.approx(0.56)
     bad_nan = list(good)
     bad_nan[-1] = float("nan")
     assert phy049.persistent_splay(t, r1, e, bad_nan, e) is None
-    wrong_sign = [0.80, 0.79, 0.82, 0.86]
+    wrong_sign = [0.80, 0.79, 0.82, 0.86, 0.88]
     assert phy049.persistent_splay(t, r1, e, wrong_sign, e) is None
 
 
