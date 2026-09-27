@@ -111,14 +111,21 @@ def test_w4_walker_plan_requires_three_per_l():
     phy042._w4_validate_walker_plan({64: 3, 96: 3, 128: 4})
     with pytest.raises(ValueError, match="mindestens 3 Walker"):
         phy042._w4_validate_walker_plan({64: 3, 96: 2, 128: 3})
+    # Der Schwellwert selbst ist Teil des W4-Vertrags und darf nicht durch
+    # einen Caller auf Kalibrierungsniveau abgesenkt werden.
+    with pytest.raises(ValueError, match="nicht unter 3"):
+        phy042._w4_validate_walker_plan({64: 2}, min_walkers=2)
 
 
-def test_pair_inside_domains_fails_closed_on_unknown_domain():
-    assert phy042._pair_inside_domains(0.575, 0.60, 0.59)
-    assert not phy042._pair_inside_domains(0.595, 0.60, 0.59)
-    assert not phy042._pair_inside_domains(0.575, None, 0.59)
-    assert not phy042._pair_inside_domains(0.575, 0.60, None)
-    assert not phy042._pair_inside_domains(None, 0.60, 0.59)
+def test_pair_inside_domains_checks_lower_and_upper_bounds():
+    a = (0.56, 0.6475)  # z.B. PHY032-Fallback
+    b = (0.52, 0.60)
+    assert phy042._pair_inside_domains(0.575, a, b)
+    assert not phy042._pair_inside_domains(0.555, a, b)  # unter Fallback-Evidenz
+    assert not phy042._pair_inside_domains(0.61, a, b)
+    assert not phy042._pair_inside_domains(0.575, None, b)
+    assert not phy042._pair_inside_domains(0.575, a, None)
+    assert not phy042._pair_inside_domains(None, a, b)
 
 def test_pair_trend_inputs_are_sorted_ascending():
     """Die PHY041-Paar-Sequenz (Trend-Referenz) ist nach min-L sortiert und
