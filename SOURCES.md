@@ -222,3 +222,20 @@ bleiben unveraendert als Lineage stehen; letzte Zeile pro Pfad gewinnt.
 | 40D186525B32FB06 | 2026-08-08 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (NEU: PHY043-Gates (iid-U4-Orakel exakt 2-1/N, Moden-Buchhaltung exakt, Splay-/Crossing-Vertraege fails-closed, Mini-MC-Smoke)) |
 | 5C8023B58DEE5DD0 | 2026-08-08 | results | repo-native: `results/260808 PHY043 triangular convention-free crossing report.txt` (NEU: Gate-Evidenz PHY043 Finallauf L=9/13/19/25, T=1.36..1.70, 8 Seeds/800 Messungen, seed=42, OVERALL PASS 6/6, ~688 s; Splay-Lagen 1.50..1.64, NR-PHY043-01) |
 | 3DDB36EB7D36C425 | 2026-08-17 | tests | repo-native: `tests/test_sources_integrity.py` (stand: Plattform-Portabilitaets-Fix 2026-08-17 - Gate hasht Index-Bytes statt Arbeitsbaum (core.autocrlf machte 68 von 88 Dateien zu falschen Positiven unter Windows) + neue Regel 5 Arbeitsbaum-vs-Index-Drift) |
+
+## W4 Evidence-Contract Hardening 2026-09-27 — append-only
+
+Issue #45: Quellenversions- und Validitaetssemantik gehaertet. Historische
+Zeilen bleiben unveraendert; die folgenden repo-native SHA-256-Praefixe sind
+die aktuellen Bytes auf dem W4-Haertungs-Branch.
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| 400E0775C1008893 | 2026-09-27 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (Issue #45: Ein-Walker-Spread/Domaene fail-closed `null`; getrennte effektive Evidenzbasis; aktueller versionierter Honeycomb-Ledger; W4-Walker-Preflight) |
+| 0A9BCB93A92C35E6 | 2026-09-27 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (Issue #45: Report-Limit-Metadaten aus echtem Lauf statt Hardcode) |
+| C7442E4CA5FBCD8B | 2026-09-27 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Issue #45: Referenzledger-, >=3-Walker- und fail-closed-Domaenen-Gates) |
+| D2C1E1DBEE31F24F | 2026-09-27 | tests | repo-native: `tests/test_honeycomb_reference_conventions.py` (Issue #45: aktuelle Quellenfassungen statt supersedierter beta/v1-Annahmen) |
+| 5C808981447254C8 | 2026-09-27 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Issue #45: dynamische Report-Metadaten gegen Drift getestet) |
+| FDF312FCABD7EF24 | 2026-09-27 | spec | repo-native: `spec/260703 PHI HEX honeycomb reference conventions audit v01.md` (Quellenversions-Audit 2026-09-27; aktuelle vs supersedierte Evidenz getrennt) |
+| A54242EEE218464C | 2026-09-27 | spec | repo-native: `spec/260927 PHI HEX w4 preregistration v01.md` (NEU: fail-closed W4-Praeregistrierung, Kalibrier-/Stop-/Modellwahl-Vertrag) |
+
