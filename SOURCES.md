@@ -239,3 +239,13 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | FDF312FCABD7EF24 | 2026-09-27 | spec | repo-native: `spec/260703 PHI HEX honeycomb reference conventions audit v01.md` (Quellenversions-Audit 2026-09-27; aktuelle vs supersedierte Evidenz getrennt) |
 | A54242EEE218464C | 2026-09-27 | spec | repo-native: `spec/260927 PHI HEX w4 preregistration v01.md` (NEU: fail-closed W4-Praeregistrierung, Kalibrier-/Stop-/Modellwahl-Vertrag) |
 
+### W4 Kalibrierungs-Runner + 1/t-Instrumentierung 2026-09-27
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| 0F229401722FBAF9 | 2026-09-27 | src | repo-native: `src/260702 PHY041 honeycomb wang-landau entropic helicity v01.py` (Issue #45: reale B&P-1/t-Aktivierung und Umschalt-Sweep werden im geerbten WLResult persistiert; vorher Default-False/0 trotz aktivem 1/t) |
+| 6C41C8B52BFC3161 | 2026-09-27 | tests | repo-native: `tests/test_phy041_honeycomb_wl.py` (Regression fuer 1/t-Metadaten + Slow-Smoke bindet Aktivierung an echten Lauf) |
+| E2F5DEB4948F0A7E | 2026-09-27 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (NEU: vorregistrierter L64-Kalibrierungsrunner; 2 WL-Walker + Wolff-Quercheck; Kosten/Konvergenz/Coverage; kein T_BKT-Claim) |
+| 81332F7043BE1C20 | 2026-09-27 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (NEU: Stream-, Budget-, Input- und Stopregel-Gates fuer PHY044) |
+| FA91A37669C7A8ED | 2026-09-27 | spec | repo-native: `spec/260927 PHI HEX w4 preregistration v01.md` (Stand nach 1/t- und Sampler-Effizienz-Haertung; supersedet vorherige Zeile derselben Spec) |
+
