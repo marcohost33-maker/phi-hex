@@ -304,16 +304,6 @@ def reanalyse_domains(report: dict, thr: float = DOMAIN_THRESHOLD) -> dict:
                           report["pair_quotable"][key])}
     return {"threshold": thr,
             "domain_status": {str(L): _domain_status(dom[L]) for L in Ls},
-        "effective_domain_bounds": {
-            str(L): (
-                None if effective_domain_bounds.get(L) is None
-                else list(effective_domain_bounds[L])
-            )
-            for L in Ls
-        },
-        "effective_domain_basis": {
-            str(L): effective_domain_basis.get(L) for L in Ls
-        },
             "committed_domain_tmax_spread004":
                 report["domain_tmax_spread004"],
             "pairs": pairs}
@@ -770,6 +760,16 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
                           for L in Ls},
         "domain_tmax_spread004": {str(L): dom[L]["tmax"] for L in Ls},
         "domain_status": {str(L): _domain_status(dom[L]) for L in Ls},
+        "effective_domain_bounds": {
+            str(L): (
+                None if effective_domain_bounds.get(L) is None
+                else list(effective_domain_bounds[L])
+            )
+            for L in Ls
+        },
+        "effective_domain_basis": {
+            str(L): effective_domain_basis.get(L) for L in Ls
+        },
         "pair_domain_basis": {f"{a}_{b}": v
                               for (a, b), v in pair_basis.items()},
         "validation_vs_wolff_L32": val_rows,
