@@ -232,3 +232,38 @@ Vor jeder PHY049-Produktion gelten zusaetzlich fail-closed:
 - Persistierte Rohmomente werden als untrusted evidence behandelt:
   fehlende/nichtnumerische/NaN/Inf-Werte fuehren zu G0=FAIL, nicht zu einer
   Exception ausserhalb des Adjudikators.
+
+
+## 11. Operativer Produktionsvertrag / Checkpointing 2026-09-27
+
+Dieser Nachtrag aendert **keine** Physik-, Leiter-, Seed-, Sweep-, Bootstrap-
+oder Entscheidungsregel. Er macht den bereits vorregistrierten 24-h-Lauf
+transaktional ausfuehrbar:
+
+- der offizielle CLI-Produktionspfad verwendet ausschliesslich die exakten
+  W4-v03-Defaults und schreibt in eine explizite JSON-Ergebnisdatei;
+- persistiert wird atomar via Temp-Datei + fsync + Replace, sodass ein
+  Prozess-/Hostabbruch kein halb geschriebenes Evidenzartefakt hinterlaesst;
+- Checkpoints werden nur nach einem **vollstaendigen L-Block** committed.
+  Ein partieller L-Block ist beim Resume unzulaessig und wird nie als Evidenz
+  uebernommen;
+- Resume akzeptiert nur einen byte-semantisch identischen
+  `campaign_contract` (Leiter, T-Gitter, Seeds, Thermalisierung, Messungen,
+  Workerzahl, Wall-Budget) und identische gruene Preflight-Gates;
+- ein terminaler `WALL_BUDGET_STOP` darf nicht per Resume in eine laengere
+  Kampagne verwandelt werden. Fehlende Jobs bleiben explizit ungemessen;
+- ein bereits vollstaendiges Checkpoint wird ohne Neuberechnung wiedergegeben;
+- der Produktionsrunner selbst erzeugt **keine Physikinterpretation**.
+  Erst ein exaktes, vollstaendiges Produkt darf an PHY050
+  `assess_production()` uebergeben werden.
+
+Operative Aufrufe:
+
+`python "src/260927 PHY049 honeycomb correlation ratio v01.py"`
+fuehrt nur den Preflight aus.
+
+`python "src/260927 PHY049 honeycomb correlation ratio v01.py" --production`
+startet die exakte Kampagne und schreibt atomare Whole-L-Checkpoints.
+
+`--resume` ist nur fuer einen nichtterminalen, exakt passenden
+Whole-L-Checkpoint zulaessig.
