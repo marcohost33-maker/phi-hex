@@ -243,3 +243,15 @@ committed.
 - G0 akzeptiert nur `checkpoint_status == "COMPLETE"`; ein numerisch
   vollstaendiger, transaktional nicht finalisierter Datensatz ist nicht
   adjudizierbar.
+
+
+## 11. Adjudikations-Domain-Hardening - 2026-09-28, weiterhin pre-data
+
+Die v03-Entscheidungslabels sind nun an die **vollstaendigen**
+Hypothesenintervalle gebunden, nicht nur an deren Ueberlappgrenzen. Ein 95%-
+Intervall, das H_B ausschliesst, kann nur `SUPPORTED_LOW` sein, wenn es H_A
+noch schneidet; symmetrisch gilt dies fuer `SUPPORTED_LITERATURE` und H_B.
+Liegt das 95%-Intervall vollstaendig ausserhalb beider vorregistrierten
+Hypothesenbereiche, lautet das interne Label
+`OUTSIDE_PREREGISTERED_HYPOTHESES`. Dadurch werden extreme Schaetzer nicht
+faelschlich als Evidenz fuer eine Hypothese etikettiert.

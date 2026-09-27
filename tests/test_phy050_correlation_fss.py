@@ -147,6 +147,22 @@ def test_decision_label_respects_full_hypothesis_overlap():
     assert phy050.decision_label(0.578, 0.001, gates_passed=False) == "INCONCLUSIVE"
 
 
+def test_decision_label_cannot_support_a_hypothesis_it_excludes():
+    assert (
+        phy050.decision_label(0.540, 0.001)
+        == "OUTSIDE_PREREGISTERED_HYPOTHESES"
+    )
+    assert (
+        phy050.decision_label(0.590, 0.001)
+        == "OUTSIDE_PREREGISTERED_HYPOTHESES"
+    )
+    # A CI may extend beyond one edge and still support the low/literature
+    # location comparatively if it overlaps that preregistered interval while
+    # excluding the competing hypothesis.
+    assert phy050.decision_label(0.556, 0.001) == "SUPPORTED_LOW"
+    assert phy050.decision_label(0.581, 0.001) == "SUPPORTED_LITERATURE"
+
+
 def test_assess_production_fails_closed_on_incomplete_input():
     prod = _synthetic_product_for_validation()
     prod["complete"] = False

@@ -143,9 +143,14 @@ mit Untergrenze 0.002.
 sigma_tot = hypot(sigma_boot, sigma_model).
 
 Ausgabe:
-- SUPPORTED_LOW, wenn T_hat + 2 sigma_tot < 0.570;
-- SUPPORTED_LITERATURE, wenn T_hat - 2 sigma_tot > 0.573;
-- OVERLAP, wenn das 95%-Intervall den gesamten vorregistrierten
+- SUPPORTED_LOW, wenn T_hat + 2 sigma_tot < 0.570 **und** das 95%-Intervall
+  H_A=[0.557,0.573] schneidet;
+- SUPPORTED_LITERATURE, wenn T_hat - 2 sigma_tot > 0.573 **und** das
+  95%-Intervall H_B=[0.570,0.580] schneidet;
+- OUTSIDE_PREREGISTERED_HYPOTHESES, wenn das 95%-Intervall die konkurrierende
+  Hypothese ausschliesst, aber zugleich auch die vermeintlich unterstuetzte
+  vorregistrierte Hypothese vollstaendig verfehlt;
+- OVERLAP, wenn das 95%-Intervall den vorregistrierten
   Hypothesen-Ueberlapp [0.570, 0.573] schneidet;
 - INCONCLUSIVE, wenn ein Gate aus §7 scheitert oder sigma_tot > 0.010.
 
@@ -280,3 +285,12 @@ startet die exakte Kampagne und schreibt atomare Whole-L-Checkpoints.
 
 `--resume` ist nur fuer einen nichtterminalen, exakt passenden
 Whole-L-Checkpoint zulaessig.
+
+### 6.1 Pre-data Adjudikations-Haertung 2026-09-28
+
+Die Schwellen 0.570/0.573 allein duerfen keine Hypothese "unterstuetzen", wenn
+das gesamte 95%-Intervall ausserhalb ihres vorregistrierten Wertebereichs liegt.
+Insbesondere sind extrem niedrige/hohe Schaetzer kein automatischer Support fuer
+H_A/H_B, sondern `OUTSIDE_PREREGISTERED_HYPOTHESES`. Diese Korrektur wurde
+vor PHY049-Produktionsdaten festgeschrieben und aendert weder Observable,
+Sampler, Fit noch Unsicherheitsbudget.

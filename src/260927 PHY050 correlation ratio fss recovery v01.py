@@ -45,8 +45,10 @@ W4V3_REQUIRED_PREFLIGHT_GATES = (
     "G3_seed_unique",
     "G4_fss_recovery",
 )
-DECISION_LOW_EDGE = 0.570
-DECISION_HIGH_EDGE = 0.573
+HYPOTHESIS_LOW = (0.557, 0.573)
+HYPOTHESIS_LITERATURE = (0.570, 0.580)
+DECISION_LOW_EDGE = HYPOTHESIS_LITERATURE[0]
+DECISION_HIGH_EDGE = HYPOTHESIS_LOW[1]
 MAX_SIGMA_TOT = 0.010
 MAX_ROBUST_DELTA = 0.008
 
@@ -740,9 +742,17 @@ def decision_label(
     lo = tbkt - 2.0 * sigma_tot
     hi = tbkt + 2.0 * sigma_tot
     if hi < DECISION_LOW_EDGE:
-        return "SUPPORTED_LOW"
+        # Excluding H_B is not enough: the 95% interval must still overlap
+        # the preregistered low hypothesis H_A=[0.557,0.573].
+        if hi >= HYPOTHESIS_LOW[0] and lo <= HYPOTHESIS_LOW[1]:
+            return "SUPPORTED_LOW"
+        return "OUTSIDE_PREREGISTERED_HYPOTHESES"
     if lo > DECISION_HIGH_EDGE:
-        return "SUPPORTED_LITERATURE"
+        # Likewise, a very high estimate cannot be called literature support
+        # when its 95% interval excludes H_B=[0.570,0.580].
+        if hi >= HYPOTHESIS_LITERATURE[0] and lo <= HYPOTHESIS_LITERATURE[1]:
+            return "SUPPORTED_LITERATURE"
+        return "OUTSIDE_PREREGISTERED_HYPOTHESES"
     # Any 95% interval intersecting the preregistered H_A/H_B overlap
     # [0.570, 0.573] stays explicitly non-discriminating.
     if hi >= DECISION_LOW_EDGE and lo <= DECISION_HIGH_EDGE:
