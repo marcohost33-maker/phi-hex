@@ -161,6 +161,9 @@ Bestwert-Claim.
 G0 INPUT:
 - exakt die vorregistrierten Metadaten n_seeds=12, n_therm=1000,
   n_meas=4000;
+- exakt die persistierten Preflight-Gates
+  {VAL_BIT_numba,G1_geometry,G2_aligned_limit,G3_seed_unique,G4_fss_recovery}
+  mit literal `true` fuer jeden Eintrag und ohne Zusatz-Gates;
 - exakt 5*29*12 erwartete Rohzeilen, keine Zusatz-/Fremdzeilen;
 - `complete is True` und `unmeasured == []`;
 - alle erwarteten (L,T,Seed)-Jobs mit exakter (L,t_idx,T,s,seed)-Identitaet;
