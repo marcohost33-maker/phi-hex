@@ -213,6 +213,9 @@ fail-open paths. They are now part of the binding contract:
   INCONCLUSIVE.
 - **Runtime backend gate:** a worker/direct `_job()` path must itself consult
   VAL-BIT before selecting Numba; Numba availability alone is insufficient.
+- **Production entrypoint gate:** public `produce()` must execute and require
+  the complete VAL-BIT/G1-G4 preflight before submitting any measurement job,
+  and persist those gate verdicts alongside the raw product.
 
 These changes are preproduction hardening, not post-hoc tuning: no PHY049
 production curve or transition estimate had been generated when they were
