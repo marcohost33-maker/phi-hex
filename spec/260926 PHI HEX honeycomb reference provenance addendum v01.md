@@ -139,3 +139,58 @@ arXiv:0806.1496) gibt beta_c = 0.3412(4) in ihrer Konvention. Deren square-Wert
 0.5599(7) = 1.1199/2 belegt den Faktor 2, also T_BKT = 1/0.6824 = 1.465(1).
 Die bisherige Repo-Referenz 1.418 (Helicity-Crossing, Normierung unbelegt)
 gilt als konventions-abhaengig.
+
+
+## 7. Nachtrag 3 - Primaertext-Abgleich 2026-09-27
+
+Die bis 2026-09-26 offene Normierungsfrage ist fuer den publizierten
+Jiang-Kanal primaertextlich geklaert und fuer die beiden anderen zentralen
+Referenzfamilien enger eingegrenzt.
+
+### Jiang, PTEP 2024 103A02
+
+Die publizierte Fassung definiert den Honeycomb-Helicity-Modulus mit dem
+expliziten Vorfaktor `4/(3 sqrt(3))`. Der Text erklaert diesen Faktor als
+Verhaeltnis der Spindichten von Honeycomb- und Quadratgitter. Genau dieser
+korrigierte `Gamma(L)` wird anschliessend mit der Nelson-Kosterlitz-Linie
+`2T/pi` verglichen. Der publizierte Helicity-Wert `T_BKT = 0.576(4)`
+ist deshalb **nicht** als roher per-Site-Wert zu klassifizieren.
+
+Status ab 2026-09-27:
+- `helicity_ptep`: **primary_text_verified** fuer Wert, Wolff-Sampler und
+  Normierungsfaktor;
+- `nn_ptep`: **primary_text_verified** fuer den publizierten Wert
+  `0.572(3)`.
+
+Damit ist die bisherige Hypothese in
+`results/260926 PHY046 W4 v02 interpretation note.md`, die Uebereinstimmung
+der internen per-Site-Linie mit Jiang koenne durch eine per-Site-
+Literaturnormierung erklaert werden, fuer die PTEP-Fassung **falsifiziert**.
+
+### de Andrade, Jorge, DaSilva, arXiv:2406.12076 v4 / Phys. Scr. 100 065953
+
+Die v4-Metadaten/Abstract-Evidenz bestaetigt die direkten T-Werte
+`0.575(8)` (SA) und `0.576(3)` (WL). Ein belastbarer maschinenlesbarer
+Primaertextbeleg fuer den konkreten Honeycomb-Normierungsfaktor wurde in
+dieser Sitzung nicht reproduzierbar extrahiert. Daher bleibt der
+Normierungsstatus dieser Kanaele **primary_text_pending**, statt aus der
+Jiang-Konvention uebertragen zu werden.
+
+Die historische beta-Provenienz `1.687(3)` / `1.635(11)` bleibt ebenfalls
+offen und traegt weiterhin keinen Claim.
+
+### Okabe/Otsuka, J. Phys. A 58 065003 / arXiv:2501.07388
+
+Die Quelle beschreibt als Monte-Carlo-Methode explizit die Groessenabhaengigkeit
+des Verhaeltnisses von Korrelationsfunktionen bei zwei verschiedenen
+Distanzen. Der Honeycomb-Wert `0.573` wird als Schaetzung berichtet. Dieser
+Kanal ist damit fuer die PHI-Hex-Frage besonders wertvoll, weil er keinen
+Helicity-Normierungsfaktor verwendet.
+
+Konsequenz fuer W4:
+- die ~1.3-%-Spannung zwischen PHY046 (~0.565) und 0.572-0.573 bleibt eine
+  **echte offene Diskrepanz**;
+- sie darf nicht mehr durch die Jiang-per-Site-Hypothese weginterpretiert
+  werden;
+- der naechste diskriminierende Test ist der vorregistrierte
+  Correlation-Ratio-Quercheck W4-v03/PHY049.
