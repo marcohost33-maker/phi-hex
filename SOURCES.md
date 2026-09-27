@@ -344,3 +344,7 @@ bleiben unveraendert als Lineage stehen; letzte Zeile pro Pfad gewinnt.
 | 5F4D7C6DB49E30DB | 2026-09-28 | spec | repo-native: `spec/260927 PHI HEX w4 honeycomb preregistration v03 correlation-ratio.md` (stand: pre-data Produktionsvertrag um Crash-Durability, BLOCK_IN_PROGRESS und typstrikte Resume-Semantik gehaertet; supersediert vorherige Zeile fuer diesen Pfad) |
 | 5297550D4E3153E4 | 2026-09-28 | spec | repo-native: `spec/260927 PHI HEX w4 v03a fss estimator hardening.md` (stand: pre-data FSS/G0-Vertrag bindet finalen Envelope und unterbrechungssichere Budget-Semantik; supersediert vorherige Zeile fuer diesen Pfad) |
 | 9672A963E9AA5A53 | 2026-09-28 | docs | repo-native: `README.md` (stand: G4-Status evidenzkonform; kein repository-level VALIDATED ohne results-Gate-Log) |
+
+| 0DA6E65CBC7726C4 | 2026-09-28 | results | repo-native: `results/260928 PHY050 deterministic G4 gate.json` (NEU: deterministischer PHY050-G4-Gate-Log von CI #196 auf Source-Head a069c702; Estimator-Mechanik PASS, Physikinterpretation explizit false) |
+| D4E067170890C0D4 | 2026-09-28 | tests | repo-native: `tests/test_phy050_correlation_fss.py` (stand: committierter G4-Gate-Log wird byte-semantisch gegen aktuellen deterministischen PHY050-preflight regeneriert; supersediert vorherige Zeile fuer diesen Pfad) |
+| F6393C9F2621870B | 2026-09-28 | docs | repo-native: `README.md` (stand: G4-Estimator-Mechanik nun evidenzkonform via committiertem results-Gate-Log validiert; keine Physikvalidierung) |

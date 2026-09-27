@@ -1,6 +1,7 @@
 """Fast correctness gates for PHY050 W4-v03a deterministic FSS."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,19 @@ phy050 = conftest._load(
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = ROOT / "spec" / "260927 PHI HEX w4 v03a fss estimator hardening.md"
+G4_REPORT = ROOT / "results" / "260928 PHY050 deterministic G4 gate.json"
+
+
+def test_committed_g4_gate_matches_deterministic_preflight():
+    report = json.loads(G4_REPORT.read_text(encoding="utf-8"))
+    assert report["evidence"]["generated_from_commit"] == (
+        "a069c70237aeadc2f0f29d6edc9fb4d051dd306f"
+    )
+    assert report["evidence"]["ci_run_id"] == 36358011720
+    assert report["evidence"]["ci_run_number"] == 196
+    assert report["preflight"] == phy050.preflight()
+    assert report["preflight"]["g4"]["passed"] is True
+    assert report["preflight"]["production_interpretation_enabled"] is False
 
 
 def test_amendment_binds_estimator_constants():
