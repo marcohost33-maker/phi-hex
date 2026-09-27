@@ -292,3 +292,8 @@ bleiben unveraendert als Lineage stehen; letzte Zeile pro Pfad gewinnt.
 | D5CDF5F5A4FC99E7 | 2026-09-27 | tests | repo-native: `tests/test_phy042_wl_fss.py` (stand: zwei-seitige Evidenzdomaenen, effektive Domain-Basis und versionierte Provenienz gegatet) |
 | 25A01DB136ACAD04 | 2026-09-27 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (stand: Power-Claim nur fuer fixierten Pilot, andere Laufbudgets UNASSESSED) |
 | 89C1B81D06801435 | 2026-09-27 | spec | repo-native: `spec/260703 PHI HEX honeycomb reference conventions audit v01.md` (stand: historischer 2026-07-03-Vertrag explizit durch 260926-Provenienz-Nachtrag fuer aktuelle Literaturvergleiche supersediert; Legacy-Kanaele nur Lineage) |
+
+| F2747B8D78B0DCEE | 2026-09-27 | src | repo-native: `src/260927 PHY049 honeycomb correlation ratio v01.py` (stand: Ruff-konform nach Review-Hardening; supersediert vorherigen PHY049-Pin) |
+| 2259A66803B9C326 | 2026-09-27 | tests | repo-native: `tests/test_phy042_wl_fss.py` (stand: fail-closed Fallback-Test korrigiert: gescheiterter VAL-B bleibt unmeasured; supersediert vorherigen Test-Pin) |
+| 2764F2EE2CE7162B | 2026-09-27 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (stand: Reporttest erwartet fuer nicht-preregistrierte Budgets UNASSESSED statt unbelegter 1%-Poweraussage; supersediert vorherigen Test-Pin) |
+| 7E4166383B5FDEAE | 2026-09-27 | tests | repo-native: `tests/test_phy049_correlation_ratio.py` (stand: korrektes Drei-Punkt-Splay-Orakel plus NaN/opposite-sign Guards; supersediert vorherigen Test-Pin) |
