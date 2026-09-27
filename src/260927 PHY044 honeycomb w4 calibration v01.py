@@ -176,7 +176,9 @@ def run_phy044_calibration(
     lo_mean, lo_std = _p41.wolff_anchor(L, 0.50, master_seed=master_seed)
     hi_mean, hi_std = _p41.wolff_anchor(L, 0.70, master_seed=master_seed)
     e_lo, e_hi = _p41.window_from_anchors(lo_mean, lo_std, hi_mean, hi_std)
-    n_sites = 2 * L * L
+    # Bind bookkeeping to the actual lattice builder, not to an assumed
+    # closed-form site count.
+    _, _, _, _, _, _, n_sites = _p41.honeycomb_arrays(L)
     nbins = int(round((e_hi - e_lo) * n_sites))
 
     walkers = [
@@ -228,7 +230,8 @@ def run_phy044_calibration(
         "L": L,
         "n_sites": n_sites,
         "n_wl_walkers": n_wl_walkers,
-        "production_requirement_met": n_wl_walkers >= 3,
+        "production_walker_requirement_met": n_wl_walkers >= 3,
+        "calibration_is_not_production_validity": True,
         "master_seed": master_seed,
         "temperatures": list(temps),
         "window": {
@@ -250,9 +253,9 @@ def run_phy044_calibration(
         "comparison": comparison,
         "verdict": verdict,
         "scale_decision": (
-            "DO_NOT_SCALE_YET_2_WALKERS_CALIBRATION_ONLY"
-            if n_wl_walkers < 3
-            else "EVALUATE_W4_G0_G3"
+            "ELIGIBLE_TO_PLAN_PRODUCTION_NOT_A_VALIDITY_PASS"
+            if verdict == "CALIBRATION_PASS_FOR_COST_MODEL"
+            else "DO_NOT_SCALE_UNTIL_CALIBRATION_FAILURE_IS_RESOLVED"
         ),
         "runtime_s_total": time.perf_counter() - total_t0,
     }
