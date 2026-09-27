@@ -75,6 +75,7 @@ def test_persistent_splay_requires_significant_persistent_tail():
 
 def test_preflight_allows_measurement_after_g4_but_not_physics_interpretation():
     out = phy049.preflight()
+    assert out["gates"]["VAL_BIT_numba"] is True
     assert out["gates"]["G1_geometry"] is True
     assert out["gates"]["G2_aligned_limit"] is True
     assert out["gates"]["G3_seed_unique"] is True
@@ -95,3 +96,65 @@ def test_tiny_measurement_job_compiles_and_returns_finite_correlations():
     assert -1.0 <= row["g_quarter"] <= 1.0
     assert -1.0 <= row["g_half"] <= 1.0
     assert row["wall_s"] >= 0.0
+
+
+def test_geometry_invariants_are_checked_directly():
+    for L in (8, 12):
+        got = phy049._geometry_invariants(L)
+        assert got["translation_L_a1"] is True
+        assert got["translation_L_a2"] is True
+        assert got["same_sublattice_q_h"] is True
+
+
+def test_numba_backend_is_bit_identical_when_available():
+    assert phy049._backend_bit_identity() is True
+
+
+def test_persistent_splay_rejects_nonfinite_and_wrong_sign():
+    t = [0.54, 0.55, 0.56, 0.57]
+    r1 = [0.80, 0.79, 0.76, 0.70]
+    e = [0.005] * 4
+    good = [0.80, 0.79, 0.72, 0.64]
+    assert phy049.persistent_splay(t, r1, e, good, e) == pytest.approx(0.56)
+    bad_nan = list(good)
+    bad_nan[-1] = float("nan")
+    assert phy049.persistent_splay(t, r1, e, bad_nan, e) is None
+    wrong_sign = [0.80, 0.79, 0.82, 0.86]
+    assert phy049.persistent_splay(t, r1, e, wrong_sign, e) is None
+
+
+def test_zero_wall_budget_marks_every_job_unmeasured(monkeypatch):
+    def must_not_run(_args):
+        raise AssertionError("job must not start after budget stop")
+
+    monkeypatch.setattr(phy049, "_job", must_not_run)
+    out = phy049.produce(
+        ladder=(8,), t_grid=(0.57,), n_seeds=2, n_therm=1, n_meas=1,
+        max_workers=1, wall_budget_h=0.0,
+    )
+    assert out["rows"] == []
+    assert out["complete"] is False
+    assert len(out["unmeasured"]) == 2
+    assert {r["reason"] for r in out["unmeasured"]} == {"WALL_BUDGET_STOP"}
+
+
+def test_aggregate_rejects_duplicate_seed_wrong_temperature_and_wrong_rng_seed():
+    base_rows = [
+        {"L": 8, "t_idx": 0, "T": 0.57, "s": s,
+         "seed": phy049.seed_for(8, 0, s),
+         "g_quarter": 0.9 + 0.01 * s, "g_half": 0.8 + 0.01 * s}
+        for s in range(3)
+    ]
+    prod = {"ladder": [8], "t_grid": [0.57], "n_seeds": 3, "rows": base_rows}
+    assert phy049.aggregate(prod)["curves"]["8"]["R"][0] is not None
+
+    dup = {**prod, "rows": [base_rows[0], base_rows[0], base_rows[2]]}
+    assert phy049.aggregate(dup)["curves"]["8"]["R"][0] is None
+
+    wrong_t = {**prod, "rows": [dict(r) for r in base_rows]}
+    wrong_t["rows"][1]["T"] = 0.571
+    assert phy049.aggregate(wrong_t)["curves"]["8"]["R"][0] is None
+
+    wrong_seed = {**prod, "rows": [dict(r) for r in base_rows]}
+    wrong_seed["rows"][1]["seed"] += 1
+    assert phy049.aggregate(wrong_seed)["curves"]["8"]["R"][0] is None
