@@ -157,11 +157,20 @@ def produce(ladder=W4V3_LADDER, t_grid=W4V3_T_GRID,
             wall_budget_h=W4V3_WALL_BUDGET_H) -> dict:
     """Produce raw seed-level means without crossing the preregistered size boundary.
 
-    Work is committed one complete L at a time. Once the wall budget is exhausted,
-    no further lattice size is started; all jobs for those sizes are recorded as
-    unmeasured. A single already-started size is allowed to finish so partial-L
-    data can never masquerade as a complete production block.
+    The public production path is locked behind the complete preflight
+    (VAL-BIT plus G1-G4). Work is committed one complete L at a time. Once
+    the wall budget is exhausted, no further lattice size is started; all
+    jobs for those sizes are recorded as unmeasured. A single already-started
+    size is allowed to finish so partial-L data cannot masquerade as complete.
     """
+    pre = preflight()
+    if not pre["production_measurement_eligible"]:
+        failed = [k for k, ok in pre["gates"].items() if not ok]
+        raise RuntimeError(
+            "PHY049 preflight failed; production is locked: "
+            + ", ".join(failed)
+        )
+
     ladder = tuple(int(L) for L in ladder)
     t_grid = tuple(float(T) for T in t_grid)
     for L in ladder:
@@ -193,6 +202,7 @@ def produce(ladder=W4V3_LADDER, t_grid=W4V3_T_GRID,
         "module": "PHY049_honeycomb_correlation_ratio_v01",
         "spec": ("spec/260927 PHI HEX w4 honeycomb preregistration v03 "
                  "correlation-ratio.md"),
+        "preflight_gates": dict(pre["gates"]),
         "ladder": list(ladder), "t_grid": list(t_grid),
         "n_seeds": n_seeds, "n_therm": n_therm, "n_meas": n_meas,
         "max_workers": max_workers, "wall_budget_h": wall_budget_h,
