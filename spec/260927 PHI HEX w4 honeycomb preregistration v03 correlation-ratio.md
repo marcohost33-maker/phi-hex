@@ -173,7 +173,10 @@ VAL-BIT BACKEND:
   Seed Python und Numba bit-identische Korrelationsreihen liefern; andernfalls
   ist Produktion gesperrt;
 - diese Sperre bindet auch den direkten `_job()`-/Worker-Pfad: blosse
-  Numba-Verfuegbarkeit darf den Produktionskernel nicht autorisieren.
+  Numba-Verfuegbarkeit darf den Produktionskernel nicht autorisieren;
+- der oeffentliche `produce()`-Pfad muss vor Start irgendeines Messjobs den
+  vollstaendigen Preflight VAL-BIT + G1-G4 erfolgreich absolvieren und die
+  Gate-Ergebnisse im Produkt persistieren.
 
 G1 GEOMETRY:
 - Translation um L liefert identische Siteindizes;
