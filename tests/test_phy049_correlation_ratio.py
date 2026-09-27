@@ -159,3 +159,30 @@ def test_aggregate_rejects_duplicate_seed_wrong_temperature_and_wrong_rng_seed()
     wrong_seed = {**prod, "rows": [dict(r) for r in base_rows]}
     wrong_seed["rows"][1]["seed"] += 1
     assert phy049.aggregate(wrong_seed)["curves"]["8"]["R"][0] is None
+
+
+def test_direct_job_cannot_bypass_failed_val_bit(monkeypatch):
+    """Numba availability alone must never authorize a production kernel."""
+    if not phy049.HAVE_NUMBA:
+        pytest.skip("Numba not installed in this environment")
+    monkeypatch.setattr(phy049, "_VAL_BIT_OK", None)
+    monkeypatch.setattr(phy049, "_backend_bit_identity", lambda: False)
+    with pytest.raises(RuntimeError, match="VAL-BIT failed"):
+        phy049._job((8, 0, 0.57, 0, 2, 3))
+
+
+def test_production_backend_caches_successful_val_bit(monkeypatch):
+    """One interpreter/process validates VAL-BIT once, then reuses the verdict."""
+    if not phy049.HAVE_NUMBA:
+        pytest.skip("Numba not installed in this environment")
+    calls = {"n": 0}
+
+    def ok():
+        calls["n"] += 1
+        return True
+
+    monkeypatch.setattr(phy049, "_VAL_BIT_OK", None)
+    monkeypatch.setattr(phy049, "_backend_bit_identity", ok)
+    assert phy049._production_run_backend() is phy049._nb_run_corr
+    assert phy049._production_run_backend() is phy049._nb_run_corr
+    assert calls["n"] == 1
