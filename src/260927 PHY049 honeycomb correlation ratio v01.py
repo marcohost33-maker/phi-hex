@@ -252,13 +252,16 @@ def aggregate(prod: dict) -> dict:
                 )
             )
             if not valid_rows:
-                vals.append(None); sems.append(None); continue
+                vals.append(None)
+                sems.append(None)
+                continue
             q = np.array([r["g_quarter"] for r in rr], dtype=float)
             h = np.array([r["g_half"] for r in rr], dtype=float)
             if np.any(~np.isfinite(q)) or np.any(~np.isfinite(h)):
                 vals.append(None); sems.append(None); continue
             v, e = jackknife_ratio(q, h)
-            vals.append(v); sems.append(e)
+            vals.append(v)
+            sems.append(e)
         curves[str(L)] = {"R": vals, "SE": sems}
     return {"ladder": ladder, "t_grid": t_grid, "curves": curves}
 
