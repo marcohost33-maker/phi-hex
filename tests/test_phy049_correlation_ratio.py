@@ -73,11 +73,14 @@ def test_persistent_splay_requires_significant_persistent_tail():
     assert phy049.persistent_splay(t, r1, e, broken, e) is None
 
 
-def test_preflight_is_fail_closed_until_fss_recovery_exists():
+def test_preflight_allows_measurement_after_g4_but_not_physics_interpretation():
     out = phy049.preflight()
     assert out["gates"]["G1_geometry"] is True
+    assert out["gates"]["G2_aligned_limit"] is True
     assert out["gates"]["G3_seed_unique"] is True
-    assert out["gates"]["G4_fss_recovery"] is False
+    assert out["gates"]["G4_fss_recovery"] is True
+    assert out["stage"] == "PREPRODUCTION_G4_VALIDATED"
+    assert out["production_measurement_eligible"] is True
     assert out["overall_interpretation_enabled"] is False
     assert "NO_PHYSICS_INTERPRETATION" in out["claim_ceiling"]
 
