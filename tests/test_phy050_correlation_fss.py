@@ -58,3 +58,61 @@ def test_rejected_pair_does_not_pollute_score(monkeypatch):
     monkeypatch.setattr(phy050, "FSS_MIN_PAIR_POINTS", 10_000)
     agg = phy050.synthetic_aggregate(0.573, 0.90, seed=992)
     assert phy050.collapse_score(agg, 0.573, 0.90) is None
+
+
+def _synthetic_product_for_validation():
+    rows = []
+    for L in phy050.W4V3_LADDER:
+        for k, T in enumerate(phy050.W4V3_T_GRID):
+            for s in range(12):
+                rows.append({
+                    "L": L,
+                    "t_idx": k,
+                    "T": T,
+                    "s": s,
+                    "seed": phy050.W4V3_SEED_BASE + 1000 * L + 100 * k + s,
+                    "g_quarter": 0.90 + 1e-4 * s,
+                    "g_half": 0.80 + 2e-4 * s,
+                })
+    return {
+        "ladder": list(phy050.W4V3_LADDER),
+        "t_grid": list(phy050.W4V3_T_GRID),
+        "n_seeds": 12,
+        "rows": rows,
+        "complete": True,
+        "unmeasured": [],
+    }
+
+
+def test_product_groups_validate_temperature_seed_and_complete_flag():
+    prod = _synthetic_product_for_validation()
+    assert phy050._product_groups(prod) is not None
+
+    wrong_t = {**prod, "rows": [dict(r) for r in prod["rows"]]}
+    wrong_t["rows"][0]["T"] += 0.001
+    assert phy050._product_groups(wrong_t) is None
+
+    wrong_seed = {**prod, "rows": [dict(r) for r in prod["rows"]]}
+    wrong_seed["rows"][0]["seed"] += 1
+    assert phy050._product_groups(wrong_seed) is None
+
+    incomplete = {**prod, "complete": False}
+    assert phy050._product_groups(incomplete) is None
+
+
+def test_decision_label_respects_full_hypothesis_overlap():
+    assert phy050.decision_label(0.565, 0.001) == "SUPPORTED_LOW"
+    assert phy050.decision_label(0.578, 0.001) == "SUPPORTED_LITERATURE"
+    assert phy050.decision_label(0.571, 0.0001) == "OVERLAP"
+    assert phy050.decision_label(0.5715, 0.003) == "OVERLAP"
+    assert phy050.decision_label(0.565, 0.011) == "INCONCLUSIVE"
+    assert phy050.decision_label(0.578, 0.001, gates_passed=False) == "INCONCLUSIVE"
+
+
+def test_assess_production_fails_closed_on_incomplete_input():
+    prod = _synthetic_product_for_validation()
+    prod["complete"] = False
+    out = phy050.assess_production(prod, n_boot=20)
+    assert out["gates"]["G0_input"] is False
+    assert out["decision"] == "INCONCLUSIVE"
+    assert out["physics_interpretation_enabled"] is False
