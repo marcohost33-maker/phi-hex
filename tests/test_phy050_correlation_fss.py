@@ -80,6 +80,9 @@ def _synthetic_product_for_validation():
         "n_seeds": phy050.W4V3_N_SEEDS,
         "n_therm": phy050.W4V3_N_THERM,
         "n_meas": phy050.W4V3_N_MEAS,
+        "preflight_gates": {
+            key: True for key in phy050.W4V3_REQUIRED_PREFLIGHT_GATES
+        },
         "rows": rows,
         "complete": True,
         "unmeasured": [],
@@ -199,3 +202,42 @@ def test_float_bootstrap_count_fails_closed_in_production_assessor():
     out = phy050.assess_production(prod, n_boot=1000.0)
     assert out["decision"] == "INCONCLUSIVE"
     assert out["physics_interpretation_enabled"] is False
+
+
+
+def test_g0_requires_exact_persisted_preflight_gate_map():
+    prod = _synthetic_product_for_validation()
+    assert phy050._product_groups(prod) is not None
+
+    missing = dict(prod)
+    missing.pop("preflight_gates")
+    assert phy050._product_groups(missing) is None
+    assert phy050.assess_production(missing)["gates"]["G0_input"] is False
+
+    false_gate = {**prod, "preflight_gates": dict(prod["preflight_gates"])}
+    false_gate["preflight_gates"]["G1_geometry"] = False
+    assert phy050._product_groups(false_gate) is None
+
+    string_gate = {**prod, "preflight_gates": dict(prod["preflight_gates"])}
+    string_gate["preflight_gates"]["G1_geometry"] = "true"
+    assert phy050._product_groups(string_gate) is None
+
+    extra_gate = {**prod, "preflight_gates": dict(prod["preflight_gates"])}
+    extra_gate["preflight_gates"]["UNREGISTERED"] = True
+    assert phy050._product_groups(extra_gate) is None
+
+
+@pytest.mark.parametrize(
+    "grid",
+    [
+        list(phy050.W4V3_T_GRID[:-1]),
+        list(phy050.W4V3_T_GRID) + [0.6125],
+    ],
+)
+def test_g0_wrong_length_temperature_grid_fails_without_raising(grid):
+    prod = _synthetic_product_for_validation()
+    prod["t_grid"] = grid
+    assert phy050._product_groups(prod) is None
+    out = phy050.assess_production(prod)
+    assert out["gates"]["G0_input"] is False
+    assert out["decision"] == "INCONCLUSIVE"
