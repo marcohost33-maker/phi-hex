@@ -304,6 +304,16 @@ def reanalyse_domains(report: dict, thr: float = DOMAIN_THRESHOLD) -> dict:
                           report["pair_quotable"][key])}
     return {"threshold": thr,
             "domain_status": {str(L): _domain_status(dom[L]) for L in Ls},
+        "effective_domain_bounds": {
+            str(L): (
+                None if effective_domain_bounds.get(L) is None
+                else list(effective_domain_bounds[L])
+            )
+            for L in Ls
+        },
+        "effective_domain_basis": {
+            str(L): effective_domain_basis.get(L) for L in Ls
+        },
             "committed_domain_tmax_spread004":
                 report["domain_tmax_spread004"],
             "pairs": pairs}
@@ -315,6 +325,19 @@ def _pair_quotable(tb, dom_a: dict, dom_b: dict) -> tuple:
     limit, basis = _pair_domain_limit(dom_a, dom_b)
     q = tb is not None and limit is not None and tb <= limit
     return bool(q), limit, basis
+
+
+def _pair_inside_bounds(
+    tb: float | None,
+    bounds_a: tuple[float, float] | None,
+    bounds_b: tuple[float, float] | None,
+) -> bool:
+    """Require a crossing to lie inside BOTH evidenced [T_min,T_max] domains."""
+    if tb is None or bounds_a is None or bounds_b is None:
+        return False
+    lo = max(float(bounds_a[0]), float(bounds_b[0]))
+    hi = min(float(bounds_a[1]), float(bounds_b[1]))
+    return bool(lo <= float(tb) <= hi)
 
 
 def _walker_plan(Ls, n_walkers: int, min_walkers: int | None = None) -> dict:
@@ -540,6 +563,32 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
               f"(d={abs(y2wl - u032):.4f}, tol={tol:.4f}) "
               f"{'ok' if ok else 'ABWEICHUNG'}")
 
+    # Effektive Evidenzdomaene fuer NEUE Paarurteile: beide Grenzen binden.
+    # Gemessene Walker-Domaenen beginnen am unteren T-Gitterrand. Fuer die
+    # historische L=24-Einzel-Walker-Bruecke darf nur der separat validierte
+    # PHY032-Drift-Guard als Fallback dienen; er wird nicht als Walker-Spread
+    # umetikettiert.
+    effective_domain_bounds: dict[int, tuple[float, float] | None] = {}
+    effective_domain_basis: dict[int, str] = {}
+    for L in Ls:
+        if dom[L]["measured"] and np.any(dom[L]["mask"]):
+            vt = t_grid[dom[L]["mask"]]
+            effective_domain_bounds[L] = (float(vt.min()), float(vt.max()))
+            effective_domain_basis[L] = "walker_spread"
+        else:
+            effective_domain_bounds[L] = None
+            effective_domain_basis[L] = (
+                "measured_empty" if dom[L]["measured"] else "unmeasured"
+            )
+
+    if 24 in Ls and effective_domain_bounds.get(24) is None and grid_rows:
+        if grid_ok and all(bool(row["ok"]) for row in grid_rows):
+            effective_domain_bounds[24] = (
+                min(float(row["T"]) for row in grid_rows),
+                max(float(row["T"]) for row in grid_rows),
+            )
+            effective_domain_basis[24] = "PHY032_drift_guard"
+
     # --- VAL-C: PHY041-Bruecke (bitgleiche L=24-Reproduktion) --------------
     c24 = main_curve[24]
     k24 = int(np.argmin(c24["y4_scaled"]))
@@ -560,17 +609,29 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
         tb = tbkt_pair_from_curves(t_grid, main_curve[La]["y2"], La,
                                    main_curve[Lb]["y2"], Lb)
         pair_tbkt[(La, Lb)] = tb
-        q, limit, basis = _pair_quotable(tb, dom[La], dom[Lb])
+        bounds_a = effective_domain_bounds.get(La)
+        bounds_b = effective_domain_bounds.get(Lb)
+        q = _pair_inside_bounds(tb, bounds_a, bounds_b)
         pair_quotable[(La, Lb)] = q
-        pair_basis[(La, Lb)] = {"limit_tmax": limit, "basis": basis}
+        pair_basis[(La, Lb)] = {
+            "bounds_a": bounds_a,
+            "bounds_b": bounds_b,
+            "basis_a": effective_domain_basis.get(La),
+            "basis_b": effective_domain_basis.get(Lb),
+        }
         if tb is None:
             print(f"      T_BKT({La},{Lb}): kein Nulldurchgang im T-Fenster")
         else:
-            lim_txt = "keine" if limit is None else f"{limit:.4f}"
-            tag = ("QUOTIERBAR" if q else
-                   f"NR: Crossing ausserhalb Domaene "
-                   f"(min T_max={lim_txt})")
-            tag += f", Basis {basis}"
+            tag = (
+                "QUOTIERBAR"
+                if q
+                else "NR: Crossing ausserhalb oder ohne zwei belegte "
+                     "[T_min,T_max]-Domaenen"
+            )
+            tag += (
+                f", Basis {effective_domain_basis.get(La)}/"
+                f"{effective_domain_basis.get(Lb)}"
+            )
             print(f"      T_BKT({La},{Lb}) = {tb:.4f}  "
                   f"(vs Multi-Lattice 0.573: "
                   f"{(tb - 0.573) / 0.573 * 100:+.2f}%)  [{tag}]")
