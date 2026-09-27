@@ -324,7 +324,7 @@ def test_every_band_channel_has_provenance_row():
     Beleg-Status; der Nachtrag-Spec listet jeden Kanal-Namen."""
     assert set(phy042.REF_PROVENANCE) == set(phy042.REF_BAND)
     allowed = {"current_method_anchor", "primary_text_verified",
-               "superseded_historical"}
+               "superseded_historical", "version_unclear"}
     addendum = (ROOT / "spec" /
                 "260926 PHI HEX honeycomb reference provenance addendum v01.md"
                 ).read_text(encoding="utf-8")
@@ -345,6 +345,10 @@ def test_every_band_channel_has_provenance_row():
     assert "upsilon_beta" not in refs["current"]
     assert "upsilon_beta" in refs["lineage"]
     assert refs["provenance"]["upsilon_beta"]["status"] == "superseded_historical"
+    for key in ("upsilon4_wl_T", "upsilon4_sa_T"):
+        assert key not in refs["current"]
+        assert key in refs["lineage"]
+        assert refs["provenance"][key]["status"] == "version_unclear"
 
 
 def test_pair_inside_effective_bounds_checks_lower_and_upper_edges():
@@ -362,6 +366,17 @@ def test_reanalysis_rejects_truthy_string_as_phy032_gate_evidence():
     rep = json.loads(
         (ROOT / phy042.PHY042_REPORT_V01).read_text(encoding="utf-8"))
     rep["validation_vs_phy032_grid"][0]["ok"] = "false"
+    out = phy042.reanalyse_domains(rep)
+    assert out["effective_domain_bounds"]["24"] is None
+    assert out["pairs"]["24_32"]["quotable"] is False
+
+
+
+def test_reanalysis_requires_literal_true_phy032_top_level_gate():
+    import json
+    rep = json.loads(
+        (ROOT / phy042.PHY042_REPORT_V01).read_text(encoding="utf-8"))
+    rep["pass_gates"]["PASS_WL_Y2_MATCHES_PHY032_GRID_L24"] = "false"
     out = phy042.reanalyse_domains(rep)
     assert out["effective_domain_bounds"]["24"] is None
     assert out["pairs"]["24_32"]["quotable"] is False
