@@ -177,8 +177,9 @@ def _w4_validate_walker_plan(walkers: dict[int, int],
     Issue #45 trennt damit explizit eine Ein-Walker-Bruecke von einer
     gemessenen Walker-Validitaetsdomaene.
     """
-    if min_walkers < 2:
-        raise ValueError("min_walkers muss >=2 sein")
+    if min_walkers < 3:
+        raise ValueError(
+            "W4-Produktionspreflight darf min_walkers nicht unter 3 setzen")
     bad = {L: n for L, n in walkers.items() if n < min_walkers}
     if bad:
         raise ValueError(
@@ -186,16 +187,21 @@ def _w4_validate_walker_plan(walkers: dict[int, int],
             f"{min_walkers} Walker je L; unzureichend: {bad}")
 
 
-def _pair_inside_domains(tb: float | None,
-                         tmax_a: float | None,
-                         tmax_b: float | None) -> bool:
-    """Quotierbarkeit nur bei zwei explizit belegten Domaenen (fail-closed)."""
-    return bool(
-        tb is not None
-        and tmax_a is not None
-        and tmax_b is not None
-        and tb <= min(tmax_a, tmax_b)
-    )
+def _pair_inside_domains(
+    tb: float | None,
+    bounds_a: tuple[float, float] | None,
+    bounds_b: tuple[float, float] | None,
+) -> bool:
+    """Quotierbarkeit nur innerhalb BEIDER belegter [T_min,T_max]-Domaenen.
+
+    Insbesondere darf ein PHY032-Fallback, dessen Evidenz erst bei T=0.56
+    beginnt, kein Crossing bei T<0.56 freigeben.
+    """
+    if tb is None or bounds_a is None or bounds_b is None:
+        return False
+    lo = max(bounds_a[0], bounds_b[0])
+    hi = min(bounds_a[1], bounds_b[1])
+    return bool(lo <= tb <= hi)
 
 
 def _uncovered_mass(res, T: float) -> float:
@@ -414,11 +420,24 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
     # Messung. Fuer die historische L=24-Bruecke darf separat der unabhaengige
     # PHY032-Drift-Guard verwendet werden, aber er wird NICHT als Walker-Spread
     # umetikettiert. So bleibt domain_tmax_spread004 bei L=24 ehrlich None.
-    effective_domain_tmax = dict(domain_tmax)
+    effective_domain_bounds: dict[int, tuple[float, float] | None] = {}
     effective_domain_basis = dict(domain_basis)
-    if 24 in Ls and domain_tmax.get(24) is None and grid_rows:
+    for L in Ls:
+        if domains[L] is not None and domains[L].any():
+            valid_t = t_grid[domains[L]]
+            effective_domain_bounds[L] = (
+                float(valid_t.min()), float(valid_t.max()))
+        else:
+            effective_domain_bounds[L] = None
+
+    if 24 in Ls and effective_domain_bounds.get(24) is None and grid_rows:
         if all(bool(row["ok"]) for row in grid_rows):
-            effective_domain_tmax[24] = max(float(row["T"]) for row in grid_rows)
+            # Fallback-Evidenz ist nur auf dem tatsaechlich validierten
+            # PHY032-Gitter gueltig; BEIDE Grenzen sind bindend.
+            effective_domain_bounds[24] = (
+                min(float(row["T"]) for row in grid_rows),
+                max(float(row["T"]) for row in grid_rows),
+            )
             effective_domain_basis[24] = "PHY032_drift_guard"
 
     # --- VAL-C: PHY041-Bruecke (bitgleiche L=24-Reproduktion) --------------
@@ -441,7 +460,7 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
                                    main_curve[Lb]["y2"], Lb)
         pair_tbkt[(La, Lb)] = tb
         q = _pair_inside_domains(
-            tb, effective_domain_tmax.get(La), effective_domain_tmax.get(Lb))
+            tb, effective_domain_bounds.get(La), effective_domain_bounds.get(Lb))
         pair_quotable[(La, Lb)] = q
         if tb is None:
             print(f"      T_BKT({La},{Lb}): kein Nulldurchgang im T-Fenster")
@@ -587,8 +606,10 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
         },
         "domain_tmax_spread004": {str(L): domain_tmax[L] for L in Ls},
         "domain_basis": {str(L): domain_basis[L] for L in Ls},
-        "effective_domain_tmax": {
-            str(L): effective_domain_tmax.get(L) for L in Ls
+        "effective_domain_bounds": {
+            str(L): (None if effective_domain_bounds.get(L) is None
+                     else list(effective_domain_bounds[L]))
+            for L in Ls
         },
         "effective_domain_basis": {
             str(L): effective_domain_basis.get(L) for L in Ls
