@@ -265,3 +265,5 @@ bleiben unveraendert als Lineage stehen; letzte Zeile pro Pfad gewinnt.
 | 15D9759C8870E009 | 2026-09-27 | tests | repo-native: `tests/test_phy049_correlation_ratio.py` (NEU: Spec-Bindung, Seed-Kollisionen, R=1-Orakel, ratio-of-means, fail-closed Nenner/Splay, Tiny-Wolff-End-to-End, Interpretationssperre) |
 | E3E2104AECAF29EE | 2026-09-27 | spec | repo-native: `spec/260926 PHI HEX honeycomb reference provenance addendum v01.md` (stand: Nachtrag 3; Jiang/PTEP 0.576(4) + Faktor 4/(3 sqrt(3)) primaertextlich gebunden; per-Site-Erklaerung falsifiziert; de-Andrade-Normierung separat offen; W4-v03 begruendet) |
 | A9EDC92905E7E355 | 2026-09-27 | results | repo-native: `results/260926 PHY046 W4 v02 interpretation note.md` (stand: Jiang-Normierung korrigiert; fruehere per-Site-Hypothese fuer PTEP falsifiziert; W4-v03/PHY049 als naechster diskriminierender Schritt) |
+
+| 6EEB2D8504159424 | 2026-09-27 | src | repo-native: `src/260927 PHY049 honeycomb correlation ratio v01.py` (stand: Numba-Wolff-Dispatcher lokal gebunden statt Modulobjekt im njit-Kontext; BLAS-Thread-Pin vor NumPy-Import; supersedet vorherige PHY049-Zeile) |
