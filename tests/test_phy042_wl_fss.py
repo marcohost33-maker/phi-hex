@@ -296,8 +296,15 @@ def test_run_phy042_report_path_emits_null_for_single_walker(monkeypatch):
         assert out["domain_status"][L]["measured"] is True
         assert out["domain_tmax_spread004"][L] == pytest.approx(0.60)
         assert len(out["walker_spread"][L]) == len(t)
-    assert out["pair_domain_basis"]["24_32"]["basis"] == "partial"
-    assert out["pair_domain_basis"]["32_48"]["basis"] == "both_measured"
+    assert out["effective_domain_basis"]["24"] == "PHY032_drift_guard"
+    assert out["effective_domain_basis"]["32"] == "walker_spread"
+    assert out["effective_domain_bounds"]["24"][0] >= min(
+        row["T"] for row in out["validation_vs_phy032_grid_L24"]
+    )
+    assert out["pair_domain_basis"]["24_32"]["basis_a"] == "PHY032_drift_guard"
+    assert out["pair_domain_basis"]["24_32"]["basis_b"] == "walker_spread"
+    assert out["pair_domain_basis"]["32_48"]["basis_a"] == "walker_spread"
+    assert out["pair_domain_basis"]["32_48"]["basis_b"] == "walker_spread"
     with pytest.raises(ValueError):
         phy042.run_phy042(max_workers=1, min_walkers=3)
 
@@ -317,3 +324,13 @@ def test_every_band_channel_has_provenance_row():
     # die im Issue fehlenden Werte sind jetzt im Band
     assert phy042.REF_BAND["upsilon_wl_T"] == (0.576, 0.003)
     assert "binder_beta" in phy042.REF_BAND
+
+
+def test_pair_inside_effective_bounds_checks_lower_and_upper_edges():
+    a = (0.56, 0.6475)
+    b = (0.52, 0.60)
+    assert phy042._pair_inside_bounds(0.575, a, b)
+    assert not phy042._pair_inside_bounds(0.555, a, b)
+    assert not phy042._pair_inside_bounds(0.61, a, b)
+    assert not phy042._pair_inside_bounds(0.575, None, b)
+    assert not phy042._pair_inside_bounds(None, a, b)
