@@ -145,9 +145,9 @@ REF_PROVENANCE = {
                      "T=0.575(8), Upsilon, sim. annealing",
                      "primary_text_verified"),
     "upsilon4_wl_T": ("arXiv:2406.12076 Haupttext", "T=0.568(1), Upsilon_4, WL",
-                      "primary_text_verified"),
+                      "version_unclear"),
     "upsilon4_sa_T": ("arXiv:2406.12076 Haupttext",
-                      "T=0.551(11), Upsilon_4, SA", "primary_text_verified"),
+                      "T=0.551(11), Upsilon_4, SA", "version_unclear"),
     "helicity_ptep": ("PTEP 2024(10) 103A02 (Journal-Fassung arXiv:2406.14812)",
                       "T=0.576(4), Helicity", "primary_text_verified"),
     "nn_ptep": ("PTEP 2024(10) 103A02 (Journal-Fassung arXiv:2406.14812)",
@@ -159,8 +159,6 @@ REF_CURRENT_KEYS = (
     "multi_lattice",
     "upsilon_wl_T",
     "upsilon_sa_T",
-    "upsilon4_wl_T",
-    "upsilon4_sa_T",
     "helicity_ptep",
     "nn_ptep",
 )
@@ -336,8 +334,9 @@ def reanalyse_domains(report: dict, thr: float = DOMAIN_THRESHOLD) -> dict:
             )
 
     grid_rows = report.get("validation_vs_phy032_grid", [])
-    grid_gate = bool(
+    grid_gate = (
         report.get("pass_gates", {}).get("PASS_WL_Y2_MATCHES_PHY032_GRID_L24")
+        is True
     )
     if 24 in Ls and bounds.get(24) is None and grid_gate:
         try:
