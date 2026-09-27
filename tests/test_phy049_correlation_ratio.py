@@ -443,3 +443,33 @@ def test_resume_contract_mismatch_fails_closed(tmp_path, monkeypatch):
             checkpoint_path=checkpoint,
             resume=True,
         )
+
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        [],
+        {"campaign_contract": {}},
+    ],
+)
+def test_resume_rejects_malformed_checkpoint_root_or_contract(
+    tmp_path, monkeypatch, payload
+):
+    checkpoint = tmp_path / "malformed.json"
+    checkpoint.write_text(json.dumps(payload), encoding="utf-8")
+    monkeypatch.setattr(
+        phy049, "preflight", _green_preflight_for_checkpoint_tests
+    )
+    with pytest.raises(RuntimeError):
+        phy049.produce(
+            ladder=(8,),
+            t_grid=(0.57,),
+            n_seeds=1,
+            n_therm=1,
+            n_meas=1,
+            max_workers=1,
+            wall_budget_h=1.0,
+            checkpoint_path=checkpoint,
+            resume=True,
+        )
