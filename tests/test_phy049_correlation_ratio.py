@@ -586,3 +586,74 @@ def test_resume_rejects_coerced_gate_and_contract_types(tmp_path, monkeypatch):
             max_workers=1, wall_budget_h=1.0, checkpoint_path=checkpoint,
             resume=True,
         )
+
+
+def test_completed_block_rejects_impossible_observable_and_negative_wall():
+    base = _fake_checkpoint_job((8, 0, 0.57, 0, 1, 1))
+    for field, value in (
+        ("g_quarter", 1.000001),
+        ("g_half", -1.000001),
+        ("wall_s", -0.001),
+    ):
+        row = dict(base)
+        row[field] = value
+        assert phy049._completed_block_valid([row], 8, (0.57,), 1) is False
+
+
+def test_resume_rejects_runtime_or_source_provenance_drift(tmp_path, monkeypatch):
+    checkpoint = tmp_path / "provenance-drift.json"
+    monkeypatch.setattr(
+        phy049, "preflight", _green_preflight_for_checkpoint_tests
+    )
+    monkeypatch.setattr(phy049, "_job", _fake_checkpoint_job)
+    out = phy049.produce(
+        ladder=(8,), t_grid=(0.57,), n_seeds=1, n_therm=1, n_meas=1,
+        max_workers=1, wall_budget_h=1.0, checkpoint_path=checkpoint,
+    )
+    assert out["runtime_provenance"]["schema"] == (
+        "PHY049_RUNTIME_PROVENANCE_V1"
+    )
+
+    original = phy049._runtime_provenance
+
+    def drifted():
+        value = json.loads(json.dumps(original()))
+        value["numpy_version"] = value["numpy_version"] + "-different"
+        return value
+
+    monkeypatch.setattr(phy049, "_runtime_provenance", drifted)
+    with pytest.raises(RuntimeError, match="runtime/source provenance"):
+        phy049.produce(
+            ladder=(8,), t_grid=(0.57,), n_seeds=1, n_therm=1, n_meas=1,
+            max_workers=1, wall_budget_h=1.0, checkpoint_path=checkpoint,
+            resume=True,
+        )
+
+
+@pytest.mark.parametrize(
+    ("ladder", "t_grid", "wall_budget_h"),
+    [
+        ((8.0,), (0.57,), 1.0),
+        ((8, 8), (0.57,), 1.0),
+        ((8,), ("0.57",), 1.0),
+        ((8,), (float("nan"),), 1.0),
+        ((8,), (0.57,), float("nan")),
+        ((8,), (0.57,), float("inf")),
+    ],
+)
+def test_produce_rejects_coerced_or_nonfinite_campaign_inputs(
+    ladder, t_grid, wall_budget_h, monkeypatch
+):
+    monkeypatch.setattr(
+        phy049, "preflight", _green_preflight_for_checkpoint_tests
+    )
+    with pytest.raises(ValueError):
+        phy049.produce(
+            ladder=ladder,
+            t_grid=t_grid,
+            n_seeds=1,
+            n_therm=1,
+            n_meas=1,
+            max_workers=1,
+            wall_budget_h=wall_budget_h,
+        )

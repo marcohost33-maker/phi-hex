@@ -12,11 +12,23 @@ whose T_BKT is not identifiable even if their raw collapse score is small.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
+
+_SRC = Path(__file__).resolve().parent
+_ROOT = _SRC.parent
+_RUNTIME_SOURCE_PATHS = (
+    "src/260926 PHY045 helicity normalization O1 test v01.py",
+    "src/260927 PHY049 honeycomb correlation ratio v01.py",
+    "src/260927 PHY050 correlation ratio fss recovery v01.py",
+    "spec/260927 PHI HEX w4 honeycomb preregistration v03 correlation-ratio.md",
+    "spec/260927 PHI HEX w4 v03a fss estimator hardening.md",
+)
 
 W4V3_LADDER = (48, 72, 96, 144, 192)
 W4V3_T_GRID = tuple(round(0.540 + 0.0025 * k, 4) for k in range(29))
@@ -461,6 +473,79 @@ def _strict_json_equal(value: object, expected: object) -> bool:
     return lhs == rhs
 
 
+def _file_sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            h.update(block)
+    return h.hexdigest().upper()
+
+
+def _current_runtime_file_hashes() -> dict[str, str]:
+    return {
+        rel: _file_sha256(_ROOT / rel) for rel in _RUNTIME_SOURCE_PATHS
+    }
+
+
+def _valid_runtime_provenance(value: object) -> bool:
+    if not isinstance(value, dict):
+        return False
+    required = {
+        "schema",
+        "python_implementation",
+        "python_version",
+        "numpy_version",
+        "numba_version",
+        "production_backend",
+        "sys_platform",
+        "machine",
+        "thread_env",
+        "source_sha256",
+    }
+    if set(value) != required:
+        return False
+    if value.get("schema") != "PHY049_RUNTIME_PROVENANCE_V1":
+        return False
+    for key in (
+        "python_implementation",
+        "python_version",
+        "numpy_version",
+        "sys_platform",
+        "machine",
+    ):
+        if not isinstance(value.get(key), str) or not value[key]:
+            return False
+    backend = value.get("production_backend")
+    numba_version = value.get("numba_version")
+    if backend not in {"python", "numba"}:
+        return False
+    if backend == "numba":
+        if not isinstance(numba_version, str) or not numba_version:
+            return False
+    elif numba_version is not None:
+        return False
+    if value.get("thread_env") != {
+        "OPENBLAS_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+    }:
+        return False
+    hashes = value.get("source_sha256")
+    if not isinstance(hashes, dict):
+        return False
+    current = _current_runtime_file_hashes()
+    if set(hashes) != set(current):
+        return False
+    if any(
+        not isinstance(v, str)
+        or len(v) != 64
+        or any(ch not in "0123456789ABCDEF" for ch in v)
+        for v in hashes.values()
+    ):
+        return False
+    return hashes == current
+
+
 def _product_groups(prod: dict) -> dict[tuple[int, int], list[dict]] | None:
     """Validate the exact preregistered raw-production contract, fail closed."""
     try:
@@ -477,6 +562,7 @@ def _product_groups(prod: dict) -> dict[tuple[int, int], list[dict]] | None:
             "correlation-ratio.md"
         )
         or prod.get("checkpoint_status") != "COMPLETE"
+        or not _valid_runtime_provenance(prod.get("runtime_provenance"))
         or not _is_json_number(prod.get("wall_s"))
         or float(prod["wall_s"]) < 0.0
     ):

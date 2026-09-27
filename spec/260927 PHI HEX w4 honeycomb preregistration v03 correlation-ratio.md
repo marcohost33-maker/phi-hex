@@ -294,3 +294,21 @@ Insbesondere sind extrem niedrige/hohe Schaetzer kein automatischer Support fuer
 H_A/H_B, sondern `OUTSIDE_PREREGISTERED_HYPOTHESES`. Diese Korrektur wurde
 vor PHY049-Produktionsdaten festgeschrieben und aendert weder Observable,
 Sampler, Fit noch Unsicherheitsbudget.
+
+
+## 12. Runtime-/Source-Provenienz-Gate - 2026-09-28, pre-data
+
+Jeder PHY049-Checkpoint und das finale Produktionsprodukt tragen
+`runtime_provenance` mit Schema `PHY049_RUNTIME_PROVENANCE_V1`. Gebunden
+werden Python-Implementierung/-Version, NumPy-/Numba-Version, tatsaechlich
+gewaehltes Produktionsbackend, Plattform/Maschinenklasse, die drei
+Single-Thread-Umgebungsvariablen sowie SHA-256 der fuer Messung und
+Adjudikation relevanten PHY045/PHY049/PHY050-Dateien und v03/v03a-Specs.
+
+Resume ist nur bei JSON-typstreng identischer Runtime-/Source-Provenienz
+zulaessig. Damit duerfen keine vollstaendigen L-Bloecke verschiedener
+Code-, Spec- oder Runtime-Staende in ein einziges Produkt gemischt werden.
+G0 akzeptiert ein finales Produkt nur, wenn die gespeicherten Source-SHA-256
+dem aktuell adjudizierenden Checkout entsprechen. Historische Produkte bleiben
+reproduzierbar, muessen aber unter ihrem urspruenglichen Checkout adjudiziert
+werden.

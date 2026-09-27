@@ -13,10 +13,12 @@ validated without looking at production physics data.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import math
 import os
+import platform
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor
@@ -28,6 +30,14 @@ for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
 import numpy as np  # noqa: E402
 
 _SRC = Path(__file__).resolve().parent
+_ROOT = _SRC.parent
+_RUNTIME_SOURCE_PATHS = (
+    "src/260926 PHY045 helicity normalization O1 test v01.py",
+    "src/260927 PHY049 honeycomb correlation ratio v01.py",
+    "src/260927 PHY050 correlation ratio fss recovery v01.py",
+    "spec/260927 PHI HEX w4 honeycomb preregistration v03 correlation-ratio.md",
+    "spec/260927 PHI HEX w4 v03a fss estimator hardening.md",
+)
 
 
 def _load(name: str, filename: str):
@@ -213,6 +223,40 @@ def _json_number(value: object) -> bool:
     return type(value) in (int, float) and math.isfinite(float(value))
 
 
+def _file_sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            h.update(block)
+    return h.hexdigest().upper()
+
+
+def _runtime_provenance() -> dict:
+    """Immutable software/runtime fingerprint for one production campaign."""
+    source_sha256 = {
+        rel: _file_sha256(_ROOT / rel) for rel in _RUNTIME_SOURCE_PATHS
+    }
+    numba_version = None
+    if HAVE_NUMBA:
+        numba_version = str(getattr(_p45.numba, "__version__", "unknown"))
+    return {
+        "schema": "PHY049_RUNTIME_PROVENANCE_V1",
+        "python_implementation": platform.python_implementation(),
+        "python_version": platform.python_version(),
+        "numpy_version": str(np.__version__),
+        "numba_version": numba_version,
+        "production_backend": "numba" if HAVE_NUMBA else "python",
+        "sys_platform": sys.platform,
+        "machine": platform.machine() or "unknown",
+        "thread_env": {
+            "OPENBLAS_NUM_THREADS": os.environ.get("OPENBLAS_NUM_THREADS"),
+            "OMP_NUM_THREADS": os.environ.get("OMP_NUM_THREADS"),
+            "MKL_NUM_THREADS": os.environ.get("MKL_NUM_THREADS"),
+        },
+        "source_sha256": source_sha256,
+    }
+
+
 def _completed_block_valid(
     rows: list[dict],
     L: int,
@@ -252,6 +296,12 @@ def _completed_block_valid(
                     return False
                 if not math.isfinite(float(r[key])):
                     return False
+            if not (
+                -1.0 <= float(r["g_quarter"]) <= 1.0
+                and -1.0 <= float(r["g_half"]) <= 1.0
+                and float(r["wall_s"]) >= 0.0
+            ):
+                return False
         except (KeyError, TypeError, ValueError, OverflowError):
             return False
     return len(seen) == expected_n
@@ -261,6 +311,7 @@ def _checkpoint_payload(
     *,
     pre: dict,
     contract: dict,
+    runtime_provenance: dict,
     rows: list[dict],
     unmeasured: list[dict],
     wall_s: float,
@@ -279,6 +330,7 @@ def _checkpoint_payload(
         "spec": ("spec/260927 PHI HEX w4 honeycomb preregistration v03 "
                  "correlation-ratio.md"),
         "preflight_gates": dict(pre["gates"]),
+        "runtime_provenance": runtime_provenance,
         **contract,
         "campaign_contract": dict(contract),
         "checkpoint_status": "COMPLETE" if complete else status,
@@ -319,8 +371,26 @@ def produce(
             + ", ".join(failed)
         )
 
-    ladder = tuple(int(L) for L in ladder)
-    t_grid = tuple(float(T) for T in t_grid)
+    try:
+        raw_ladder = tuple(ladder)
+        raw_t_grid = tuple(t_grid)
+    except TypeError as exc:
+        raise ValueError("ladder and t_grid must be finite sequences") from exc
+    if (
+        not raw_ladder
+        or any(type(L) is not int for L in raw_ladder)
+        or len(set(raw_ladder)) != len(raw_ladder)
+    ):
+        raise ValueError("ladder must contain unique literal integers")
+    if (
+        not raw_t_grid
+        or any(type(T) not in (int, float) for T in raw_t_grid)
+        or any(not math.isfinite(float(T)) or float(T) <= 0.0 for T in raw_t_grid)
+        or len(set(float(T) for T in raw_t_grid)) != len(raw_t_grid)
+    ):
+        raise ValueError("t_grid must contain unique finite positive numbers")
+    ladder = raw_ladder
+    t_grid = tuple(float(T) for T in raw_t_grid)
     for L in ladder:
         _validate_L(L)
     if (
@@ -331,10 +401,15 @@ def produce(
         or min(n_seeds, n_therm, n_meas, max_workers) <= 0
     ):
         raise ValueError("seed/sweep/worker counts must be positive integers")
-    if type(wall_budget_h) not in (int, float) or wall_budget_h < 0:
-        raise ValueError("wall_budget_h must be a non-negative number")
+    if (
+        type(wall_budget_h) not in (int, float)
+        or not math.isfinite(float(wall_budget_h))
+        or float(wall_budget_h) < 0.0
+    ):
+        raise ValueError("wall_budget_h must be a finite non-negative number")
 
     wall_budget_h = float(wall_budget_h)
+    runtime_provenance = _runtime_provenance()
     contract = _campaign_contract(
         ladder, t_grid, n_seeds, n_therm, n_meas, max_workers, wall_budget_h
     )
@@ -362,6 +437,12 @@ def produce(
             raise RuntimeError("checkpoint contract does not match this campaign")
         if not _strict_json_equal(saved.get("preflight_gates"), pre["gates"]):
             raise RuntimeError("checkpoint preflight evidence does not match")
+        if not _strict_json_equal(
+            saved.get("runtime_provenance"), runtime_provenance
+        ):
+            raise RuntimeError(
+                "checkpoint runtime/source provenance does not match"
+            )
 
         status = saved.get("checkpoint_status")
         if status == "WALL_BUDGET_STOP":
@@ -478,6 +559,7 @@ def produce(
             payload = _checkpoint_payload(
                 pre=pre,
                 contract=contract,
+                runtime_provenance=runtime_provenance,
                 rows=rows,
                 unmeasured=[],
                 wall_s=elapsed,
@@ -502,6 +584,7 @@ def produce(
             payload = _checkpoint_payload(
                 pre=pre,
                 contract=contract,
+                runtime_provenance=runtime_provenance,
                 rows=rows,
                 unmeasured=[],
                 wall_s=elapsed,
@@ -514,6 +597,7 @@ def produce(
     product = _checkpoint_payload(
         pre=pre,
         contract=contract,
+        runtime_provenance=runtime_provenance,
         rows=rows,
         unmeasured=unmeasured,
         wall_s=elapsed,

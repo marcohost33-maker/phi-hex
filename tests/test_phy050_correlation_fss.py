@@ -96,6 +96,22 @@ def _synthetic_product_for_validation():
             "correlation-ratio.md"
         ),
         "checkpoint_status": "COMPLETE",
+        "runtime_provenance": {
+            "schema": "PHY049_RUNTIME_PROVENANCE_V1",
+            "python_implementation": "CPython",
+            "python_version": "3.12.0",
+            "numpy_version": "2.0.0",
+            "numba_version": None,
+            "production_backend": "python",
+            "sys_platform": "test-platform",
+            "machine": "test-machine",
+            "thread_env": {
+                "OPENBLAS_NUM_THREADS": "1",
+                "OMP_NUM_THREADS": "1",
+                "MKL_NUM_THREADS": "1",
+            },
+            "source_sha256": phy050._current_runtime_file_hashes(),
+        },
         "wall_s": 123.0,
         "ladder": list(phy050.W4V3_LADDER),
         "t_grid": list(phy050.W4V3_T_GRID),
@@ -355,3 +371,31 @@ def test_g0_campaign_contract_rejects_python_numeric_coercion():
     coerced["campaign_contract"]["n_seeds"] = float(phy050.W4V3_N_SEEDS)
     assert coerced["campaign_contract"]["n_seeds"] == phy050.W4V3_N_SEEDS
     assert phy050._product_groups(coerced) is None
+
+
+def test_g0_requires_exact_runtime_source_provenance():
+    prod = _synthetic_product_for_validation()
+    assert phy050._product_groups(prod) is not None
+
+    missing = dict(prod)
+    missing.pop("runtime_provenance")
+    assert phy050._product_groups(missing) is None
+
+    drifted = {
+        **prod,
+        "runtime_provenance": json.loads(
+            json.dumps(prod["runtime_provenance"])
+        ),
+    }
+    first_path = next(iter(drifted["runtime_provenance"]["source_sha256"]))
+    drifted["runtime_provenance"]["source_sha256"][first_path] = "0" * 64
+    assert phy050._product_groups(drifted) is None
+
+    bad_threads = {
+        **prod,
+        "runtime_provenance": json.loads(
+            json.dumps(prod["runtime_provenance"])
+        ),
+    }
+    bad_threads["runtime_provenance"]["thread_env"]["OMP_NUM_THREADS"] = "2"
+    assert phy050._product_groups(bad_threads) is None

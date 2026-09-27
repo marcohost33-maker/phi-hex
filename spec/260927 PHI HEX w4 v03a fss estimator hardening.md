@@ -255,3 +255,14 @@ Liegt das 95%-Intervall vollstaendig ausserhalb beider vorregistrierten
 Hypothesenbereiche, lautet das interne Label
 `OUTSIDE_PREREGISTERED_HYPOTHESES`. Dadurch werden extreme Schaetzer nicht
 faelschlich als Evidenz fuer eine Hypothese etikettiert.
+
+
+## 12. Computational-Provenance-Bindung - 2026-09-28, weiterhin pre-data
+
+G0 bindet die Messdaten nun an den exakten Mess-/Analyse-Checkout statt nur
+an Modulnamen und boolesche Gates. `runtime_provenance` muss valide sein;
+insbesondere muessen die SHA-256 von PHY045/PHY049/PHY050 und v03/v03a mit
+dem adjudizierenden Checkout uebereinstimmen. Resume verlangt darueber hinaus
+dieselbe Python-/NumPy-/Numba-/Backend-/Plattform-Provenienz und dieselben
+Thread-Pins. Ein Code- oder Runtime-Wechsel waehrend einer Kampagne scheitert
+damit fail-closed.
