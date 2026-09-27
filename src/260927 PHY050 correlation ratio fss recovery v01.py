@@ -34,6 +34,8 @@ W4V3_SEED_BASE = 49_000_000
 W4V3_N_SEEDS = 12
 W4V3_N_THERM = 1000
 W4V3_N_MEAS = 4000
+W4V3_MAX_WORKERS = 4
+W4V3_WALL_BUDGET_H = 24.0
 W4V3_N_BOOT = 1000
 W4V3_REQUIRED_PREFLIGHT_GATES = (
     "VAL_BIT_numba",
@@ -460,6 +462,8 @@ def _product_groups(prod: dict) -> dict[tuple[int, int], list[dict]] | None:
         or not _is_json_int(prod.get("n_seeds"))
         or not _is_json_int(prod.get("n_therm"))
         or not _is_json_int(prod.get("n_meas"))
+        or not _is_json_int(prod.get("max_workers"))
+        or not _is_json_number(prod.get("wall_budget_h"))
     ):
         return None
 
@@ -484,7 +488,21 @@ def _product_groups(prod: dict) -> dict[tuple[int, int], list[dict]] | None:
         prod["n_seeds"] != W4V3_N_SEEDS
         or prod["n_therm"] != W4V3_N_THERM
         or prod["n_meas"] != W4V3_N_MEAS
+        or prod["max_workers"] != W4V3_MAX_WORKERS
+        or float(prod["wall_budget_h"]) != W4V3_WALL_BUDGET_H
     ):
+        return None
+
+    expected_contract = {
+        "ladder": list(W4V3_LADDER),
+        "t_grid": list(W4V3_T_GRID),
+        "n_seeds": W4V3_N_SEEDS,
+        "n_therm": W4V3_N_THERM,
+        "n_meas": W4V3_N_MEAS,
+        "max_workers": W4V3_MAX_WORKERS,
+        "wall_budget_h": W4V3_WALL_BUDGET_H,
+    }
+    if prod.get("campaign_contract") != expected_contract:
         return None
     if prod.get("complete") is not True or prod.get("unmeasured") != []:
         return None
@@ -532,7 +550,14 @@ def _product_groups(prod: dict) -> dict[tuple[int, int], list[dict]] | None:
                     if (
                         not _is_json_number(r.get("g_quarter"))
                         or not _is_json_number(r.get("g_half"))
+                        or not _is_json_number(r.get("wall_s"))
                     ):
+                        return None
+                    q = float(r["g_quarter"])
+                    h = float(r["g_half"])
+                    if not (-1.0 <= q <= 1.0 and -1.0 <= h <= 1.0):
+                        return None
+                    if float(r["wall_s"]) < 0.0:
                         return None
                 groups[(L, k)] = rr
     except (KeyError, TypeError, ValueError, OverflowError):
