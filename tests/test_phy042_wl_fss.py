@@ -220,10 +220,8 @@ def test_walker_plan_min_walkers_is_fail_closed():
         phy042._walker_plan((32, 48), 2, min_walkers=3)
 
 
-def test_reanalysis_of_committed_report_reproduces_measured_domains():
-    """Bindet die neue Semantik an die committete Evidenz: aus den
-    gespeicherten Walker-Kurven folgen exakt die gemessenen Domaenen
-    L32=0.60 / L48=0.585 und alle Paar-Urteile; L=24 wird ungemessen."""
+def test_reanalysis_uses_two_sided_bounds_and_green_l24_fallback():
+    """Reanalysis uses the same strict domain semantics as fresh runs."""
     import json
     rep = json.loads(
         (ROOT / phy042.PHY042_REPORT_V01).read_text(encoding="utf-8"))
@@ -232,24 +230,36 @@ def test_reanalysis_of_committed_report_reproduces_measured_domains():
     assert st["24"]["measured"] is False and st["24"]["tmax"] is None
     assert st["32"]["tmax"] == rep["domain_tmax_spread004"]["32"] == 0.6
     assert st["48"]["tmax"] == rep["domain_tmax_spread004"]["48"] == 0.585
-    for key, p in out["pairs"].items():
-        assert p["quotable"] == p["quotable_as_committed"], key
-    assert out["pairs"]["24_32"]["quotable"] is True
-    # ehrliche Einordnung: das einzige quotierbare Paar hat nur EINSEITIG
-    # Sampler-Evidenz (L=24 ungemessen)
-    assert out["pairs"]["24_32"]["basis"] == "partial"
-    assert out["pairs"]["32_48"]["basis"] == "both_measured"
+
+    p = out["pairs"]["24_32"]
+    assert p["basis_a"] == "PHY032_drift_guard"
+    assert p["basis_b"] == "walker_spread"
+    assert p["bounds_a"] is not None and p["bounds_b"] is not None
+    assert phy042._pair_inside_bounds(
+        p["tbkt"], tuple(p["bounds_a"]), tuple(p["bounds_b"])
+    ) is p["quotable"]
+
+    broken = json.loads(json.dumps(rep))
+    broken["pass_gates"]["PASS_WL_Y2_MATCHES_PHY032_GRID_L24"] = False
+    out_broken = phy042.reanalyse_domains(broken)
+    p_broken = out_broken["pairs"]["24_32"]
+    assert out_broken["effective_domain_bounds"]["24"] is None
+    assert p_broken["basis_a"] == "unmeasured"
+    assert p_broken["quotable"] is False
 
 
-def test_committed_erratum_matches_regeneration():
-    """Drift-Guard: das committete Erratum ist exakt die Ausgabe von
-    `--reanalyse` auf dem gepinnten Report (inkl. dessen SHA-256)."""
+def test_committed_erratum_remains_lineage_but_runtime_reanalysis_is_current():
+    """The v01 artifact stays immutable while current code is stricter."""
     import json
     committed = json.loads(ERRATUM.read_text(encoding="utf-8"))
     regen = json.loads(json.dumps(phy042._clean(phy042.domain_erratum())))
-    assert committed == regen
-    assert committed["source_sha256"] == (
+    expected_sha = (
         "19a9ce3c799401dbb55e519c09b390bee9dfbe23792f99b2e7c650c3eeefa3cf")
+    assert committed["source_sha256"] == expected_sha
+    assert regen["source_sha256"] == expected_sha
+    assert regen["date"] == "2026-09-27"
+    assert regen["pairs"]["24_32"]["basis_a"] == "PHY032_drift_guard"
+    assert regen["pairs"]["24_32"]["basis_b"] == "walker_spread"
 
 
 def test_run_phy042_report_path_emits_null_for_single_walker(monkeypatch):
@@ -296,8 +306,15 @@ def test_run_phy042_report_path_emits_null_for_single_walker(monkeypatch):
         assert out["domain_status"][L]["measured"] is True
         assert out["domain_tmax_spread004"][L] == pytest.approx(0.60)
         assert len(out["walker_spread"][L]) == len(t)
-    assert out["pair_domain_basis"]["24_32"]["basis"] == "partial"
-    assert out["pair_domain_basis"]["32_48"]["basis"] == "both_measured"
+    # Der synthetische VAL-B-Vergleich oben scheitert absichtlich deutlich:
+    # ohne gruene Fallback-Evidenz bleibt L24 fail-closed ungemessen.
+    assert out["effective_domain_basis"]["24"] == "unmeasured"
+    assert out["effective_domain_bounds"]["24"] is None
+    assert out["effective_domain_basis"]["32"] == "walker_spread"
+    assert out["pair_domain_basis"]["24_32"]["basis_a"] == "unmeasured"
+    assert out["pair_domain_basis"]["24_32"]["basis_b"] == "walker_spread"
+    assert out["pair_domain_basis"]["32_48"]["basis_a"] == "walker_spread"
+    assert out["pair_domain_basis"]["32_48"]["basis_b"] == "walker_spread"
     with pytest.raises(ValueError):
         phy042.run_phy042(max_workers=1, min_walkers=3)
 
@@ -306,7 +323,8 @@ def test_every_band_channel_has_provenance_row():
     """Issue #45 §3: jeder Band-Kanal fuehrt Quelle, berichtete Groesse und
     Beleg-Status; der Nachtrag-Spec listet jeden Kanal-Namen."""
     assert set(phy042.REF_PROVENANCE) == set(phy042.REF_BAND)
-    allowed = {"contract_260703", "search_corroborated", "version_unclear"}
+    allowed = {"current_method_anchor", "primary_text_verified",
+               "superseded_historical", "version_unclear"}
     addendum = (ROOT / "spec" /
                 "260926 PHI HEX honeycomb reference provenance addendum v01.md"
                 ).read_text(encoding="utf-8")
@@ -314,6 +332,51 @@ def test_every_band_channel_has_provenance_row():
         assert status in allowed, key
         assert src and reported, key
         assert f"| {key} |" in addendum, key
-    # die im Issue fehlenden Werte sind jetzt im Band
+    # Historische Werte bleiben als Lineage, aktuelle Auswertung benutzt nur
+    # den expliziten aktuellen Key-Satz.
     assert phy042.REF_BAND["upsilon_wl_T"] == (0.576, 0.003)
     assert "binder_beta" in phy042.REF_BAND
+    assert phy042.REF_PROVENANCE["binder_beta"][2] == "superseded_historical"
+    assert phy042.REF_PROVENANCE["helicity_ptep"][2] == "primary_text_verified"
+    assert phy042.REF_PROVENANCE["upsilon_wl_T"][2] == "primary_text_verified"
+    assert "binder_beta" not in phy042.REF_CURRENT_KEYS
+    refs = phy042._reference_payload()
+    assert set(refs["current"]) == set(phy042.REF_CURRENT_KEYS)
+    assert "upsilon_beta" not in refs["current"]
+    assert "upsilon_beta" in refs["lineage"]
+    assert refs["provenance"]["upsilon_beta"]["status"] == "superseded_historical"
+    for key in ("upsilon4_wl_T", "upsilon4_sa_T"):
+        assert key not in refs["current"]
+        assert key in refs["lineage"]
+        assert refs["provenance"][key]["status"] == "version_unclear"
+
+
+def test_pair_inside_effective_bounds_checks_lower_and_upper_edges():
+    a = (0.56, 0.6475)
+    b = (0.52, 0.60)
+    assert phy042._pair_inside_bounds(0.575, a, b)
+    assert not phy042._pair_inside_bounds(0.555, a, b)
+    assert not phy042._pair_inside_bounds(0.61, a, b)
+    assert not phy042._pair_inside_bounds(0.575, None, b)
+    assert not phy042._pair_inside_bounds(None, a, b)
+
+
+def test_reanalysis_rejects_truthy_string_as_phy032_gate_evidence():
+    import json
+    rep = json.loads(
+        (ROOT / phy042.PHY042_REPORT_V01).read_text(encoding="utf-8"))
+    rep["validation_vs_phy032_grid"][0]["ok"] = "false"
+    out = phy042.reanalyse_domains(rep)
+    assert out["effective_domain_bounds"]["24"] is None
+    assert out["pairs"]["24_32"]["quotable"] is False
+
+
+
+def test_reanalysis_requires_literal_true_phy032_top_level_gate():
+    import json
+    rep = json.loads(
+        (ROOT / phy042.PHY042_REPORT_V01).read_text(encoding="utf-8"))
+    rep["pass_gates"]["PASS_WL_Y2_MATCHES_PHY032_GRID_L24"] = "false"
+    out = phy042.reanalyse_domains(rep)
+    assert out["effective_domain_bounds"]["24"] is None
+    assert out["pairs"]["24_32"]["quotable"] is False

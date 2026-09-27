@@ -124,39 +124,67 @@ REF_BAND = {  # T-Form, aus spec/260703 (beta-Kanaele konvertiert)
     "nn_ptep": (0.572, 0.003),
 }
 
-# Provenienz je Band-Kanal (Issue #45 §3). status:
-#   "contract_260703"  - Eintrag des Vertrags spec/260703 (Stand 2026-07-03)
-#   "search_corroborated" - durch >= 2 unabhaengige Web-Such-Snapshots des
-#       Abstracts belegt; Primaertext in dieser Umgebung NICHT abrufbar
-#       (Egress-Policy blockt arxiv.org/iopscience/oup, 2026-09-26)
-#   "version_unclear"  - Wert belegt, Fassung (v1..v4) nicht eindeutig
-# Offene Pflicht: Primaertext-Abgleich je Fassung (Spec 260926 §4).
+# Provenienz je Kanal. Historische Kanaele bleiben fuer Lineage im Dictionary,
+# duerfen aber nicht als aktuelle Referenzfamilie interpretiert werden.
+# Status 2026-09-27 wird durch spec/260926 ... provenance addendum supersediert.
 REF_PROVENANCE = {
     "multi_lattice": ("arXiv:2501.07388 v1 = J.Phys.A 58 065003 (2025)",
-                      "T, ohne Fehlerbalken", "contract_260703"),
+                      "T, ohne Fehlerbalken", "current_method_anchor"),
     "helicity_direct": ("arXiv:2406.14812 v1", "T, Helicity",
-                        "contract_260703"),
-    "nn_mc": ("arXiv:2406.14812 v1", "T, NN", "contract_260703"),
+                        "superseded_historical"),
+    "nn_mc": ("arXiv:2406.14812 v1", "T, NN", "superseded_historical"),
     "upsilon_beta": ("arXiv:2406.12076 v3/v4 = Phys.Scr. 100 065953 (2025)",
-                     "beta=1.687(3), Upsilon", "contract_260703"),
+                     "beta=1.687(3), Upsilon", "superseded_historical"),
     "upsilon4_beta": ("arXiv:2406.12076 v3/v4 = Phys.Scr. 100 065953 (2025)",
-                      "beta=1.635(11), Upsilon_4", "contract_260703"),
+                      "beta=1.635(11), Upsilon_4", "superseded_historical"),
     "binder_beta": ("arXiv:2406.12076 v2..v4 Abstract",
-                    "beta=1.724(2), Binder", "search_corroborated"),
+                    "beta=1.724(2), Binder", "superseded_historical"),
     "upsilon_wl_T": ("arXiv:2406.12076 Abstract (v4) = Phys.Scr. 100 065953",
-                     "T=0.576(3), Upsilon, Wang-Landau", "search_corroborated"),
+                     "T=0.576(3), Upsilon, Wang-Landau", "primary_text_verified"),
     "upsilon_sa_T": ("arXiv:2406.12076 Abstract (v4) = Phys.Scr. 100 065953",
                      "T=0.575(8), Upsilon, sim. annealing",
-                     "search_corroborated"),
+                     "primary_text_verified"),
     "upsilon4_wl_T": ("arXiv:2406.12076 Haupttext", "T=0.568(1), Upsilon_4, WL",
                       "version_unclear"),
     "upsilon4_sa_T": ("arXiv:2406.12076 Haupttext",
                       "T=0.551(11), Upsilon_4, SA", "version_unclear"),
     "helicity_ptep": ("PTEP 2024(10) 103A02 (Journal-Fassung arXiv:2406.14812)",
-                      "T=0.576(4), Helicity", "search_corroborated"),
+                      "T=0.576(4), Helicity", "primary_text_verified"),
     "nn_ptep": ("PTEP 2024(10) 103A02 (Journal-Fassung arXiv:2406.14812)",
-                "T=0.572(3), NN", "search_corroborated"),
+                "T=0.572(3), NN", "primary_text_verified"),
 }
+
+
+REF_CURRENT_KEYS = (
+    "multi_lattice",
+    "upsilon_wl_T",
+    "upsilon_sa_T",
+    "helicity_ptep",
+    "nn_ptep",
+)
+
+
+def _reference_payload() -> dict:
+    """Separate current comparison anchors from historical lineage."""
+    current, lineage, provenance = {}, {}, {}
+    for key, value in REF_BAND.items():
+        src, reported, status = REF_PROVENANCE[key]
+        encoded = list(value) if isinstance(value, tuple) else value
+        provenance[key] = {
+            "source": src,
+            "reported": reported,
+            "status": status,
+        }
+        if key in REF_CURRENT_KEYS:
+            current[key] = encoded
+        else:
+            lineage[key] = encoded
+    return {
+        "current": current,
+        "lineage": lineage,
+        "provenance": provenance,
+    }
+
 
 # PHY041-Bruecke: committed Reportwerte (results/260702 PHY041 ... report.txt)
 PHY041_PAIRS = {(12, 16): 0.5951, (12, 24): 0.6029, (16, 24): 0.6087}
@@ -276,38 +304,86 @@ def _domain_status(d: dict) -> dict:
 
 
 def reanalyse_domains(report: dict, thr: float = DOMAIN_THRESHOLD) -> dict:
-    """Domaenen + Paar-Quotierbarkeit aus einem COMMITTETEN PHY042-Report
-    neu ableiten (MC-frei: nutzt nur die gespeicherten Walker-Kurven).
+    """Re-derive domains and pair quotability from a committed PHY042 report.
 
-    Zweck (Issue #45 §2): der Report 260707 ist per voller SHA-256 gepinnt
-    und wird NICHT umgeschrieben (AGENTS.md: Lineage ehrlich). Diese
-    Funktion liefert die korrigierte Domaenen-Semantik als separates,
-    reproduzierbares Erratum und prueft zugleich, dass die gemessenen
-    Domaenen (L32/L48) und die Quotierbarkeits-Urteile aus den Kurven
-    folgen.
+    Current semantics require an evidenced lower *and* upper bound on both
+    sizes. For historical single-walker L=24, the only admissible fallback is
+    the exact eight-row PHY032 drift guard when its committed gate is green.
     """
     Ls = [int(x) for x in report["Ls"]]
-    t_grid = None
     dom = {}
+    t_grids: dict[int, np.ndarray] = {}
     for L in Ls:
         nw = int(report["n_walkers"][str(L)])
         cs = [report["curves"][f"{L}_{w}"] for w in range(nw)]
         t_grid = np.asarray(cs[0]["T"], dtype=float)
+        t_grids[L] = t_grid
         dom[L] = _walker_domain([c["y2"] for c in cs], t_grid, thr)
+
+    bounds: dict[int, tuple[float, float] | None] = {}
+    basis: dict[int, str] = {}
+    for L in Ls:
+        if dom[L]["measured"] and np.any(dom[L]["mask"]):
+            vt = t_grids[L][dom[L]["mask"]]
+            bounds[L] = (float(vt.min()), float(vt.max()))
+            basis[L] = "walker_spread"
+        else:
+            bounds[L] = None
+            basis[L] = (
+                "measured_empty" if dom[L]["measured"] else "unmeasured"
+            )
+
+    grid_rows = report.get("validation_vs_phy032_grid", [])
+    grid_gate = (
+        report.get("pass_gates", {}).get("PASS_WL_Y2_MATCHES_PHY032_GRID_L24")
+        is True
+    )
+    if 24 in Ls and bounds.get(24) is None and grid_gate:
+        try:
+            valid_rows = (
+                isinstance(grid_rows, list)
+                and len(grid_rows) == 8
+                and all(
+                    type(row.get("L")) is int
+                    and row["L"] == 24
+                    and row.get("ok") is True
+                    and type(row.get("T")) in (int, float)
+                    and math.isfinite(float(row["T"]))
+                    for row in grid_rows
+                )
+            )
+        except (KeyError, TypeError, ValueError, OverflowError):
+            valid_rows = False
+        if valid_rows:
+            ts = [float(row["T"]) for row in grid_rows]
+            bounds[24] = (min(ts), max(ts))
+            basis[24] = "PHY032_drift_guard"
+
     pairs = {}
     for key, tb in report["pair_tbkt_mean_curves"].items():
         a, b = (int(x) for x in key.split("_"))
-        q, limit, basis = _pair_quotable(tb, dom[a], dom[b])
-        pairs[key] = {"tbkt": tb, "quotable": q, "limit_tmax": limit,
-                      "basis": basis,
-                      "quotable_as_committed": bool(
-                          report["pair_quotable"][key])}
-    return {"threshold": thr,
-            "domain_status": {str(L): _domain_status(dom[L]) for L in Ls},
-            "committed_domain_tmax_spread004":
-                report["domain_tmax_spread004"],
-            "pairs": pairs}
-
+        ba, bb = bounds.get(a), bounds.get(b)
+        quotable = _pair_inside_bounds(tb, ba, bb)
+        limit = None if ba is None or bb is None else min(ba[1], bb[1])
+        pairs[key] = {
+            "tbkt": tb,
+            "quotable": bool(quotable),
+            "limit_tmax": limit,
+            "bounds_a": ba,
+            "bounds_b": bb,
+            "basis_a": basis.get(a),
+            "basis_b": basis.get(b),
+            "quotable_as_committed": bool(report["pair_quotable"][key]),
+        }
+    return {
+        "threshold": thr,
+        "domain_status": {str(L): _domain_status(dom[L]) for L in Ls},
+        "effective_domain_bounds": {str(L): bounds[L] for L in Ls},
+        "effective_domain_basis": {str(L): basis[L] for L in Ls},
+        "committed_domain_tmax_spread004":
+            report["domain_tmax_spread004"],
+        "pairs": pairs,
+    }
 
 def _pair_quotable(tb, dom_a: dict, dom_b: dict) -> tuple:
     """(quotierbar, T-Grenze, Basis): Crossing existiert UND liegt in der
@@ -315,6 +391,19 @@ def _pair_quotable(tb, dom_a: dict, dom_b: dict) -> tuple:
     limit, basis = _pair_domain_limit(dom_a, dom_b)
     q = tb is not None and limit is not None and tb <= limit
     return bool(q), limit, basis
+
+
+def _pair_inside_bounds(
+    tb: float | None,
+    bounds_a: tuple[float, float] | None,
+    bounds_b: tuple[float, float] | None,
+) -> bool:
+    """Require a crossing to lie inside BOTH evidenced [T_min,T_max] domains."""
+    if tb is None or bounds_a is None or bounds_b is None:
+        return False
+    lo = max(float(bounds_a[0]), float(bounds_b[0]))
+    hi = min(float(bounds_a[1]), float(bounds_b[1]))
+    return bool(lo <= float(tb) <= hi)
 
 
 def _walker_plan(Ls, n_walkers: int, min_walkers: int | None = None) -> dict:
@@ -540,6 +629,32 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
               f"(d={abs(y2wl - u032):.4f}, tol={tol:.4f}) "
               f"{'ok' if ok else 'ABWEICHUNG'}")
 
+    # Effektive Evidenzdomaene fuer NEUE Paarurteile: beide Grenzen binden.
+    # Gemessene Walker-Domaenen beginnen am unteren T-Gitterrand. Fuer die
+    # historische L=24-Einzel-Walker-Bruecke darf nur der separat validierte
+    # PHY032-Drift-Guard als Fallback dienen; er wird nicht als Walker-Spread
+    # umetikettiert.
+    effective_domain_bounds: dict[int, tuple[float, float] | None] = {}
+    effective_domain_basis: dict[int, str] = {}
+    for L in Ls:
+        if dom[L]["measured"] and np.any(dom[L]["mask"]):
+            vt = t_grid[dom[L]["mask"]]
+            effective_domain_bounds[L] = (float(vt.min()), float(vt.max()))
+            effective_domain_basis[L] = "walker_spread"
+        else:
+            effective_domain_bounds[L] = None
+            effective_domain_basis[L] = (
+                "measured_empty" if dom[L]["measured"] else "unmeasured"
+            )
+
+    if 24 in Ls and effective_domain_bounds.get(24) is None and grid_rows:
+        if grid_ok and all(bool(row["ok"]) for row in grid_rows):
+            effective_domain_bounds[24] = (
+                min(float(row["T"]) for row in grid_rows),
+                max(float(row["T"]) for row in grid_rows),
+            )
+            effective_domain_basis[24] = "PHY032_drift_guard"
+
     # --- VAL-C: PHY041-Bruecke (bitgleiche L=24-Reproduktion) --------------
     c24 = main_curve[24]
     k24 = int(np.argmin(c24["y4_scaled"]))
@@ -560,17 +675,29 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
         tb = tbkt_pair_from_curves(t_grid, main_curve[La]["y2"], La,
                                    main_curve[Lb]["y2"], Lb)
         pair_tbkt[(La, Lb)] = tb
-        q, limit, basis = _pair_quotable(tb, dom[La], dom[Lb])
+        bounds_a = effective_domain_bounds.get(La)
+        bounds_b = effective_domain_bounds.get(Lb)
+        q = _pair_inside_bounds(tb, bounds_a, bounds_b)
         pair_quotable[(La, Lb)] = q
-        pair_basis[(La, Lb)] = {"limit_tmax": limit, "basis": basis}
+        pair_basis[(La, Lb)] = {
+            "bounds_a": bounds_a,
+            "bounds_b": bounds_b,
+            "basis_a": effective_domain_basis.get(La),
+            "basis_b": effective_domain_basis.get(Lb),
+        }
         if tb is None:
             print(f"      T_BKT({La},{Lb}): kein Nulldurchgang im T-Fenster")
         else:
-            lim_txt = "keine" if limit is None else f"{limit:.4f}"
-            tag = ("QUOTIERBAR" if q else
-                   f"NR: Crossing ausserhalb Domaene "
-                   f"(min T_max={lim_txt})")
-            tag += f", Basis {basis}"
+            tag = (
+                "QUOTIERBAR"
+                if q
+                else "NR: Crossing ausserhalb oder ohne zwei belegte "
+                     "[T_min,T_max]-Domaenen"
+            )
+            tag += (
+                f", Basis {effective_domain_basis.get(La)}/"
+                f"{effective_domain_basis.get(Lb)}"
+            )
             print(f"      T_BKT({La},{Lb}) = {tb:.4f}  "
                   f"(vs Multi-Lattice 0.573: "
                   f"{(tb - 0.573) / 0.573 * 100:+.2f}%)  [{tag}]")
@@ -654,8 +781,8 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
         sy = walker_pairs.get((24, 32), {}).get("spread", float("nan"))
         print(f"    - QUOTIERBAR: T_BKT(24,32) = {tb2432:.4f} "
               f"+- {sy / 2:.4f} (Sampler-Systematik = halber Walker-Spread); "
-              f"Lage im Referenzband: nahe Upsilon-beta-Kanal 0.5928, "
-              f"unterhalb PHY041 (16,24)=0.6087.")
+              "Literaturvergleich ausschliesslich ueber aktuell verifizierte "
+              "Referenzkanaele; superseded beta-Kanaele bleiben nur Lineage.")
     # Haertung 2026-07-10 (Code-Audit L2): default schuetzt den
     # n_walkers=1-Pfad (leerer Generator -> ValueError VOR dem Report).
     max_spread = max((dom[L]["spread"].max() for L in Ls
@@ -685,12 +812,15 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
     print(f"    - Laufzeit gesamt: {time.time() - t_start:.0f}s "
           f"({len(jobs)} WL-Jobs, max_workers={max_workers})")
 
+    refs = _reference_payload()
     return {
         "module": "PHY042_honeycomb_wl_fss",
         "attribution": "Coworker Research / Coworkerz",
         "date": "2026-07-06",
-        "reference_band": {k: (list(v) if isinstance(v, tuple) else v)
-                           for k, v in REF_BAND.items()},
+        "reference_band": refs["current"],
+        "reference_band_status": "current_only",
+        "reference_lineage": refs["lineage"],
+        "reference_provenance": refs["provenance"],
         "Ls": list(Ls),
         "n_walkers": {str(L): walkers[L] for L in Ls},
         "master_seed": master_seed,
@@ -709,6 +839,16 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
                           for L in Ls},
         "domain_tmax_spread004": {str(L): dom[L]["tmax"] for L in Ls},
         "domain_status": {str(L): _domain_status(dom[L]) for L in Ls},
+        "effective_domain_bounds": {
+            str(L): (
+                None if effective_domain_bounds.get(L) is None
+                else list(effective_domain_bounds[L])
+            )
+            for L in Ls
+        },
+        "effective_domain_basis": {
+            str(L): effective_domain_basis.get(L) for L in Ls
+        },
         "pair_domain_basis": {f"{a}_{b}": v
                               for (a, b), v in pair_basis.items()},
         "validation_vs_wolff_L32": val_rows,
@@ -769,7 +909,7 @@ def domain_erratum(report_path: Path = _ROOT / PHY042_REPORT_V01) -> dict:
     return {
         "module": "PHY042_domain_semantics_erratum",
         "attribution": "Coworker Research / Coworkerz",
-        "date": "2026-09-26",
+        "date": "2026-09-27",
         "issue": "#45 section 2",
         "source_report": PHY042_REPORT_V01,
         "source_sha256": hashlib.sha256(raw).hexdigest(),
@@ -777,8 +917,9 @@ def domain_erratum(report_path: Path = _ROOT / PHY042_REPORT_V01) -> dict:
                  "and walker_spread['24'] = 0.0 x31. Both are construction "
                  "artefacts of the single-walker path (grid end / zero), "
                  "not measurements. Corrected semantics: null + reason. "
-                 "Measured domains (L32, L48) and all pair-quotability "
-                 "verdicts are unchanged (re-derived from stored curves)."),
+                 "Pair quotability is re-derived with two-sided evidenced "
+                 "[T_min,T_max] bounds; L24 may use only an exact eight-row, "
+                 "green PHY032 drift-guard fallback."),
         **reanalyse_domains(rep),
     }
 

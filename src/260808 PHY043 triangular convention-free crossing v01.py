@@ -69,6 +69,13 @@ INTERNAL_PER_SITE = 1.4007      # PHY030 v02 WM-Fit (per-Site-Konvention)
 SPLAY_Z = 2.0                   # Persistenz-Schwelle in sigma_D
 N_BOOT = 300
 BOOT_STREAM = 99043             # frei (99001 = PHY032-Bootstrap)
+PILOT_LS = (9, 13, 19)
+PILOT_TEMPS = tuple(round(1.36 + 0.02 * k, 2) for k in range(12))
+PILOT_N_MEASURE = 400
+PILOT_N_BURN = 300
+PILOT_N_SEEDS = 4
+PILOT_MASTER_SEED = 42
+PILOT_STREAM_CONTRACT = "900 + s + 1000*L + 100000*t_idx"
 XI_PREFACTOR = math.sqrt(3.0) / (4.0 * math.pi)
 MIN_MODES = ((1, 0), (0, 1), (1, 1))  # Norm-1-Moden; (1,-1) hat Norm 3
 
@@ -499,6 +506,48 @@ def _clean(o):
     return o
 
 
+def _is_preregistered_pilot(report: dict) -> bool:
+    """Match the complete fixed pilot contract, not just seed/L maxima."""
+    try:
+        w = report["wolff"]
+        bootstrap = report["bootstrap"]
+        return (
+            tuple(report["lattices_L"]) == PILOT_LS
+            and tuple(report["temperatures"]) == PILOT_TEMPS
+            and type(w["n_measure"]) is int
+            and w["n_measure"] == PILOT_N_MEASURE
+            and type(w["n_burn"]) is int
+            and w["n_burn"] == PILOT_N_BURN
+            and type(w["n_seeds"]) is int
+            and w["n_seeds"] == PILOT_N_SEEDS
+            and type(w["master_seed"]) is int
+            and w["master_seed"] == PILOT_MASTER_SEED
+            and w["stream_contract"] == PILOT_STREAM_CONTRACT
+            and type(bootstrap["n_boot"]) is int
+            and bootstrap["n_boot"] == N_BOOT
+            and type(bootstrap["stream"]) is int
+            and bootstrap["stream"] == BOOT_STREAM
+        )
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
+def _power_limit_note(report: dict) -> str:
+    """Scope the 1%-power statement to the exact preregistered pilot."""
+    w = report.get("wolff", {})
+    n_seeds = w.get("n_seeds", "?")
+    Ls = report.get("lattices_L", [])
+    max_l = max(Ls) if Ls else "?"
+    if _is_preregistered_pilot(report):
+        return (
+            "n_seeds=4, L<=19: keine 1%-Diskriminierung erwartet "
+            "(exakter vorregistrierter Pilot-Vertrag, Spec §6)."
+        )
+    return (
+        f"n_seeds={n_seeds}, L<={max_l}: 1%-Power UNASSESSED; "
+        "keine Power-Aussage allein aus Laufmetadaten (Spec §6)."
+    )
+
 def write_report(report: dict, path: Path) -> None:
     lines = []
     lines.append("PHY043 - Konventionsfreier Quercheck triangular "
@@ -587,9 +636,9 @@ def write_report(report: dict, path: Path) -> None:
     # (Pilot-/PHY030-Budget) - der Finallauf 2026-08-08 hatte n_seeds=8,
     # L<=25 (Kopfzeile desselben Reports). Grenzen-Text jetzt aus den
     # tatsaechlichen Laufparametern abgeleitet (Erratum: results/260926).
-    lines.append(f"  - n_seeds={w['n_seeds']}, "
-                 f"L<={max(report['lattices_L'])}: keine "
-                 "1%-Diskriminierung erwartbar (Spec §6).")
+    lines.append(
+        "  - " + _power_limit_note(report)
+    )
     lines.append("  - Universeller (xi_2/L)*-Anker bewusst NICHT verwendet "
                  "(Rhombus-Torus,")
     lines.append("    tau=exp(i pi/3) — Hasenbusch-Wert gilt fuer tau=i).")

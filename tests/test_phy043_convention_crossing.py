@@ -225,7 +225,8 @@ def test_limits_text_follows_run_parameters(tmp_path):
     out = tmp_path / "r.txt"
     phy043.write_report(_minimal_report(8, [9, 13, 19, 25]), out)
     text = out.read_text(encoding="utf-8")
-    assert "n_seeds=8, L<=25: keine 1%-Diskriminierung" in text
+    assert "n_seeds=8, L<=25: 1%-Power UNASSESSED" in text
+    assert "keine Power-Aussage allein aus Laufmetadaten" in text
     assert "n_seeds=4, L<=19" not in text
     phy043.write_report(_minimal_report(3, [9, 13]), out)
     assert "n_seeds=3, L<=13:" in out.read_text(encoding="utf-8")
@@ -249,3 +250,66 @@ def test_committed_report_drift_is_documented_by_erratum():
     err = (root / "results" / "260926 PHY043 report erratum.md"
            ).read_text(encoding="utf-8")
     assert f"n_seeds={n_seeds}, L<={L_max}: keine 1%-Diskriminierung" in err
+
+
+def test_power_limit_note_is_scoped_to_exact_fixed_pilot_contract():
+    pilot = _minimal_report(4, [9, 13, 19])
+    pilot["temperatures"] = list(phy043.PILOT_TEMPS)
+    pilot["wolff"].update({
+        "n_measure": phy043.PILOT_N_MEASURE,
+        "n_burn": phy043.PILOT_N_BURN,
+        "n_seeds": phy043.PILOT_N_SEEDS,
+        "master_seed": phy043.PILOT_MASTER_SEED,
+        "stream_contract": phy043.PILOT_STREAM_CONTRACT,
+    })
+    pilot["bootstrap"] = {
+        "n_boot": phy043.N_BOOT,
+        "stream": phy043.BOOT_STREAM,
+    }
+    assert phy043._is_preregistered_pilot(pilot) is True
+    assert "keine 1%-Diskriminierung erwartet" in phy043._power_limit_note(pilot)
+
+    mutations = (
+        ("temperatures", list(phy043.PILOT_TEMPS[:-1])),
+        ("lattices_L", [9, 13, 19, 25]),
+    )
+    for key, value in mutations:
+        altered = {**pilot, key: value}
+        assert phy043._is_preregistered_pilot(altered) is False
+        assert "UNASSESSED" in phy043._power_limit_note(altered)
+
+    for field, value in (
+        ("n_measure", 401),
+        ("n_burn", 299),
+        ("n_seeds", 5),
+        ("master_seed", 43),
+        ("stream_contract", "other"),
+    ):
+        altered = {**pilot, "wolff": dict(pilot["wolff"])}
+        altered["wolff"][field] = value
+        assert phy043._is_preregistered_pilot(altered) is False
+        assert "UNASSESSED" in phy043._power_limit_note(altered)
+
+    altered_boot = {**pilot, "bootstrap": dict(pilot["bootstrap"])}
+    altered_boot["bootstrap"]["n_boot"] = phy043.N_BOOT - 1
+    assert phy043._is_preregistered_pilot(altered_boot) is False
+    assert "UNASSESSED" in phy043._power_limit_note(altered_boot)
+
+
+def test_preregistered_pilot_rejects_stringified_numeric_metadata():
+    pilot = _minimal_report(4, [9, 13, 19])
+    pilot["temperatures"] = list(phy043.PILOT_TEMPS)
+    pilot["wolff"].update({
+        "n_measure": phy043.PILOT_N_MEASURE,
+        "n_burn": phy043.PILOT_N_BURN,
+        "n_seeds": phy043.PILOT_N_SEEDS,
+        "master_seed": phy043.PILOT_MASTER_SEED,
+        "stream_contract": phy043.PILOT_STREAM_CONTRACT,
+    })
+    pilot["bootstrap"] = {
+        "n_boot": phy043.N_BOOT,
+        "stream": phy043.BOOT_STREAM,
+    }
+    pilot["wolff"]["n_measure"] = str(phy043.PILOT_N_MEASURE)
+    assert phy043._is_preregistered_pilot(pilot) is False
+    assert "UNASSESSED" in phy043._power_limit_note(pilot)

@@ -56,22 +56,30 @@ Referenz T_BKT = 0.8929-0.8935. Paar-Crossings bei L = 32..256: 0.8919,
     NN 0.572(3).
   - Die Spannung zu den normierungsfreien Werten betraegt ~1.3 % (~2 sigma).
     Die square-V&V erklaert sie nicht.
-- **Auffaellig und unbelegt:** die per-Site-Werte dieser Pipeline treffen die
-  Helicity-Literatur.
-  - HKS per Site 0.5713 liegt bei Jiang arXiv v1 0.571(8).
-  - Die per-Site-Paare bei L = 24..48 (0.588-0.592) liegen bei 1/1.696 = 0.5896
-    (de Andrade et al. v2, beta aus Upsilon).
-  - Hypothese: diese Helicity-Werte sind per Site normiert. Pruefbar nur am
-    Primaertext.
+- **Primaertext-Korrektur 2026-09-27:** die fruehere Hypothese, die
+  Uebereinstimmung der internen per-Site-Linie mit Jiang koenne auf einer
+  per-Site-Literaturnormierung beruhen, ist fuer die publizierte PTEP-Fassung
+  falsifiziert. Jiang definiert Gamma mit dem Honeycomb-Dichtefaktor
+  4/(3 sqrt(3)) und vergleicht diesen korrigierten Modulus mit 2T/pi.
+  - Der publizierte Helicity-Wert 0.576(4) ist daher kein roher per-Site-Wert.
+  - Der normierungsfreie NN-Wert 0.572(3) bleibt ebenfalls oberhalb PHY046.
+  - Primaertext-Nachtrag 2026-09-27: auch de Andrade v4 multipliziert
+    Upsilon/Upsilon_4 fuer Honeycomb explizit mit 4/(3 sqrt(3)) und verwendet
+    danach das Nelson-Kosterlitz-Kriterium. Die aktuelle direkte T-Linie ist
+    damit normierungsseitig geklaert; historische beta-Linien bleiben
+    versionsspezifische Lineage.
 - **Kandidaten fuer die Rest-Spannung:**
   - (a) honeycomb-spezifische Finite-Size-Korrekturen, groesser als auf square;
   - (b) Biases der normierungsfreien Literaturwerte (grobe Schaetzung; NN);
   - (c) Torus-Form-/Windungs-Effekte auf den Sprung. Fuer den Rhombus-Torus
     werden sie als klein erwartet, sind aber nicht nachgerechnet.
-- **Naechster diskriminierender Schritt:** ein eigener normierungsfreier
-  Schaetzer (Correlation-Ratio oder eta = 1/4 mit multiplikativer Log-
-  Korrektur) auf derselben honeycomb-Leiter und denselben Seeds. Das ist
-  vorzuregistrieren, bevor gerechnet wird.
+- **Naechster diskriminierender Schritt:** W4-v03/PHY049 ist am 2026-09-27
+  vorregistriert: eigener normierungsfreier Correlation-Ratio-Schaetzer
+  R=<g(L/2)>/<g(L/4)> auf L={48,72,96,144,192}. Die Mess-Engine ist
+  fail-closed. W4-v03a/PHY050 implementiert inzwischen das deterministische
+  FSS-Recovery-Gate mit positiven und adversarial synthetischen Kontrollen.
+  Ein gruener G4 autorisiert nur die Produktion; Physikinterpretation bleibt
+  bis G0/G5/G6 auf echten PHY049-Daten gesperrt.
 
 ## 4. Claim-Decke
 
