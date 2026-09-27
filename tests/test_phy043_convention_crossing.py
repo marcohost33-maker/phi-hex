@@ -197,3 +197,7 @@ def test_run_phy043_smoke_structure(tmp_path) -> None:
     phy043.write_report(report, out)
     text = out.read_text(encoding="utf-8")
     assert "PASS-Gates" in text and "FINDING" in text
+    # Issue #45: Limit-Zeile muss aus echten Laufmetadaten kommen, nicht aus
+    # dem alten PHY030-Pilotbudget hardcodiert sein.
+    assert "n_seeds=2, L<=7" in text
+    assert "n_seeds=4, L<=19" not in text
