@@ -31,6 +31,10 @@ G4_MAX_ABS_ERROR = 0.003
 BOOTSTRAP_SEED = 50_049
 MODEL_SIGMA_FLOOR = 0.002
 W4V3_SEED_BASE = 49_000_000
+W4V3_N_SEEDS = 12
+W4V3_N_THERM = 1000
+W4V3_N_MEAS = 4000
+W4V3_N_BOOT = 1000
 DECISION_LOW_EDGE = 0.570
 DECISION_HIGH_EDGE = 0.573
 MAX_SIGMA_TOT = 0.010
@@ -422,44 +426,69 @@ def g4_synthetic_recovery() -> dict:
 
 
 def _product_groups(prod: dict) -> dict[tuple[int, int], list[dict]] | None:
+    """Validate the exact preregistered raw-production contract, fail closed."""
     try:
         ladder = tuple(int(x) for x in prod["ladder"])
         t_grid = tuple(float(x) for x in prod["t_grid"])
         n_seeds = int(prod["n_seeds"])
+        n_therm = int(prod["n_therm"])
+        n_meas = int(prod["n_meas"])
         rows = list(prod["rows"])
     except (KeyError, TypeError, ValueError):
         return None
+
     if ladder != W4V3_LADDER or not np.allclose(
         t_grid, W4V3_T_GRID, atol=0.0, rtol=0.0
     ):
         return None
-    if prod.get("complete") is False or prod.get("unmeasured"):
+    if (
+        n_seeds != W4V3_N_SEEDS
+        or n_therm != W4V3_N_THERM
+        or n_meas != W4V3_N_MEAS
+    ):
         return None
-    groups: dict[tuple[int, int], list[dict]] = {}
-    for L in ladder:
-        for k in range(len(t_grid)):
-            rr = [
-                r
-                for r in rows
-                if int(r.get("L", -1)) == L
-                and int(r.get("t_idx", -1)) == k
-            ]
-            if len(rr) != n_seeds:
-                return None
-            rr.sort(key=lambda r: int(r.get("s", -1)))
-            if [int(r.get("s", -1)) for r in rr] != list(range(n_seeds)):
-                return None
-            expected_t = t_grid[k]
-            for r in rr:
-                s = int(r.get("s", -1))
-                expected_seed = W4V3_SEED_BASE + 1000 * L + 100 * k + s
-                if float(r.get("T", math.nan)) != expected_t:
-                    return None
-                if int(r.get("seed", -1)) != expected_seed:
-                    return None
-            groups[(L, k)] = rr
-    return groups
+    if prod.get("complete") is not True or prod.get("unmeasured") != []:
+        return None
 
+    expected_rows = len(W4V3_LADDER) * len(W4V3_T_GRID) * W4V3_N_SEEDS
+    if len(rows) != expected_rows:
+        return None
+
+    groups: dict[tuple[int, int], list[dict]] = {}
+    try:
+        for L in ladder:
+            for k in range(len(t_grid)):
+                rr = [
+                    r
+                    for r in rows
+                    if int(r.get("L", -1)) == L
+                    and int(r.get("t_idx", -1)) == k
+                ]
+                if len(rr) != W4V3_N_SEEDS:
+                    return None
+                rr.sort(key=lambda r: int(r.get("s", -1)))
+                if [int(r.get("s", -1)) for r in rr] != list(
+                    range(W4V3_N_SEEDS)
+                ):
+                    return None
+                expected_t = t_grid[k]
+                for r in rr:
+                    seed_idx = int(r.get("s", -1))
+                    expected_seed = (
+                        W4V3_SEED_BASE + 1000 * L + 100 * k + seed_idx
+                    )
+                    if float(r.get("T", math.nan)) != expected_t:
+                        return None
+                    if int(r.get("seed", -1)) != expected_seed:
+                        return None
+                    q = float(r["g_quarter"])
+                    h = float(r["g_half"])
+                    if not math.isfinite(q) or not math.isfinite(h):
+                        return None
+                groups[(L, k)] = rr
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return None
+    return groups
 
 def product_to_aggregate(
     prod: dict, *, rng: np.random.Generator | None = None
@@ -474,8 +503,15 @@ def product_to_aggregate(
         vals, sems = [], []
         for k in range(len(W4V3_T_GRID)):
             rr = groups[(L, k)]
-            q0 = np.asarray([float(r["g_quarter"]) for r in rr], dtype=float)
-            h0 = np.asarray([float(r["g_half"]) for r in rr], dtype=float)
+            try:
+                q0 = np.asarray(
+                    [float(r["g_quarter"]) for r in rr], dtype=float
+                )
+                h0 = np.asarray(
+                    [float(r["g_half"]) for r in rr], dtype=float
+                )
+            except (KeyError, TypeError, ValueError, OverflowError):
+                return None
             if np.any(~np.isfinite(q0)) or np.any(~np.isfinite(h0)):
                 return None
             idx = np.arange(ns) if rng is None else rng.integers(0, ns, size=ns)
@@ -511,7 +547,7 @@ def product_to_aggregate(
 
 
 def bootstrap_tbkt(
-    prod: dict, *, n_boot: int = 1000, seed: int = BOOTSTRAP_SEED
+    prod: dict, *, n_boot: int = W4V3_N_BOOT, seed: int = BOOTSTRAP_SEED
 ) -> dict | None:
     """Paired-seed bootstrap; invalid/non-identifiable replicas fail closed."""
     if n_boot < 20:
@@ -614,7 +650,7 @@ def decision_label(
     return "INCONCLUSIVE"
 
 
-def assess_production(prod: dict, *, n_boot: int = 1000) -> dict:
+def assess_production(prod: dict, *, n_boot: int = W4V3_N_BOOT) -> dict:
     """Single fail-closed G0/G4/G5/G6 adjudicator for real PHY049 data."""
     g4 = g4_synthetic_recovery()
     agg = product_to_aggregate(prod)
@@ -626,6 +662,24 @@ def assess_production(prod: dict, *, n_boot: int = 1000) -> dict:
             "decision": "INCONCLUSIVE",
             "physics_interpretation_enabled": False,
             "claim_ceiling": "G0 failed: incomplete or invalid production evidence.",
+        }
+
+    if n_boot != W4V3_N_BOOT:
+        return {
+            "gates": {
+                "G0_input": True,
+                "G4_synthetic_recovery": bool(g4["passed"]),
+                "G5_power": False,
+                "G6_robustness": False,
+            },
+            "decision": "INCONCLUSIVE",
+            "physics_interpretation_enabled": False,
+            "bootstrap_requested": n_boot,
+            "bootstrap_required": W4V3_N_BOOT,
+            "claim_ceiling": (
+                "Non-production bootstrap count: production adjudication "
+                f"requires exactly {W4V3_N_BOOT} replicas."
+            ),
         }
 
     primary = fit_collapse(agg)
