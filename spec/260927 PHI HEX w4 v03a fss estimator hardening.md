@@ -168,3 +168,36 @@ PHY049 data and committed gate evidence in `results/`.
   finite-size scaling for KT/BKT systems.
 - S. M. Bhattacharjee and F. Seno, J. Phys. A 34, 6375 (2001) - quantitative
   objective functions for data-collapse assessment.
+
+## 9. Preproduction review hardening - 2026-09-27
+
+Automated review before any PHY049 production data identified additional
+fail-open paths. They are now part of the binding contract:
+
+- **VAL-BIT:** if Numba is installed, a same-seed tiny Python/Numba trajectory
+  must be bit-identical before the Numba backend is production-eligible.
+- **G0 row identity:** every expected row must match exact `(L,t_idx,T,s,seed)`;
+  duplicate seeds, wrong temperatures, wrong RNG seeds, non-finite moments,
+  incomplete products, and wall-budget omissions fail closed.
+- **Wall budget:** production is committed only in complete-L blocks. Once the
+  24 h deadline has been reached, no further L is started and every skipped job
+  is explicitly recorded as `WALL_BUDGET_STOP`. A started L is allowed to
+  finish so a partial-L block cannot masquerade as complete evidence.
+- **G1 geometry:** periodic translation by L in both primitive directions and
+  same-sublattice preservation for L/4 and L/2 are checked directly; the
+  aligned-state oracle alone is insufficient.
+- **Splay direction:** for ordered L1<L2 the high-T sign is fixed before data as
+  `R_L2-R_L1 < 0`; NaN/Inf, invalid errors, or the opposite sign break
+  persistence.
+- **Decision overlap:** H_A=[0.557,0.573] and H_B=[0.570,0.580] overlap on
+  [0.570,0.573]. `SUPPORTED_LITERATURE` therefore requires the lower 95%
+  bound to exceed 0.573; any 95% interval intersecting [0.570,0.573] is
+  `OVERLAP`.
+- **Single adjudicator:** PHY050 `assess_production()` is the only production
+  path allowed to combine G0/G4/G5/G6, bootstrap uncertainty, model spread,
+  and the internal discrimination label. It remains fail-closed when any
+  prerequisite is non-quotable.
+
+These changes are preproduction hardening, not post-hoc tuning: no PHY049
+production curve or transition estimate had been generated when they were
+committed.
