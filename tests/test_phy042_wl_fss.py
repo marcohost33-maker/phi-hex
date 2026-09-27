@@ -296,12 +296,12 @@ def test_run_phy042_report_path_emits_null_for_single_walker(monkeypatch):
         assert out["domain_status"][L]["measured"] is True
         assert out["domain_tmax_spread004"][L] == pytest.approx(0.60)
         assert len(out["walker_spread"][L]) == len(t)
-    assert out["effective_domain_basis"]["24"] == "PHY032_drift_guard"
+    # Der synthetische VAL-B-Vergleich oben scheitert absichtlich deutlich:
+    # ohne gruene Fallback-Evidenz bleibt L24 fail-closed ungemessen.
+    assert out["effective_domain_basis"]["24"] == "unmeasured"
+    assert out["effective_domain_bounds"]["24"] is None
     assert out["effective_domain_basis"]["32"] == "walker_spread"
-    assert out["effective_domain_bounds"]["24"][0] >= min(
-        row["T"] for row in out["validation_vs_phy032_grid_L24"]
-    )
-    assert out["pair_domain_basis"]["24_32"]["basis_a"] == "PHY032_drift_guard"
+    assert out["pair_domain_basis"]["24_32"]["basis_a"] == "unmeasured"
     assert out["pair_domain_basis"]["24_32"]["basis_b"] == "walker_spread"
     assert out["pair_domain_basis"]["32_48"]["basis_a"] == "walker_spread"
     assert out["pair_domain_basis"]["32_48"]["basis_b"] == "walker_spread"
