@@ -1,6 +1,6 @@
 # Phi-Hex
 
-> **Stand 2026-09-27 (W4-v03 / PHY049):** Jiang/PTEP primaertextlich nachgeprueft: der publizierte Honeycomb-Helicity-Modulus enthaelt den Faktor 4/(3 sqrt(3)); die per-Site-Erklaerung fuer 0.576(4) ist falsifiziert. Normierungsfreier Correlation-Ratio-Quercheck W4-v03 ist vorregistriert; PHY049 bleibt bis zum synthetischen FSS-Recovery-Gate fail-closed.  
+> **Stand 2026-09-27 (W4-v03 / PHY049/PHY050):** Jiang/PTEP primaertextlich nachgeprueft: der publizierte Honeycomb-Helicity-Modulus enthaelt den Faktor 4/(3 sqrt(3)); die per-Site-Erklaerung fuer 0.576(4) ist falsifiziert. Der normierungsfreie Correlation-Ratio-Quercheck ist vorregistriert und G4 synthetisch validiert. Produktion ist nur nach gruenem Preflight/VAL-BIT zulaessig; Physikinterpretation bleibt bis zu realem G0/G5/G6-Evidenzlauf gesperrt.  
 > **Status:** Forschungs-Repo (oeffentlich seit 2026-08-17) | XY/BKT-Physik auf Dreiecks-, Honeycomb- und Kagome-Gittern.  
 > **Lizenz:** Apache-2.0 | **Lineage/Provenance:** siehe `SOURCES.md`.  
 > **Stand 2026-09-26b (Selbstpruefung PR #50):** **Audit O1 entschieden - das NK-Kriterium verlangt Upsilon PRO FLAECHE** (PHY045: exakt + MC, per Site mit 22-54 sigma widerlegt). Alle per-Site-T_BKT-Werte auf triangular/honeycomb/kagome in diesem README sind damit konventions-verzerrt (Lineage bleibt; Neuauswertung separat). W4 laeuft nach Vorregistrierung v02 (Upsilon pro Flaeche, Wolff, HKS).  
@@ -24,11 +24,15 @@ Phi-Hex untersucht das 2D-XY-Modell und BKT-Physik auf periodischen Gittern: Hel
 - **Kein Ersatz fuer die Specs.** Jede Zahl hier hat ihren Vertrag in `spec/` und ihren
   Lauf in `results/`; ohne diese beiden ist eine Zahl aus diesem README nicht zitierfaehig.
 
-## Konvention: Helicity-Modulus per Site
+## Konvention: Helicity-Modulus — NK-Claims pro Flaeche
 
-Seit dem Audit vom 2026-06-04 wird der Helicity-Modulus per Site normiert. Das ersetzt die fruehere Flaechen-Normierung, die T_BKT um etwa 15 % ueberschaetzt hatte.
+Audit O1/PHY045 hat die fruehere README-Konvention korrigiert: fuer den
+Nelson-Kosterlitz-Sprung ist der Helicity-Modulus in der physikalischen
+Flaechennormierung zu verwenden. Per-Site-Werte bleiben als historische
+Lineage und als interne Geometrie-/Implementierungsorakel erhalten, duerfen
+aber nicht unveraendert in einen NK-T_BKT-Claim eingehen.
 
-Wichtige Orakel:
+Wichtige interne Orakel (per Site, **keine** NK-Claim-Normierung):
 
 - Triangular: `Upsilon(0) = 1.5 J` per Site.
 - Honeycomb: `Upsilon_2(0) = 3/4 J` per Site.
@@ -41,11 +45,11 @@ Ab PR #18/PHY041 gilt `spec/260703 PHI HEX honeycomb reference conventions audit
 | Quelle | berichtete Groesse | T-Form fuer Vergleich | Rolle |
 |---|---:|---:|---|
 | arXiv:2501.07388 | T-Wert | 0.573 | Multi-Lattice-Anker |
-| arXiv:2406.14812 | T_BKT,H = 0.571(8) | 0.571 +/- 0.008 | direkter Honeycomb-Helicity-Anker |
-| arXiv:2406.14812 | T_BKT,H = 0.560(9) | 0.560 +/- 0.009 | NN/MC-Zusatzanker |
-| arXiv:2406.12076 | beta_BKT = 1.687(3) | 0.5928 +/- 0.0011 | Upsilon / WL-Honeycomb |
-| arXiv:2406.12076 | beta_BKT = 1.635(11) | 0.6116 +/- 0.0041 | Upsilon_4 |
-| arXiv:2406.12076 | beta_BKT = 1.724(2) | 0.5800 +/- 0.0007 | Binder |
+| arXiv:2406.14812 (historische Pre-Journal-Version) | T_BKT,H = 0.571(8) | 0.571 +/- 0.008 | superseded_historical |
+| arXiv:2406.14812 (historische Pre-Journal-Version) | T_BKT,H = 0.560(9) | 0.560 +/- 0.009 | superseded_historical |
+| arXiv:2406.12076 (historische beta-Auswertung) | beta_BKT = 1.687(3) | 0.5928 +/- 0.0011 | superseded_historical |
+| arXiv:2406.12076 (historische beta-Auswertung) | beta_BKT = 1.635(11) | 0.6116 +/- 0.0041 | superseded_historical |
+| arXiv:2406.12076 (historische beta-Auswertung) | beta_BKT = 1.724(2) | 0.5800 +/- 0.0007 | superseded_historical |
 | arXiv:2406.12076 (v4 / Phys. Scr. 100 065953) | T_BKT = 0.576(3) | 0.576 +/- 0.003 | Upsilon, Wang-Landau (direkt T) |
 | arXiv:2406.12076 (v4 / Phys. Scr. 100 065953) | T_BKT = 0.575(8) | 0.575 +/- 0.008 | Upsilon, sim. annealing (direkt T) |
 | PTEP 2024 103A02 (Journal-Fassung 2406.14812) | T_BKT = 0.576(4) | 0.576 +/- 0.004 | Helicity |
@@ -58,11 +62,12 @@ Konversion: `T = 1 / beta`, `sigma_T = sigma_beta / beta^2`.
 0.576(3) ist der direkt berichtete WL-T-Wert von arXiv:2406.12076 (vorher als
 "unattribuierter Legacy-Anker" gefuehrt) und stand bis dahin gar nicht im
 Band; die Journal-Fassung von arXiv:2406.14812 berichtet andere Werte als
-arXiv v1 - beide Fassungen stehen getrennt. Die beta-Kanaele (0.580..0.612 in
-T-Form) sind eine quellen-interne Spannung zu den direkten T-Werten
-(0.560..0.576) und werden nie ineinander umgerechnet. Die neuen Zeilen sind
-**search_corroborated** (Primaertext war in der Arbeitsumgebung nicht
-abrufbar) - Primaertext-Abgleich steht aus; allein tragen sie keinen Claim.
+aeltere Versionen - beide bleiben getrennte Lineage. Die historischen
+beta-Kanaele (0.580..0.612 in T-Form) sind fuer aktuelle Interpretation
+**superseded_historical** und werden nicht mehr als aktive Referenzanker
+verwendet. Jiang/PTEP sowie die direkten de-Andrade-v4-T-Werte wurden
+primaertextlich verifiziert; aktuelle Auswertung filtert explizit nach dem
+Provenienzstatus.
 
 ## Mess-Stand
 
