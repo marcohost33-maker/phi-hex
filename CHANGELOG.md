@@ -3,6 +3,38 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-09-27] W4 Evidence-Contract Hardening (#45)
+
+### Fixed
+- **PHY042 Ein-Walker-Semantik:** Ein einzelner WL-Walker erzeugt keine
+  scheinbar gemessene Spread=0-/Voll-Domaene mehr. `walker_spread` und
+  `domain_tmax_spread004` sind dann `null`; alternative PHY032-Evidenz
+  bleibt separat als `effective_domain_basis` ausgewiesen.
+- **Pair-Gate fail-closed:** Paar-Crossings sind nur mit zwei explizit
+  belegten Domaenen quotierbar.
+- **PHY043 Report-Metadaten:** Seedzahl und maximales L werden aus dem
+  Lauf-Report gelesen; der veraltete Hardcode `n_seeds=4, L<=19` ist weg.
+- **PHY041 1/t-Instrumentierung:** echte B&P-Aktivierung und Umschalt-Sweep
+  werden jetzt im `WLResult` persistiert; zuvor blieben die geerbten
+  Defaultwerte `False/0` trotz aktiver 1/t-Politur stehen.
+- **PR-Review-Haertung:** PHY032-Fallback-Domaenen pruefen jetzt beide
+  Temperaturgrenzen; das W4-Produktionsminimum kann nicht unter 3 Walker
+  abgesenkt werden; PHY043 generalisiert die 1-%-Power-Aussage nicht mehr
+  auf beliebige n_seeds/L-Budgets.
+
+### Changed
+- Honeycomb-Literaturledger auf aktuelle Quellenfassungen rebaselined:
+  Jiang/PTEP 0.572(3) und 0.576(4); arXiv:2406.12076v4 Y2
+  0.575(8)/0.576(3), Y4 0.551(11)/0.568(1); Okabe/Otsuka 0.573 bleibt als
+  rough estimate. Alte arXiv-v1/beta-Konversionen sind explizit
+  `superseded`, nicht geloescht.
+- W4 ist in `spec/260927 PHI HEX w4 preregistration v01.md`
+  vorregistriert: >=3 Walker je produktivem L, L64-Kalibrierung vor
+  L96/128, explizite Modellwahl-Systematik und INCONCLUSIVE-Stopregeln.
+- **PHY044** als ausfuehrbarer Kalibrierungsrunner: L=64/2-Walker-WL/1-t
+  plus Wolff-Quercheck auf identischen T-Punkten; misst Kosten, Coverage,
+  1/t-Aktivierung und Y2-Disagreement, ohne einen T_BKT-Claim zu erzeugen.
+
 ## [2026-08-08] PHY043 O1-Quercheck + Review-Nachtrag + Lint-Baseline-Pin
 
 Vertragsquellen: `spec/260808 PHI HEX phy043 triangular convention-free

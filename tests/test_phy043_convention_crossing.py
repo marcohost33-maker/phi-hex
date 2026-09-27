@@ -197,3 +197,17 @@ def test_run_phy043_smoke_structure(tmp_path) -> None:
     phy043.write_report(report, out)
     text = out.read_text(encoding="utf-8")
     assert "PASS-Gates" in text and "FINDING" in text
+    # Issue #45 / Review: Metadaten werden korrekt berichtet, aber aus
+    # beliebigen n_seeds/L wird KEINE 1%-Power-Aussage abgeleitet.
+    assert "n_seeds=2, L<=7: 1%-Power UNASSESSED" in text
+    assert "keine Power-Aussage allein aus Laufmetadaten" in text
+    assert "n_seeds=4, L<=19: keine 1%-Diskriminierung erwartet" not in text
+
+
+def test_power_limit_note_is_scoped_to_fixed_pilot_budget() -> None:
+    pilot = phy043._power_limit_note(4, 19)
+    assert "keine 1%-Diskriminierung erwartet" in pilot
+    for n_seeds, max_l in ((8, 25), (4, 25), (8, 19), (2, 7)):
+        note = phy043._power_limit_note(n_seeds, max_l)
+        assert "UNASSESSED" in note
+        assert "allein aus Laufmetadaten" in note
