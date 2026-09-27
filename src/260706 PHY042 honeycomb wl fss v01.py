@@ -165,6 +165,29 @@ REF_CURRENT_KEYS = (
     "nn_ptep",
 )
 
+
+def _reference_payload() -> dict:
+    """Separate current comparison anchors from historical lineage."""
+    current, lineage, provenance = {}, {}, {}
+    for key, value in REF_BAND.items():
+        src, reported, status = REF_PROVENANCE[key]
+        encoded = list(value) if isinstance(value, tuple) else value
+        provenance[key] = {
+            "source": src,
+            "reported": reported,
+            "status": status,
+        }
+        if key in REF_CURRENT_KEYS:
+            current[key] = encoded
+        else:
+            lineage[key] = encoded
+    return {
+        "current": current,
+        "lineage": lineage,
+        "provenance": provenance,
+    }
+
+
 # PHY041-Bruecke: committed Reportwerte (results/260702 PHY041 ... report.txt)
 PHY041_PAIRS = {(12, 16): 0.5951, (12, 24): 0.6029, (16, 24): 0.6087}
 PHY041_Y4_DIP_L24 = 0.6500
@@ -283,38 +306,83 @@ def _domain_status(d: dict) -> dict:
 
 
 def reanalyse_domains(report: dict, thr: float = DOMAIN_THRESHOLD) -> dict:
-    """Domaenen + Paar-Quotierbarkeit aus einem COMMITTETEN PHY042-Report
-    neu ableiten (MC-frei: nutzt nur die gespeicherten Walker-Kurven).
+    """Re-derive domains and pair quotability from a committed PHY042 report.
 
-    Zweck (Issue #45 §2): der Report 260707 ist per voller SHA-256 gepinnt
-    und wird NICHT umgeschrieben (AGENTS.md: Lineage ehrlich). Diese
-    Funktion liefert die korrigierte Domaenen-Semantik als separates,
-    reproduzierbares Erratum und prueft zugleich, dass die gemessenen
-    Domaenen (L32/L48) und die Quotierbarkeits-Urteile aus den Kurven
-    folgen.
+    Current semantics require an evidenced lower *and* upper bound on both
+    sizes. For historical single-walker L=24, the only admissible fallback is
+    the exact eight-row PHY032 drift guard when its committed gate is green.
     """
     Ls = [int(x) for x in report["Ls"]]
-    t_grid = None
     dom = {}
+    t_grids: dict[int, np.ndarray] = {}
     for L in Ls:
         nw = int(report["n_walkers"][str(L)])
         cs = [report["curves"][f"{L}_{w}"] for w in range(nw)]
         t_grid = np.asarray(cs[0]["T"], dtype=float)
+        t_grids[L] = t_grid
         dom[L] = _walker_domain([c["y2"] for c in cs], t_grid, thr)
+
+    bounds: dict[int, tuple[float, float] | None] = {}
+    basis: dict[int, str] = {}
+    for L in Ls:
+        if dom[L]["measured"] and np.any(dom[L]["mask"]):
+            vt = t_grids[L][dom[L]["mask"]]
+            bounds[L] = (float(vt.min()), float(vt.max()))
+            basis[L] = "walker_spread"
+        else:
+            bounds[L] = None
+            basis[L] = (
+                "measured_empty" if dom[L]["measured"] else "unmeasured"
+            )
+
+    grid_rows = report.get("validation_vs_phy032_grid", [])
+    grid_gate = bool(
+        report.get("pass_gates", {}).get("PASS_WL_Y2_MATCHES_PHY032_GRID_L24")
+    )
+    if 24 in Ls and bounds.get(24) is None and grid_gate:
+        try:
+            valid_rows = (
+                isinstance(grid_rows, list)
+                and len(grid_rows) == 8
+                and all(
+                    int(row.get("L", -1)) == 24
+                    and bool(row.get("ok")) is True
+                    and math.isfinite(float(row["T"]))
+                    for row in grid_rows
+                )
+            )
+        except (KeyError, TypeError, ValueError, OverflowError):
+            valid_rows = False
+        if valid_rows:
+            ts = [float(row["T"]) for row in grid_rows]
+            bounds[24] = (min(ts), max(ts))
+            basis[24] = "PHY032_drift_guard"
+
     pairs = {}
     for key, tb in report["pair_tbkt_mean_curves"].items():
         a, b = (int(x) for x in key.split("_"))
-        q, limit, basis = _pair_quotable(tb, dom[a], dom[b])
-        pairs[key] = {"tbkt": tb, "quotable": q, "limit_tmax": limit,
-                      "basis": basis,
-                      "quotable_as_committed": bool(
-                          report["pair_quotable"][key])}
-    return {"threshold": thr,
-            "domain_status": {str(L): _domain_status(dom[L]) for L in Ls},
-            "committed_domain_tmax_spread004":
-                report["domain_tmax_spread004"],
-            "pairs": pairs}
-
+        ba, bb = bounds.get(a), bounds.get(b)
+        quotable = _pair_inside_bounds(tb, ba, bb)
+        limit = None if ba is None or bb is None else min(ba[1], bb[1])
+        pairs[key] = {
+            "tbkt": tb,
+            "quotable": bool(quotable),
+            "limit_tmax": limit,
+            "bounds_a": ba,
+            "bounds_b": bb,
+            "basis_a": basis.get(a),
+            "basis_b": basis.get(b),
+            "quotable_as_committed": bool(report["pair_quotable"][key]),
+        }
+    return {
+        "threshold": thr,
+        "domain_status": {str(L): _domain_status(dom[L]) for L in Ls},
+        "effective_domain_bounds": {str(L): bounds[L] for L in Ls},
+        "effective_domain_basis": {str(L): basis[L] for L in Ls},
+        "committed_domain_tmax_spread004":
+            report["domain_tmax_spread004"],
+        "pairs": pairs,
+    }
 
 def _pair_quotable(tb, dom_a: dict, dom_b: dict) -> tuple:
     """(quotierbar, T-Grenze, Basis): Crossing existiert UND liegt in der
@@ -712,8 +780,8 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
         sy = walker_pairs.get((24, 32), {}).get("spread", float("nan"))
         print(f"    - QUOTIERBAR: T_BKT(24,32) = {tb2432:.4f} "
               f"+- {sy / 2:.4f} (Sampler-Systematik = halber Walker-Spread); "
-              f"Lage im Referenzband: nahe Upsilon-beta-Kanal 0.5928, "
-              f"unterhalb PHY041 (16,24)=0.6087.")
+              "Literaturvergleich ausschliesslich ueber aktuell verifizierte "
+              "Referenzkanaele; superseded beta-Kanaele bleiben nur Lineage.")
     # Haertung 2026-07-10 (Code-Audit L2): default schuetzt den
     # n_walkers=1-Pfad (leerer Generator -> ValueError VOR dem Report).
     max_spread = max((dom[L]["spread"].max() for L in Ls
@@ -743,12 +811,15 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
     print(f"    - Laufzeit gesamt: {time.time() - t_start:.0f}s "
           f"({len(jobs)} WL-Jobs, max_workers={max_workers})")
 
+    refs = _reference_payload()
     return {
         "module": "PHY042_honeycomb_wl_fss",
         "attribution": "Coworker Research / Coworkerz",
         "date": "2026-07-06",
-        "reference_band": {k: (list(v) if isinstance(v, tuple) else v)
-                           for k, v in REF_BAND.items()},
+        "reference_band": refs["current"],
+        "reference_band_status": "current_only",
+        "reference_lineage": refs["lineage"],
+        "reference_provenance": refs["provenance"],
         "Ls": list(Ls),
         "n_walkers": {str(L): walkers[L] for L in Ls},
         "master_seed": master_seed,
@@ -837,7 +908,7 @@ def domain_erratum(report_path: Path = _ROOT / PHY042_REPORT_V01) -> dict:
     return {
         "module": "PHY042_domain_semantics_erratum",
         "attribution": "Coworker Research / Coworkerz",
-        "date": "2026-09-26",
+        "date": "2026-09-27",
         "issue": "#45 section 2",
         "source_report": PHY042_REPORT_V01,
         "source_sha256": hashlib.sha256(raw).hexdigest(),
@@ -845,8 +916,9 @@ def domain_erratum(report_path: Path = _ROOT / PHY042_REPORT_V01) -> dict:
                  "and walker_spread['24'] = 0.0 x31. Both are construction "
                  "artefacts of the single-walker path (grid end / zero), "
                  "not measurements. Corrected semantics: null + reason. "
-                 "Measured domains (L32, L48) and all pair-quotability "
-                 "verdicts are unchanged (re-derived from stored curves)."),
+                 "Pair quotability is re-derived with two-sided evidenced "
+                 "[T_min,T_max] bounds; L24 may use only an exact eight-row, "
+                 "green PHY032 drift-guard fallback."),
         **reanalyse_domains(rep),
     }
 
