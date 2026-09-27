@@ -345,8 +345,10 @@ def reanalyse_domains(report: dict, thr: float = DOMAIN_THRESHOLD) -> dict:
                 isinstance(grid_rows, list)
                 and len(grid_rows) == 8
                 and all(
-                    int(row.get("L", -1)) == 24
-                    and bool(row.get("ok")) is True
+                    type(row.get("L")) is int
+                    and row["L"] == 24
+                    and row.get("ok") is True
+                    and type(row.get("T")) in (int, float)
                     and math.isfinite(float(row["T"]))
                     for row in grid_rows
                 )
