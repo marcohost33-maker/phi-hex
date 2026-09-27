@@ -49,11 +49,21 @@ serialisiert, sondern als `null / unmeasured`.
 
 ### W4-G1 — L=64 Kalibrierung vor Skalierung
 
-Vor L=96/128:
-- L=64, 2 Walker nur zur Kosten-/Konvergenzkalibrierung,
+Vor L=96/128 wird `PHY044` ausgefuehrt:
+- L=64, 2 WL-Walker nur zur Kosten-/Konvergenzkalibrierung,
 - reale `wl_sweeps`, Walltime, Binzahl, Produktionsdichte, Rand-Leak,
   unbesetzte kanonische Masse und Y2-Walker-Spread erfassen,
-- daraus Kostenexponent **messen**, nicht aus L^p annehmen.
+- **B&P-1/t-Instrumentierung bindend pruefen:** jeder Walker muss
+  `one_over_t_engaged=true` und `0 < sweeps_at_1t <= wl_sweeps` melden,
+- an denselben T-Punkten einen kanonischen Wolff-Quercheck mit Y2+SEM und
+  Walltime erfassen,
+- daraus Kosten und Unsicherheits-/Disagreement-Proxies **messen**, nicht aus
+  einem angenommenen L^p oder aus Walkerzahl allein ableiten.
+
+WL-Walker-Spread und Wolff-SEM sind unterschiedliche Groessen und duerfen
+nicht zu einer scheinbar gemeinsamen Standardabweichung verrechnet werden.
+Sie werden nebeneinander berichtet. Der Sampler fuer die Grossproduktion wird
+erst nach diesem Vergleich festgelegt.
 
 Die 2-Walker-Kalibrierung darf W4-G0 nicht ersetzen.
 
@@ -117,11 +127,18 @@ Diese Kategorien bewerten Datenkonsistenz, nicht die "richtige" Publikation.
 ## 6. Stop-/Scale-Regel nach L=64
 
 Nach der L=64-Kalibrierung:
+- **Stop**, wenn die 1/t-Phase nicht nachweislich greift, Rand-/Coverage-Gates
+  scheitern oder der Zwei-Walker-Y2-Spread >=0.04 ist.
 - Produktionsbudget fuer L=96/128 nur freigeben, wenn gemessene Kosten und
   Konvergenz ein vollstaendiges W4-G0..G3-Design realistisch machen.
-- Andernfalls NEGATIVE_RESULT/INCONCLUSIVE dokumentieren und auf effizientere
-  Samplingstrategie oder HPC/GPU-Pfad wechseln, statt unterbudgetierte
-  Gross-L-Werte zu produzieren.
+- WL wird nicht allein deshalb bevorzugt, weil mehr Walker parallelisierbar
+  sind. Die Entscheidung muss den PHY044-Wolff-Quercheck und die gemessene
+  Informationsqualitaet pro Rechenzeit einbeziehen.
+- Wenn der kanonische Wolff-Pfad fuer die benoetigten Observablen klar
+  effizienter/stabiler ist, wird W4 auf eine Wolff-dominante Produktionslinie
+  rebaselined und WL als DOS-/Crosscheck-Kanal behalten.
+- Andernfalls NEGATIVE_RESULT/INCONCLUSIVE dokumentieren und erst dann einen
+  HPC/GPU-Pfad evaluieren, statt unterbudgetierte Gross-L-Werte zu produzieren.
 
 ## 7. Reproduzierbarkeit
 
@@ -131,6 +148,8 @@ Jeder Lauf protokolliert mindestens:
 - master_seed und alle Stream-IDs,
 - L, Walkerzahl, T-Gitter, Energie-Fenster, Binzahl,
 - `lnf_final`, `wl_sweeps`, `prod_sweeps`, Walltime,
+- `one_over_t_engaged`, `sweeps_at_1t`,
+- Wolff-Quercheck: n_seeds, n_measure, SEM und Walltime je T,
 - Leak/Coverage-Diagnostik,
 - Walker-Spread und Domaenenbasis,
 - alle L-Paar-Crossings mit Quotierbarkeitsgrund,
