@@ -24,7 +24,41 @@ def test_committed_g4_gate_matches_deterministic_preflight():
     )
     assert report["evidence"]["ci_run_id"] == 36358011720
     assert report["evidence"]["ci_run_number"] == 196
-    assert report["preflight"] == phy050.preflight()
+    current = phy050.preflight()
+    # Gate evidence is semantically deterministic across supported Python
+    # versions. Non-decision diagnostic scores can differ by a few ulps
+    # because their floating-point reduction order/libm implementation is
+    # runtime-dependent; never require byte-identical JSON floats here.
+    assert report["preflight"]["module"] == current["module"]
+    assert report["preflight"]["gates"] == current["gates"]
+    assert (
+        report["preflight"]["production_interpretation_enabled"]
+        == current["production_interpretation_enabled"]
+    )
+    assert report["preflight"]["claim_ceiling"] == current["claim_ceiling"]
+    ref_g4 = report["preflight"]["g4"]
+    cur_g4 = current["g4"]
+    for key in (
+        "gate",
+        "passed",
+        "missing_input_fail_closed",
+        "flat_null_rejected_as_unidentifiable",
+        "noncollapse_null_rejected_as_unidentifiable",
+        "claim_ceiling",
+    ):
+        assert ref_g4[key] == cur_g4[key]
+    assert len(ref_g4["recovery_cases"]) == len(cur_g4["recovery_cases"])
+    for ref_case, cur_case in zip(
+        ref_g4["recovery_cases"], cur_g4["recovery_cases"], strict=True
+    ):
+        for key in ("truth", "c_truth", "fit", "quotable", "pass"):
+            assert ref_case[key] == cur_case[key]
+        assert ref_case["abs_error"] == pytest.approx(
+            cur_case["abs_error"], rel=0.0, abs=1e-12
+        )
+        assert ref_case["score"] == pytest.approx(
+            cur_case["score"], rel=0.0, abs=1e-12
+        )
     assert report["preflight"]["g4"]["passed"] is True
     assert report["preflight"]["production_interpretation_enabled"] is False
 
