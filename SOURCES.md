@@ -360,3 +360,5 @@ bleiben unveraendert als Lineage stehen; letzte Zeile pro Pfad gewinnt.
 | 2EF1DADA9E80CBA4 | 2026-09-28 | tests | repo-native: `tests/test_phy050_correlation_fss.py` (stand: G0-Provenienztests fuer fehlende/falsche Source-Hashes und Thread-Pins; supersediert vorherige Zeile fuer diesen Pfad) |
 | B3F90443DB3C455C | 2026-09-28 | spec | repo-native: `spec/260927 PHI HEX w4 honeycomb preregistration v03 correlation-ratio.md` (stand: pre-data Runtime-/Source-Provenienz-Gate bindet Campaign und Adjudikation an exakte Softwarestaende; supersediert vorherige Zeile fuer diesen Pfad) |
 | A25A81D02D633B33 | 2026-09-28 | spec | repo-native: `spec/260927 PHI HEX w4 v03a fss estimator hardening.md` (stand: v03a G0/Resume um computational provenance erweitert; supersediert vorherige Zeile fuer diesen Pfad) |
+
+| 4235FD75CE39C3C7 | 2026-09-28 | tests | repo-native: `tests/test_phy050_correlation_fss.py` (stand: G4-Gate-Log wird versionsuebergreifend semantisch streng verglichen; reine Float-Rundungsdifferenzen diagnostischer Scores bis 1e-12 duerfen den Evidenzvertrag nicht faelschlich brechen; Gate-/Fit-/Claim-Felder bleiben exakt gebunden) |
