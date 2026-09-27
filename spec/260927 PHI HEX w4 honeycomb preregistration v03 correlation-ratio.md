@@ -103,7 +103,13 @@ T_BKT bei endlicher Korrelationslaenge R_L2<R_L1, also D(T)<0, mit
 werden. Fehlende, nicht-endliche oder ungueltige Punkte brechen die Persistenz
 (fail closed).
 
-### 5.2 FSS-Schaetzer
+### 5.2 FSS-Schaetzer — durch v03a mechanisch supersediert
+
+Der folgende Absatz dokumentiert den urspruenglich vorregistrierten
+Spline-Ansatz. **Operativ bindend ist seit dem pre-data Addendum
+`260927 PHI HEX w4 v03a fss estimator hardening.md` der dort definierte
+deterministische symmetric cross-size collapse score.** Kein Produktionslauf
+darf auf die hier historische Spline-Mechanik zurueckfallen.
 
 Primaer wird die Okabe/Otsuka-Form verwendet:
 R(T,L) = F(X),  X = L / exp(c / sqrt(T-T_BKT)), fuer T>T_BKT.
@@ -153,14 +159,21 @@ Bestwert-Claim.
 ## 7. Pflicht-Gates vor Physikinterpretation
 
 G0 INPUT:
-- alle erwarteten (L,T,Seed)-Jobs vorhanden;
-- endliche g(L/4), g(L/2);
+- exakt die vorregistrierten Metadaten n_seeds=12, n_therm=1000,
+  n_meas=4000;
+- exakt 5*29*12 erwartete Rohzeilen, keine Zusatz-/Fremdzeilen;
+- `complete is True` und `unmeasured == []`;
+- alle erwarteten (L,T,Seed)-Jobs mit exakter (L,t_idx,T,s,seed)-Identitaet;
+- endliche, numerisch parsebare g(L/4), g(L/2); malformed Werte fail closed
+  statt den Adjudikator zu crashen;
 - Nenner |<g(L/4)>| > 1e-6.
 
 VAL-BIT BACKEND:
 - wenn Numba verfuegbar ist, muss ein identischer Tiny-Wolff-Lauf bei gleichem
   Seed Python und Numba bit-identische Korrelationsreihen liefern; andernfalls
-  ist Produktion gesperrt.
+  ist Produktion gesperrt;
+- diese Sperre bindet auch den direkten `_job()`-/Worker-Pfad: blosse
+  Numba-Verfuegbarkeit darf den Produktionskernel nicht autorisieren.
 
 G1 GEOMETRY:
 - Translation um L liefert identische Siteindizes;
@@ -200,3 +213,19 @@ bestandenen Gates:
 - W4-v02 / PHY046: per-area Helicity, Wolff, vorregistrierter Finding.
 - W4-v03 / PHY049: Correlation Ratio, normierungsfrei, unabhaengiger
   Diskriminationstest.
+
+
+## 10. Preproduction-Integritaetsnachtrag 2026-09-27
+
+Vor jeder PHY049-Produktion gelten zusaetzlich fail-closed:
+
+- PHY050-`assess_production()` akzeptiert fuer eine Produktionsentscheidung
+  **exakt 1000** Bootstrap-Replikate. Kleinere Testbudgets bleiben zulaessig
+  fuer interne Unit-Tests von `bootstrap_tbkt()`, koennen aber weder G5 noch
+  G6 noch eine Physikentscheidung freischalten.
+- G0 bindet neben L/T/Seed auch n_therm und n_meas sowie die exakte
+  Rohzeilenzahl. Ein formal komplettes Produkt mit abweichendem
+  Simulationsbudget ist kein W4-v03-Produkt.
+- Persistierte Rohmomente werden als untrusted evidence behandelt:
+  fehlende/nichtnumerische/NaN/Inf-Werte fuehren zu G0=FAIL, nicht zu einer
+  Exception ausserhalb des Adjudikators.
