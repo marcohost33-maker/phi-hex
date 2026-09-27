@@ -194,3 +194,57 @@ Konsequenz fuer W4:
   werden;
 - der naechste diskriminierende Test ist der vorregistrierte
   Correlation-Ratio-Quercheck W4-v03/PHY049.
+
+
+## 8. Nachtrag 4 - de-Andrade-Primarytext und Versionsdrift 2026-09-27
+
+Dieser Nachtrag supersediert fuer arXiv:2406.12076 die aelteren
+`search_corroborated`-/`primary_text_pending`-Einstufungen in Sec.2 und
+Nachtrag 3, soweit sie der aktuellen v4/Publikationsfassung widersprechen.
+
+### Aktuelle Fassung v4 / Physica Scripta
+
+Der primaere v4-Text definiert Upsilon und Upsilon_4 in Gl. (16)/(19) und
+schreibt unmittelbar danach vor, dass beide Ausdruecke fuer das Honeycomb-Gitter
+mit `4/(3 sqrt(3))` multipliziert werden muessen. Der Text begruendet den
+Faktor mit dem Verhaeltnis der Spindichten gegenueber dem Quadratgitter.
+Anschliessend wird der so definierte Helicity-Modulus mit dem
+Nelson-Kosterlitz-Kriterium `Upsilon = 2 T / pi` verglichen.
+
+Damit ist der Normierungsstatus fuer die aktuelle de-Andrade-Fassung ab
+2026-09-27 **primary_text_verified**. Die vorher offene Hypothese, der direkte
+Helicity-Kanal koenne ein roher per-Site-Wert sein, ist auch fuer diese
+Referenzfamilie nicht haltbar.
+
+Die aktuelle v4-Fassung (letzte Revision 2025-04-11) berichtet im Abstract als
+beste FSS-Schaetzungen direkt
+`T_BKT = 0.575(8)` (simulated annealing) und
+`T_BKT = 0.576(3)` (Wang-Landau).
+
+### Versionsdrift der beta-Kanaele
+
+Die v2-Fassung (2024-11-27) berichtet dagegen
+`beta_BKT = 1.696(3)` aus Upsilon,
+`1.67(1)` aus Upsilon_4 und
+`1.724(2)` aus dem Binder-Cumulant. Die aktuelle v4-Abstractfassung ersetzt
+diese Darstellung durch direkte T-Werte.
+
+Folge fuer die Provenienz:
+- direkte v4-T-Kanaele und der Honeycomb-Geometriefaktor sind
+  **primary_text_verified**;
+- historische beta-Werte sind **versionsspezifische Lineage** und duerfen
+  nicht mit den aktuellen v4-T-Werten zu einem gemeinsamen Kanal vermischt
+  oder durch einfache Inversion gleichgesetzt werden;
+- die in frueheren Repo-Snapshots gefuehrten `1.687(3)` / `1.635(11)`
+  bleiben historisch dokumentiert, aber ihre genaue v3-Zuordnung wurde in
+  dieser Sitzung nicht primaertextlich reproduziert und traegt keinen
+  aktuellen Referenz-Claim.
+
+### Konsequenz fuer W4
+
+Sowohl Jiang/PTEP als auch de Andrade v4 verwenden fuer Honeycomb einen
+expliziten Dichte-/Geometriefaktor. Die Restdiskrepanz von PHY046 gegen die
+normierungsfreien Referenzkanaele kann daher nicht mehr plausibel als blosse
+Literatur-per-Site-Konvention behandelt werden. Der normierungsfreie
+Correlation-Ratio-Quercheck W4-v03/PHY049/PHY050 bleibt der richtige
+diskriminierende Test.
