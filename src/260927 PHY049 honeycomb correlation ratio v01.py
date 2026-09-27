@@ -11,7 +11,9 @@ physics data.
 """
 from __future__ import annotations
 
+import argparse
 import importlib.util
+import json
 import math
 import os
 import sys
@@ -54,6 +56,8 @@ W4V3_N_MEAS = 4000
 W4V3_SEED_BASE = 49_000_000
 W4V3_MAX_WORKERS = 4
 W4V3_WALL_BUDGET_H = 24.0
+W4V3_RESULT_PATH = (_SRC.parent / "results" /
+                    "260927 PHY049 honeycomb correlation-ratio production.json")
 W4V3_MIN_DEN = 1e-6
 W4V3_SPLAY_Z = 2.0
 W4V3_SPLAY_MIN_POINTS = 3
@@ -151,17 +155,125 @@ def _job(args: tuple) -> dict:
     }
 
 
-def produce(ladder=W4V3_LADDER, t_grid=W4V3_T_GRID,
-            n_seeds=W4V3_N_SEEDS, n_therm=W4V3_N_THERM,
-            n_meas=W4V3_N_MEAS, max_workers=W4V3_MAX_WORKERS,
-            wall_budget_h=W4V3_WALL_BUDGET_H) -> dict:
-    """Produce raw seed-level means without crossing the preregistered size boundary.
+def _campaign_contract(
+    ladder: tuple[int, ...],
+    t_grid: tuple[float, ...],
+    n_seeds: int,
+    n_therm: int,
+    n_meas: int,
+    max_workers: int,
+    wall_budget_h: float,
+) -> dict:
+    """Immutable execution contract persisted in every checkpoint."""
+    return {
+        "ladder": list(ladder),
+        "t_grid": list(t_grid),
+        "n_seeds": n_seeds,
+        "n_therm": n_therm,
+        "n_meas": n_meas,
+        "max_workers": max_workers,
+        "wall_budget_h": wall_budget_h,
+    }
 
-    The public production path is locked behind the complete preflight
-    (VAL-BIT plus G1-G4). Work is committed one complete L at a time. Once
-    the wall budget is exhausted, no further lattice size is started; all
-    jobs for those sizes are recorded as unmeasured. A single already-started
-    size is allowed to finish so partial-L data cannot masquerade as complete.
+
+def _atomic_write_json(path: Path, payload: dict) -> None:
+    """Durably replace a checkpoint; never expose a partially written JSON."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    with tmp.open("w", encoding="utf-8", newline="\n") as handle:
+        json.dump(payload, handle, indent=2, sort_keys=True, allow_nan=False)
+        handle.write("\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(tmp, path)
+
+
+def _completed_block_valid(
+    rows: list[dict],
+    L: int,
+    t_grid: tuple[float, ...],
+    n_seeds: int,
+) -> bool:
+    """Resume only an exact, finite, complete L block; partial blocks are toxic."""
+    rr = [r for r in rows if isinstance(r, dict) and r.get("L") == L]
+    expected_n = len(t_grid) * n_seeds
+    if len(rr) != expected_n:
+        return False
+    seen = set()
+    for r in rr:
+        try:
+            k = r["t_idx"]
+            seed_idx = r["s"]
+            if type(k) is not int or type(seed_idx) is not int:
+                return False
+            if not (0 <= k < len(t_grid) and 0 <= seed_idx < n_seeds):
+                return False
+            if (k, seed_idx) in seen:
+                return False
+            seen.add((k, seed_idx))
+            if r.get("seed") != seed_for(L, k, seed_idx):
+                return False
+            if type(r.get("T")) not in (int, float):
+                return False
+            if float(r["T"]) != t_grid[k]:
+                return False
+            for key in ("g_quarter", "g_half", "wall_s"):
+                if type(r.get(key)) not in (int, float):
+                    return False
+                if not math.isfinite(float(r[key])):
+                    return False
+        except (KeyError, TypeError, ValueError, OverflowError):
+            return False
+    return len(seen) == expected_n
+
+
+def _checkpoint_payload(
+    *,
+    pre: dict,
+    contract: dict,
+    rows: list[dict],
+    unmeasured: list[dict],
+    wall_s: float,
+    status: str,
+) -> dict:
+    expected = (
+        len(contract["ladder"])
+        * len(contract["t_grid"])
+        * contract["n_seeds"]
+    )
+    complete = len(rows) == expected and not unmeasured
+    return {
+        "module": "PHY049_honeycomb_correlation_ratio_v01",
+        "spec": ("spec/260927 PHI HEX w4 honeycomb preregistration v03 "
+                 "correlation-ratio.md"),
+        "preflight_gates": dict(pre["gates"]),
+        **contract,
+        "campaign_contract": dict(contract),
+        "checkpoint_status": "COMPLETE" if complete else status,
+        "wall_s": wall_s,
+        "rows": rows,
+        "unmeasured": unmeasured,
+        "complete": complete,
+    }
+
+
+def produce(
+    ladder=W4V3_LADDER,
+    t_grid=W4V3_T_GRID,
+    n_seeds=W4V3_N_SEEDS,
+    n_therm=W4V3_N_THERM,
+    n_meas=W4V3_N_MEAS,
+    max_workers=W4V3_MAX_WORKERS,
+    wall_budget_h=W4V3_WALL_BUDGET_H,
+    *,
+    checkpoint_path: str | Path | None = None,
+    resume: bool = False,
+) -> dict:
+    """Produce raw seed means with fail-closed, whole-L transactional resume.
+
+    Public production is locked behind VAL-BIT + G1-G4. Checkpoints are
+    committed only after a complete lattice-size block; an interrupted
+    in-flight L is recomputed rather than accepting partial evidence.
     """
     pre = preflight()
     if not pre["production_measurement_eligible"]:
@@ -175,42 +287,131 @@ def produce(ladder=W4V3_LADDER, t_grid=W4V3_T_GRID,
     t_grid = tuple(float(T) for T in t_grid)
     for L in ladder:
         _validate_L(L)
-    if wall_budget_h < 0:
-        raise ValueError("wall_budget_h must be >= 0")
+    if (
+        type(n_seeds) is not int
+        or type(n_therm) is not int
+        or type(n_meas) is not int
+        or type(max_workers) is not int
+        or min(n_seeds, n_therm, n_meas, max_workers) <= 0
+    ):
+        raise ValueError("seed/sweep/worker counts must be positive integers")
+    if type(wall_budget_h) not in (int, float) or wall_budget_h < 0:
+        raise ValueError("wall_budget_h must be a non-negative number")
+
+    wall_budget_h = float(wall_budget_h)
+    contract = _campaign_contract(
+        ladder, t_grid, n_seeds, n_therm, n_meas, max_workers, wall_budget_h
+    )
+    checkpoint = None if checkpoint_path is None else Path(checkpoint_path)
+    rows: list[dict] = []
+    unmeasured: list[dict] = []
+    prior_wall_s = 0.0
+    completed: set[int] = set()
+
+    if resume:
+        if checkpoint is None or not checkpoint.exists():
+            raise ValueError("resume requires an existing checkpoint_path")
+        with checkpoint.open("r", encoding="utf-8") as handle:
+            saved = json.load(handle)
+        if saved.get("campaign_contract") != contract:
+            raise RuntimeError("checkpoint contract does not match this campaign")
+        if saved.get("preflight_gates") != pre["gates"]:
+            raise RuntimeError("checkpoint preflight evidence does not match")
+        if saved.get("unmeasured"):
+            raise RuntimeError(
+                "terminal WALL_BUDGET_STOP checkpoint cannot be resumed"
+            )
+        rows = list(saved.get("rows", []))
+        if any(r.get("L") not in ladder for r in rows if isinstance(r, dict)):
+            raise RuntimeError("checkpoint contains foreign lattice rows")
+        for L in ladder:
+            count = sum(
+                1 for r in rows
+                if isinstance(r, dict) and r.get("L") == L
+            )
+            if count == 0:
+                continue
+            if not _completed_block_valid(rows, L, t_grid, n_seeds):
+                raise RuntimeError(f"checkpoint has partial/invalid L={L} block")
+            completed.add(L)
+        if saved.get("complete") is True:
+            if completed != set(ladder):
+                raise RuntimeError("checkpoint claims complete with missing L")
+            return saved
+        try:
+            prior_wall_s = float(saved.get("wall_s", 0.0))
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise RuntimeError("checkpoint wall_s is invalid") from exc
+        if not math.isfinite(prior_wall_s) or prior_wall_s < 0.0:
+            raise RuntimeError("checkpoint wall_s is invalid")
+    elif checkpoint is not None and checkpoint.exists():
+        raise FileExistsError(
+            "checkpoint exists; pass resume=True or choose a new path"
+        )
+
     t0 = time.perf_counter()
-    deadline = t0 + 3600.0 * float(wall_budget_h)
-    rows = []
-    unmeasured = []
+    budget_s = 3600.0 * wall_budget_h
 
     for L in ladder:
-        jobs = [(L, k, T, s, n_therm, n_meas)
-                for k, T in enumerate(t_grid) for s in range(n_seeds)]
-        if time.perf_counter() >= deadline:
-            unmeasured.extend(
-                {"L": L, "t_idx": k, "T": T, "s": s,
-                 "seed": seed_for(L, k, s), "reason": "WALL_BUDGET_STOP"}
-                for _L, k, T, s, _nt, _nm in jobs
-            )
+        if L in completed:
             continue
+        jobs = [
+            (L, k, T, s, n_therm, n_meas)
+            for k, T in enumerate(t_grid)
+            for s in range(n_seeds)
+        ]
+        elapsed = prior_wall_s + (time.perf_counter() - t0)
+        if elapsed >= budget_s:
+            for pending_L in ladder:
+                if pending_L in completed or pending_L < L:
+                    continue
+                for k, T in enumerate(t_grid):
+                    for seed_idx in range(n_seeds):
+                        unmeasured.append({
+                            "L": pending_L,
+                            "t_idx": k,
+                            "T": T,
+                            "s": seed_idx,
+                            "seed": seed_for(pending_L, k, seed_idx),
+                            "reason": "WALL_BUDGET_STOP",
+                        })
+            break
+
         if max_workers <= 1:
-            rows.extend(_job(j) for j in jobs)
+            block = [_job(j) for j in jobs]
         else:
             with ProcessPoolExecutor(max_workers=max_workers) as ex:
-                rows.extend(ex.map(_job, jobs, chunksize=1))
+                block = list(ex.map(_job, jobs, chunksize=1))
+        if not _completed_block_valid(block, L, t_grid, n_seeds):
+            raise RuntimeError(f"internal production block validation failed L={L}")
+        rows.extend(block)
+        completed.add(L)
 
-    return {
-        "module": "PHY049_honeycomb_correlation_ratio_v01",
-        "spec": ("spec/260927 PHI HEX w4 honeycomb preregistration v03 "
-                 "correlation-ratio.md"),
-        "preflight_gates": dict(pre["gates"]),
-        "ladder": list(ladder), "t_grid": list(t_grid),
-        "n_seeds": n_seeds, "n_therm": n_therm, "n_meas": n_meas,
-        "max_workers": max_workers, "wall_budget_h": wall_budget_h,
-        "wall_s": time.perf_counter() - t0,
-        "rows": rows, "unmeasured": unmeasured,
-        "complete": len(unmeasured) == 0,
-    }
+        if checkpoint is not None:
+            elapsed = prior_wall_s + (time.perf_counter() - t0)
+            payload = _checkpoint_payload(
+                pre=pre,
+                contract=contract,
+                rows=rows,
+                unmeasured=[],
+                wall_s=elapsed,
+                status="IN_PROGRESS",
+            )
+            _atomic_write_json(checkpoint, payload)
 
+    elapsed = prior_wall_s + (time.perf_counter() - t0)
+    status = "WALL_BUDGET_STOP" if unmeasured else "IN_PROGRESS"
+    product = _checkpoint_payload(
+        pre=pre,
+        contract=contract,
+        rows=rows,
+        unmeasured=unmeasured,
+        wall_s=elapsed,
+        status=status,
+    )
+    if checkpoint is not None:
+        _atomic_write_json(checkpoint, product)
+    return product
 
 def ratio_of_means(g_quarter: np.ndarray, g_half: np.ndarray) -> float | None:
     """R=<g(L/2)>/<g(L/4)>; never mean of per-seed ratios."""
@@ -428,6 +629,49 @@ def preflight() -> dict:
         ),
     }
 
+def _main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="PHY049 preflight or preregistered production campaign"
+    )
+    parser.add_argument(
+        "--production",
+        action="store_true",
+        help="run the exact W4-v03 production campaign",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=W4V3_RESULT_PATH,
+        help="atomic production checkpoint/result JSON",
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="resume an exact whole-L checkpoint; never resumes budget-stop data",
+    )
+    args = parser.parse_args(argv)
+    if not args.production:
+        print(json.dumps(preflight(), indent=2, sort_keys=True))
+        return 0
+    product = produce(
+        checkpoint_path=args.output,
+        resume=args.resume,
+    )
+    summary = {
+        "output": str(args.output),
+        "checkpoint_status": product["checkpoint_status"],
+        "complete": product["complete"],
+        "rows": len(product["rows"]),
+        "unmeasured": len(product["unmeasured"]),
+        "wall_s": product["wall_s"],
+        "claim_ceiling": (
+            "NO_PHYSICS_INTERPRETATION: run PHY050 assess_production() only "
+            "after an exact complete PHY049 product exists."
+        ),
+    }
+    print(json.dumps(summary, indent=2, sort_keys=True))
+    return 0
+
+
 if __name__ == "__main__":
-    import json
-    print(json.dumps(preflight(), indent=2))
+    raise SystemExit(_main())
