@@ -168,6 +168,11 @@ PHY049 data and committed gate evidence in `results/`.
   finite-size scaling for KT/BKT systems.
 - S. M. Bhattacharjee and F. Seno, J. Phys. A 34, 6375 (2001) - quantitative
   objective functions for data-collapse assessment.
+- Y.-D. Hsieh, Y.-J. Kao and A. W. Sandvik, J. Stat. Mech. P09001 (2013),
+  arXiv:1302.2900 - high-precision BKT FSS showing that subleading logarithmic
+  corrections can materially shift extrapolated T_BKT values. This does not
+  replace the correlation-ratio estimator, but it motivates the strict
+  leave-one-L/window robustness gate and the claim ceiling.
 
 ## 9. Preproduction review hardening - 2026-09-27
 
@@ -197,6 +202,17 @@ fail-open paths. They are now part of the binding contract:
   path allowed to combine G0/G4/G5/G6, bootstrap uncertainty, model spread,
   and the internal discrimination label. It remains fail-closed when any
   prerequisite is non-quotable.
+- **Exact production contract:** G0 requires n_seeds=12, n_therm=1000,
+  n_meas=4000, exactly 5*29*12 raw rows, `complete is True`,
+  `unmeasured == []`, exact row identity, and finite parseable moments.
+  Extra rows, altered budgets, missing metadata and malformed moments fail
+  closed.
+- **Bootstrap contract:** `assess_production()` authorizes production
+  adjudication only with exactly 1000 replicates. Reduced bootstrap counts may
+  be used in isolated unit tests but must force the production decision to
+  INCONCLUSIVE.
+- **Runtime backend gate:** a worker/direct `_job()` path must itself consult
+  VAL-BIT before selecting Numba; Numba availability alone is insufficient.
 
 These changes are preproduction hardening, not post-hoc tuning: no PHY049
 production curve or transition estimate had been generated when they were
