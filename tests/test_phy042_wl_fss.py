@@ -313,7 +313,8 @@ def test_every_band_channel_has_provenance_row():
     """Issue #45 §3: jeder Band-Kanal fuehrt Quelle, berichtete Groesse und
     Beleg-Status; der Nachtrag-Spec listet jeden Kanal-Namen."""
     assert set(phy042.REF_PROVENANCE) == set(phy042.REF_BAND)
-    allowed = {"contract_260703", "search_corroborated", "version_unclear"}
+    allowed = {"current_method_anchor", "primary_text_verified",
+               "superseded_historical"}
     addendum = (ROOT / "spec" /
                 "260926 PHI HEX honeycomb reference provenance addendum v01.md"
                 ).read_text(encoding="utf-8")
@@ -321,9 +322,14 @@ def test_every_band_channel_has_provenance_row():
         assert status in allowed, key
         assert src and reported, key
         assert f"| {key} |" in addendum, key
-    # die im Issue fehlenden Werte sind jetzt im Band
+    # Historische Werte bleiben als Lineage, aktuelle Auswertung benutzt nur
+    # den expliziten aktuellen Key-Satz.
     assert phy042.REF_BAND["upsilon_wl_T"] == (0.576, 0.003)
     assert "binder_beta" in phy042.REF_BAND
+    assert phy042.REF_PROVENANCE["binder_beta"][2] == "superseded_historical"
+    assert phy042.REF_PROVENANCE["helicity_ptep"][2] == "primary_text_verified"
+    assert phy042.REF_PROVENANCE["upsilon_wl_T"][2] == "primary_text_verified"
+    assert "binder_beta" not in phy042.REF_CURRENT_KEYS
 
 
 def test_pair_inside_effective_bounds_checks_lower_and_upper_edges():
