@@ -19,7 +19,7 @@ from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
-    os.environ.setdefault(_v, "1")
+    os.environ[_v] = "1"
 
 import numpy as np  # noqa: E402
 
@@ -56,6 +56,8 @@ W4V3_WALL_BUDGET_H = 24.0
 W4V3_MIN_DEN = 1e-6
 W4V3_SPLAY_Z = 2.0
 W4V3_SPLAY_MIN_POINTS = 3
+# For ordered pairs L1<L2 above T_BKT, finite xi implies R_L2 < R_L1.
+W4V3_SPLAY_EXPECTED_SIGN = -1.0
 
 
 def seed_for(L: int, t_idx: int, s: int) -> int:
@@ -137,6 +139,7 @@ def _job(args: tuple) -> dict:
                seed_for(L, t_idx, s), L)
     return {
         "L": L, "t_idx": t_idx, "T": T, "s": s,
+        "seed": seed_for(L, t_idx, s),
         "g_quarter": float(data[:, 0].mean()),
         "g_half": float(data[:, 1].mean()),
         "wall_s": time.perf_counter() - t0,
@@ -145,28 +148,52 @@ def _job(args: tuple) -> dict:
 
 def produce(ladder=W4V3_LADDER, t_grid=W4V3_T_GRID,
             n_seeds=W4V3_N_SEEDS, n_therm=W4V3_N_THERM,
-            n_meas=W4V3_N_MEAS, max_workers=W4V3_MAX_WORKERS) -> dict:
-    """Produce raw seed-level means. No T_BKT estimator is run here."""
+            n_meas=W4V3_N_MEAS, max_workers=W4V3_MAX_WORKERS,
+            wall_budget_h=W4V3_WALL_BUDGET_H) -> dict:
+    """Produce raw seed-level means without crossing the preregistered size boundary.
+
+    Work is committed one complete L at a time. Once the wall budget is exhausted,
+    no further lattice size is started; all jobs for those sizes are recorded as
+    unmeasured. A single already-started size is allowed to finish so partial-L
+    data can never masquerade as a complete production block.
+    """
+    ladder = tuple(int(L) for L in ladder)
+    t_grid = tuple(float(T) for T in t_grid)
     for L in ladder:
         _validate_L(L)
-    jobs = [(L, k, T, s, n_therm, n_meas)
-            for L in ladder for k, T in enumerate(t_grid)
-            for s in range(n_seeds)]
-    jobs.sort(key=lambda x: (-x[0], x[1], x[3]))
+    if wall_budget_h < 0:
+        raise ValueError("wall_budget_h must be >= 0")
     t0 = time.perf_counter()
-    if max_workers <= 1:
-        rows = [_job(j) for j in jobs]
-    else:
-        with ProcessPoolExecutor(max_workers=max_workers) as ex:
-            rows = list(ex.map(_job, jobs, chunksize=1))
+    deadline = t0 + 3600.0 * float(wall_budget_h)
+    rows = []
+    unmeasured = []
+
+    for L in ladder:
+        jobs = [(L, k, T, s, n_therm, n_meas)
+                for k, T in enumerate(t_grid) for s in range(n_seeds)]
+        if time.perf_counter() >= deadline:
+            unmeasured.extend(
+                {"L": L, "t_idx": k, "T": T, "s": s,
+                 "seed": seed_for(L, k, s), "reason": "WALL_BUDGET_STOP"}
+                for _L, k, T, s, _nt, _nm in jobs
+            )
+            continue
+        if max_workers <= 1:
+            rows.extend(_job(j) for j in jobs)
+        else:
+            with ProcessPoolExecutor(max_workers=max_workers) as ex:
+                rows.extend(ex.map(_job, jobs, chunksize=1))
+
     return {
         "module": "PHY049_honeycomb_correlation_ratio_v01",
         "spec": ("spec/260927 PHI HEX w4 honeycomb preregistration v03 "
                  "correlation-ratio.md"),
         "ladder": list(ladder), "t_grid": list(t_grid),
         "n_seeds": n_seeds, "n_therm": n_therm, "n_meas": n_meas,
-        "max_workers": max_workers, "wall_s": time.perf_counter() - t0,
-        "rows": rows,
+        "max_workers": max_workers, "wall_budget_h": wall_budget_h,
+        "wall_s": time.perf_counter() - t0,
+        "rows": rows, "unmeasured": unmeasured,
+        "complete": len(unmeasured) == 0,
     }
 
 
@@ -211,12 +238,25 @@ def aggregate(prod: dict) -> dict:
     for L in ladder:
         vals, sems = [], []
         for k, _T in enumerate(t_grid):
-            rr = [r for r in prod["rows"] if r["L"] == L and r["t_idx"] == k]
-            if len(rr) != ns:
+            rr = [r for r in prod["rows"] if r.get("L") == L and r.get("t_idx") == k]
+            rr.sort(key=lambda x: int(x.get("s", -1)))
+            expected_s = list(range(ns))
+            expected_T = t_grid[k]
+            valid_rows = (
+                len(rr) == ns
+                and [int(r.get("s", -1)) for r in rr] == expected_s
+                and all(float(r.get("T", math.nan)) == expected_T for r in rr)
+                and all(
+                    int(r.get("seed", -1)) == seed_for(L, k, int(r.get("s", -1)))
+                    for r in rr
+                )
+            )
+            if not valid_rows:
                 vals.append(None); sems.append(None); continue
-            rr.sort(key=lambda x: x["s"])
-            q = np.array([r["g_quarter"] for r in rr])
-            h = np.array([r["g_half"] for r in rr])
+            q = np.array([r["g_quarter"] for r in rr], dtype=float)
+            h = np.array([r["g_half"] for r in rr], dtype=float)
+            if np.any(~np.isfinite(q)) or np.any(~np.isfinite(h)):
+                vals.append(None); sems.append(None); continue
             v, e = jackknife_ratio(q, h)
             vals.append(v); sems.append(e)
         curves[str(L)] = {"R": vals, "SE": sems}
@@ -224,39 +264,74 @@ def aggregate(prod: dict) -> dict:
 
 
 def persistent_splay(t_grid, r1, e1, r2, e2,
-                     z=W4V3_SPLAY_Z, min_points=W4V3_SPLAY_MIN_POINTS):
-    """First persistent significant separation; sign learned from top-T tail.
+                     z=W4V3_SPLAY_Z, min_points=W4V3_SPLAY_MIN_POINTS,
+                     expected_sign=W4V3_SPLAY_EXPECTED_SIGN):
+    """First persistent high-T separation for an ordered pair L1<L2.
 
-    Requiring a stable tail sign avoids hard-coding lattice-ordering direction.
-    Any missing value fails closed.
+    The preregistered sign is fixed before seeing production data. For the
+    high-temperature phase g(r) decays with distance, so at equal fractional
+    distances R_L2 < R_L1 and D=R_L2-R_L1 is negative.
+    Missing, non-finite, zero-uncertainty, or opposite-sign points break
+    persistence (fail closed).
     """
     n = len(t_grid)
-    if n < min_points:
+    if n < min_points or expected_sign not in (-1.0, 1.0):
         return None
-    tail = []
-    for j in range(n - min_points, n):
-        if None in (r1[j], e1[j], r2[j], e2[j]):
-            return None
-        d = r2[j] - r1[j]
-        sig = math.hypot(e1[j], e2[j])
-        if sig <= 0 or abs(d) <= z * sig:
-            return None
-        tail.append(math.copysign(1.0, d))
-    if not all(x == tail[0] for x in tail):
-        return None
-    sign = tail[0]
     for k in range(n - min_points + 1):
         ok = True
         for j in range(k, n):
-            if None in (r1[j], e1[j], r2[j], e2[j]):
-                ok = False; break
-            d = sign * (r2[j] - r1[j])
-            sig = math.hypot(e1[j], e2[j])
-            if sig <= 0 or d <= z * sig:
-                ok = False; break
+            vals = (r1[j], e1[j], r2[j], e2[j])
+            if any(v is None or not math.isfinite(float(v)) for v in vals):
+                ok = False
+                break
+            d = expected_sign * (float(r2[j]) - float(r1[j]))
+            sig = math.hypot(float(e1[j]), float(e2[j]))
+            if not math.isfinite(sig) or sig <= 0.0 or d <= z * sig:
+                ok = False
+                break
         if ok:
             return float(t_grid[k])
     return None
+
+
+def _geometry_invariants(L: int) -> dict:
+    """Directly test the index identities required by preregistered G1."""
+    _validate_L(L)
+    wrap_a1 = True
+    wrap_a2 = True
+    same_sublattice = True
+    for i in range(L):
+        for j in range(L):
+            for s in range(2):
+                a = 2 * (i * L + j) + s
+                a1_wrap = 2 * ((((i + L) % L) * L + j)) + s
+                a2_wrap = 2 * ((i * L + ((j + L) % L))) + s
+                wrap_a1 = wrap_a1 and a1_wrap == a
+                wrap_a2 = wrap_a2 and a2_wrap == a
+                for r in (L // 4, L // 2):
+                    b1 = 2 * (((i + r) % L) * L + j) + s
+                    b2 = 2 * (i * L + ((j + r) % L)) + s
+                    same_sublattice = (
+                        same_sublattice and b1 % 2 == s and b2 % 2 == s
+                    )
+    return {
+        "translation_L_a1": wrap_a1,
+        "translation_L_a2": wrap_a2,
+        "same_sublattice_q_h": same_sublattice,
+    }
+
+
+def _backend_bit_identity() -> bool:
+    """VAL-BIT: identical tiny trajectory before Numba is production-eligible."""
+    if not HAVE_NUMBA:
+        return True
+    L = 8
+    lat = _p45.build("honeycomb", L)
+    nbr, deg = _p45._nbr_arrays(lat)
+    args = (nbr, deg, 1.0 / 0.57, 2, 3, seed_for(L, 0, 0), L)
+    py = _py_run_corr(np.zeros(lat.n), *args)
+    nb = _nb_run_corr(np.zeros(lat.n), *args)
+    return py.dtype == nb.dtype and py.shape == nb.shape and np.array_equal(py, nb)
 
 
 def preflight() -> dict:
@@ -269,13 +344,23 @@ def preflight() -> dict:
     for L in W4V3_LADDER:
         lat = _p45.build("honeycomb", L)
         th = np.zeros(lat.n)
+        inv = _geometry_invariants(L)
         geometry[str(L)] = {
             "n_ok": lat.n == 2 * L * L,
+            **inv,
             "R_aligned": _py_corr(th, L, L // 2) / _py_corr(th, L, L // 4),
         }
+    val_bit = _backend_bit_identity()
     g4 = _p50.g4_synthetic_recovery()
     gates = {
-        "G1_geometry": all(v["n_ok"] for v in geometry.values()),
+        "VAL_BIT_numba": val_bit,
+        "G1_geometry": all(
+            v["n_ok"]
+            and v["translation_L_a1"]
+            and v["translation_L_a2"]
+            and v["same_sublattice_q_h"]
+            for v in geometry.values()
+        ),
         "G2_aligned_limit": all(
             abs(v["R_aligned"] - 1.0) < 1e-15 for v in geometry.values()
         ),
