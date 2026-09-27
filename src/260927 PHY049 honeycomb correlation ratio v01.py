@@ -313,6 +313,8 @@ def produce(
             raise ValueError("resume requires an existing checkpoint_path")
         with checkpoint.open("r", encoding="utf-8") as handle:
             saved = json.load(handle)
+        if not isinstance(saved, dict):
+            raise RuntimeError("checkpoint root must be a JSON object")
         if saved.get("campaign_contract") != contract:
             raise RuntimeError("checkpoint contract does not match this campaign")
         if saved.get("preflight_gates") != pre["gates"]:
@@ -321,8 +323,13 @@ def produce(
             raise RuntimeError(
                 "terminal WALL_BUDGET_STOP checkpoint cannot be resumed"
             )
-        rows = list(saved.get("rows", []))
-        if any(r.get("L") not in ladder for r in rows if isinstance(r, dict)):
+        raw_rows = saved.get("rows", [])
+        if not isinstance(raw_rows, list) or any(
+            not isinstance(r, dict) for r in raw_rows
+        ):
+            raise RuntimeError("checkpoint rows must be a list of objects")
+        rows = list(raw_rows)
+        if any(r.get("L") not in ladder for r in rows):
             raise RuntimeError("checkpoint contains foreign lattice rows")
         for L in ladder:
             count = sum(
@@ -362,8 +369,9 @@ def produce(
         ]
         elapsed = prior_wall_s + (time.perf_counter() - t0)
         if elapsed >= budget_s:
-            for pending_L in ladder:
-                if pending_L in completed or pending_L < L:
+            stop_index = ladder.index(L)
+            for pending_L in ladder[stop_index:]:
+                if pending_L in completed:
                     continue
                 for k, T in enumerate(t_grid):
                     for seed_idx in range(n_seeds):
