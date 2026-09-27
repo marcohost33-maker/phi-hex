@@ -73,6 +73,7 @@ def _synthetic_product_for_validation():
                     "seed": phy050.W4V3_SEED_BASE + 1000 * L + 100 * k + s,
                     "g_quarter": 0.90 + 1e-4 * s,
                     "g_half": 0.80 + 2e-4 * s,
+                    "wall_s": 0.01,
                 })
     return {
         "ladder": list(phy050.W4V3_LADDER),
@@ -80,8 +81,19 @@ def _synthetic_product_for_validation():
         "n_seeds": phy050.W4V3_N_SEEDS,
         "n_therm": phy050.W4V3_N_THERM,
         "n_meas": phy050.W4V3_N_MEAS,
+        "max_workers": phy050.W4V3_MAX_WORKERS,
+        "wall_budget_h": phy050.W4V3_WALL_BUDGET_H,
         "preflight_gates": {
             key: True for key in phy050.W4V3_REQUIRED_PREFLIGHT_GATES
+        },
+        "campaign_contract": {
+            "ladder": list(phy050.W4V3_LADDER),
+            "t_grid": list(phy050.W4V3_T_GRID),
+            "n_seeds": phy050.W4V3_N_SEEDS,
+            "n_therm": phy050.W4V3_N_THERM,
+            "n_meas": phy050.W4V3_N_MEAS,
+            "max_workers": phy050.W4V3_MAX_WORKERS,
+            "wall_budget_h": phy050.W4V3_WALL_BUDGET_H,
         },
         "rows": rows,
         "complete": True,
@@ -237,6 +249,52 @@ def test_g0_requires_exact_persisted_preflight_gate_map():
 def test_g0_wrong_length_temperature_grid_fails_without_raising(grid):
     prod = _synthetic_product_for_validation()
     prod["t_grid"] = grid
+    assert phy050._product_groups(prod) is None
+    out = phy050.assess_production(prod)
+    assert out["gates"]["G0_input"] is False
+    assert out["decision"] == "INCONCLUSIVE"
+
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("max_workers", 8),
+        ("wall_budget_h", 25.0),
+    ],
+)
+def test_g0_rejects_nonpreregistered_execution_contract(field, value):
+    prod = _synthetic_product_for_validation()
+    prod[field] = value
+    assert phy050._product_groups(prod) is None
+
+
+def test_g0_requires_matching_persisted_campaign_contract():
+    prod = _synthetic_product_for_validation()
+    missing = dict(prod)
+    missing.pop("campaign_contract")
+    assert phy050._product_groups(missing) is None
+
+    mismatched = {**prod, "campaign_contract": dict(prod["campaign_contract"])}
+    mismatched["campaign_contract"]["wall_budget_h"] = 25.0
+    assert phy050._product_groups(mismatched) is None
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("g_quarter", 1.000001),
+        ("g_quarter", -1.000001),
+        ("g_half", 1.000001),
+        ("g_half", -1.000001),
+        ("wall_s", -0.001),
+        ("wall_s", "0.01"),
+    ],
+)
+def test_g0_rejects_impossible_or_untyped_row_evidence(field, value):
+    prod = _synthetic_product_for_validation()
+    prod["rows"] = [dict(r) for r in prod["rows"]]
+    prod["rows"][0][field] = value
     assert phy050._product_groups(prod) is None
     out = phy050.assess_production(prod)
     assert out["gates"]["G0_input"] is False
