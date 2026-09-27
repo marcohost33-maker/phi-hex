@@ -45,3 +45,27 @@ Die Journal-Fassung von arXiv:2406.14812 (PTEP 2024 103A02) berichtet 0.576(4)
 (Helicity) und 0.572(3) (NN). Die Regel dieser Spec (beta und T nie vermischen)
 gilt unveraendert. Details, Fassungen und Beleg-Status:
 `spec/260926 PHI HEX honeycomb reference provenance addendum v01.md`.
+
+
+## Nachtrag 2026-09-27 - Versionsstatus supersediert
+
+Diese Datei bleibt als historischer Vertragsstand vom 2026-07-03 erhalten.
+Fuer **aktuelle** Literaturvergleiche supersediert jedoch
+`spec/260926 PHI HEX honeycomb reference provenance addendum v01.md`
+die oben stehende Banddarstellung.
+
+Insbesondere gilt ab diesem Nachtrag:
+
+- publizierte Jiang/PTEP-Kanaele: NN `0.572(3)`, Helicity `0.576(4)`;
+- de-Andrade v4: direkte T-Kanaele `0.575(8)` (SA) und `0.576(3)` (WL);
+- der Honeycomb-Geometriefaktor `4/(3 sqrt(3))` ist fuer Jiang/PTEP und
+  de-Andrade v4 primaertextlich verifiziert;
+- fruehe Jiang-v1- und de-Andrade-beta-Kanaele bleiben ausschliesslich
+  **superseded_historical** Lineage und duerfen nicht als aktuelle
+  Vergleichswerte in einen Akzeptanzbereich eingehen;
+- Okabe/Otsuka `0.573` bleibt ein normierungsfreier Methoden-/Lageanker ohne
+  erfundene Unsicherheit.
+
+Neue Auswertungspfade muessen die versionierten Statusfelder in PHY042
+(`REF_PROVENANCE`, `REF_CURRENT_KEYS`) oder den Provenienz-Nachtrag
+verwenden, nicht die historische Tabelle dieser Datei isoliert.
