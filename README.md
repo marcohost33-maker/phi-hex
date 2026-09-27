@@ -35,16 +35,21 @@ Wichtige Orakel:
 
 Ab PR #18/PHY041 gilt `spec/260703 PHI HEX honeycomb reference conventions audit v01.md` als Vertragsquelle. Honeycomb-Werte werden nicht mehr als ein einzelner harter Referenzwert gefuehrt, sondern als Band mit Quelle, Observable und beta/T-Konvention.
 
-| Quelle | berichtete Groesse | T-Form fuer Vergleich | Rolle |
-|---|---:|---:|---|
-| arXiv:2501.07388 | T-Wert | 0.573 | Multi-Lattice-Anker |
-| arXiv:2406.14812 | T_BKT,H = 0.571(8) | 0.571 +/- 0.008 | direkter Honeycomb-Helicity-Anker |
-| arXiv:2406.14812 | T_BKT,H = 0.560(9) | 0.560 +/- 0.009 | NN/MC-Zusatzanker |
-| arXiv:2406.12076 | beta_BKT = 1.687(3) | 0.5928 +/- 0.0011 | Upsilon / WL-Honeycomb |
-| arXiv:2406.12076 | beta_BKT = 1.635(11) | 0.6116 +/- 0.0041 | Upsilon_4 |
-| arXiv:2406.12076 | beta_BKT = 1.724(2) | 0.5800 +/- 0.0007 | Binder |
+| Quelle / Stand | Kanal | T-Form fuer Vergleich | Rolle |
+|---|---|---:|---|
+| arXiv:2501.07388v1 / J. Phys. A 2025 | Multi-Lattice-FSS | 0.573 (rough estimate) | Zusatzanker ohne zitierte Fehlerbar |
+| Jiang, PTEP 2024 103A02 (publiziert) | NN | 0.572 +/- 0.003 | aktueller Honeycomb-Anker |
+| Jiang, PTEP 2024 103A02 (publiziert) | Helicity | 0.576 +/- 0.004 | aktueller Honeycomb-Anker |
+| arXiv:2406.12076v4 | Upsilon / SA | 0.575 +/- 0.008 | aktueller Y2-Anker |
+| arXiv:2406.12076v4 | Upsilon / WL | 0.576 +/- 0.003 | aktueller Y2-Anker |
+| arXiv:2406.12076v4 | Upsilon_4 / SA | 0.551 +/- 0.011 | Diagnostik |
+| arXiv:2406.12076v4 | Upsilon_4 / WL | 0.568 +/- 0.001 | Diagnostik |
 
-Konversion: `T = 1 / beta`, `sigma_T = sigma_beta / beta^2`.
+**Quellenversions-Audit 2026-09-27 (#45):** Die zuvor hier gefuehrten
+0.571(8)/0.560(9) aus arXiv:2406.14812v1 und die beta-konvertierten
+0.5928/0.6116/0.5800 aus einer fruehen 2406.12076-Fassung sind fuer den
+aktuellen Vergleich **superseded**. Sie bleiben nur in der Vertrags-Spec als
+Lineage erhalten. Der aktuelle Ledger ist kein Min/Max-Akzeptanzband.
 
 ## Mess-Stand
 
@@ -165,6 +170,16 @@ tests/      schnelle Gates + slow Mess-Smokes
 archive/    Vorgaenger-Versionen
 SOURCES.md  Provenance / SHA-256
 ```
+
+## W4-Haertung 2026-09-27 (Issue #45)
+
+Vor jeder Honeycomb-Grossproduktion gilt jetzt
+`spec/260927 PHI HEX w4 preregistration v01.md`: Ein-Walker-Spread ist
+`unmeasured` statt 0, W4 braucht mindestens 3 Walker je verwendeter
+L-Groesse, und L=64 wird zuerst als Kosten-/Konvergenzkalibrierung gefahren.
+Der historische PHY042-JSON bleibt unveraendert; sein
+`domain_tmax_spread004["24"]=0.67` ist als Daten-Semantik-Erratum
+dokumentiert und darf nicht als gemessene Spread-Domaene gelesen werden.
 
 ## Naechste Stufe nach PHY043 + Review-Nachtrag 2026-08-08
 
