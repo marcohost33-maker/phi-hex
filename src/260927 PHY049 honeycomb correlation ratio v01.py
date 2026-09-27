@@ -39,6 +39,9 @@ def _load(name: str, filename: str):
 _p45 = _load("phy045_normalization_for_phy049",
              "260926 PHY045 helicity normalization O1 test v01.py")
 
+_p50 = _load("phy050_corr_ratio_fss_for_phy049",
+             "260927 PHY050 correlation ratio fss recovery v01.py")
+
 HAVE_NUMBA = _p45.HAVE_NUMBA
 _py_wolff_sweep = _p45._py_wolff_sweep
 _nb_wolff_sweep = getattr(_p45, "_nb_wolff_sweep", None)
@@ -257,7 +260,7 @@ def persistent_splay(t_grid, r1, e1, r2, e2,
 
 
 def preflight() -> dict:
-    """MC-free/cheap invariants. Production interpretation remains disabled."""
+    """Cheap pre-production gates. Physics interpretation remains disabled."""
     seed_set = {seed_for(L, k, s) for L in W4V3_LADDER
                 for k in range(len(W4V3_T_GRID))
                 for s in range(W4V3_N_SEEDS)}
@@ -270,22 +273,34 @@ def preflight() -> dict:
             "n_ok": lat.n == 2 * L * L,
             "R_aligned": _py_corr(th, L, L // 2) / _py_corr(th, L, L // 4),
         }
+    g4 = _p50.g4_synthetic_recovery()
     gates = {
-        "G1_geometry": all(v["n_ok"] and abs(v["R_aligned"] - 1.0) < 1e-15
-                           for v in geometry.values()),
+        "G1_geometry": all(v["n_ok"] for v in geometry.values()),
+        "G2_aligned_limit": all(
+            abs(v["R_aligned"] - 1.0) < 1e-15 for v in geometry.values()
+        ),
         "G3_seed_unique": len(seed_set) == expected,
-        "G4_fss_recovery": False,  # intentionally not implemented yet
+        "G4_fss_recovery": bool(g4["passed"]),
     }
+    production_eligible = all(gates.values())
     return {
         "module": "PHY049_honeycomb_correlation_ratio_v01",
-        "stage": "MEASUREMENT_ENGINE_PRE-FSS",
+        "stage": (
+            "PREPRODUCTION_G4_VALIDATED"
+            if production_eligible
+            else "PREPRODUCTION_GATE_FAILED"
+        ),
         "geometry": geometry,
         "gates": gates,
-        "overall_interpretation_enabled": all(gates.values()),
-        "claim_ceiling": ("NO_PHYSICS_INTERPRETATION until G4 nonlinear "
-                          "FSS synthetic recovery is implemented and green"),
+        "g4": g4,
+        "production_measurement_eligible": production_eligible,
+        "overall_interpretation_enabled": False,
+        "claim_ceiling": (
+            "NO_PHYSICS_INTERPRETATION until real PHY049 production data "
+            "satisfy G0 input, G5 power and G6 robustness with committed "
+            "gate evidence"
+        ),
     }
-
 
 if __name__ == "__main__":
     import json
