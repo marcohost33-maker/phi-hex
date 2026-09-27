@@ -35,6 +35,13 @@ W4V3_N_SEEDS = 12
 W4V3_N_THERM = 1000
 W4V3_N_MEAS = 4000
 W4V3_N_BOOT = 1000
+W4V3_REQUIRED_PREFLIGHT_GATES = (
+    "VAL_BIT_numba",
+    "G1_geometry",
+    "G2_aligned_limit",
+    "G3_seed_unique",
+    "G4_fss_recovery",
+)
 DECISION_LOW_EDGE = 0.570
 DECISION_HIGH_EDGE = 0.573
 MAX_SIGMA_TOT = 0.010
@@ -458,8 +465,19 @@ def _product_groups(prod: dict) -> dict[tuple[int, int], list[dict]] | None:
 
     ladder = tuple(ladder_raw)
     t_grid = tuple(float(x) for x in t_grid_raw)
-    if ladder != W4V3_LADDER or not np.allclose(
-        t_grid, W4V3_T_GRID, atol=0.0, rtol=0.0
+    if ladder != W4V3_LADDER or len(t_grid) != len(W4V3_T_GRID):
+        return None
+    if not np.allclose(t_grid, W4V3_T_GRID, atol=0.0, rtol=0.0):
+        return None
+
+    preflight_gates = prod.get("preflight_gates")
+    if (
+        not isinstance(preflight_gates, dict)
+        or set(preflight_gates) != set(W4V3_REQUIRED_PREFLIGHT_GATES)
+        or any(
+            preflight_gates.get(key) is not True
+            for key in W4V3_REQUIRED_PREFLIGHT_GATES
+        )
     ):
         return None
     if (
