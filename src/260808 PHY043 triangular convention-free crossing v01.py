@@ -512,15 +512,21 @@ def _is_preregistered_pilot(report: dict) -> bool:
         w = report["wolff"]
         bootstrap = report["bootstrap"]
         return (
-            tuple(int(x) for x in report["lattices_L"]) == PILOT_LS
-            and tuple(float(x) for x in report["temperatures"]) == PILOT_TEMPS
-            and int(w["n_measure"]) == PILOT_N_MEASURE
-            and int(w["n_burn"]) == PILOT_N_BURN
-            and int(w["n_seeds"]) == PILOT_N_SEEDS
-            and int(w["master_seed"]) == PILOT_MASTER_SEED
+            tuple(report["lattices_L"]) == PILOT_LS
+            and tuple(report["temperatures"]) == PILOT_TEMPS
+            and type(w["n_measure"]) is int
+            and w["n_measure"] == PILOT_N_MEASURE
+            and type(w["n_burn"]) is int
+            and w["n_burn"] == PILOT_N_BURN
+            and type(w["n_seeds"]) is int
+            and w["n_seeds"] == PILOT_N_SEEDS
+            and type(w["master_seed"]) is int
+            and w["master_seed"] == PILOT_MASTER_SEED
             and w["stream_contract"] == PILOT_STREAM_CONTRACT
-            and int(bootstrap["n_boot"]) == N_BOOT
-            and int(bootstrap["stream"]) == BOOT_STREAM
+            and type(bootstrap["n_boot"]) is int
+            and bootstrap["n_boot"] == N_BOOT
+            and type(bootstrap["stream"]) is int
+            and bootstrap["stream"] == BOOT_STREAM
         )
     except (KeyError, TypeError, ValueError):
         return False
