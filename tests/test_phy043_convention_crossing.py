@@ -225,7 +225,8 @@ def test_limits_text_follows_run_parameters(tmp_path):
     out = tmp_path / "r.txt"
     phy043.write_report(_minimal_report(8, [9, 13, 19, 25]), out)
     text = out.read_text(encoding="utf-8")
-    assert "n_seeds=8, L<=25: keine 1%-Diskriminierung" in text
+    assert "n_seeds=8, L<=25: 1%-Power UNASSESSED" in text
+    assert "keine Power-Aussage allein aus Laufmetadaten" in text
     assert "n_seeds=4, L<=19" not in text
     phy043.write_report(_minimal_report(3, [9, 13]), out)
     assert "n_seeds=3, L<=13:" in out.read_text(encoding="utf-8")
