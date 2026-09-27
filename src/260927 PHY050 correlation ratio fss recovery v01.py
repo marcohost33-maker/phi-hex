@@ -30,6 +30,11 @@ FSS_MAX_SCORE = 2.50
 G4_MAX_ABS_ERROR = 0.003
 BOOTSTRAP_SEED = 50_049
 MODEL_SIGMA_FLOOR = 0.002
+W4V3_SEED_BASE = 49_000_000
+DECISION_LOW_EDGE = 0.570
+DECISION_HIGH_EDGE = 0.573
+MAX_SIGMA_TOT = 0.010
+MAX_ROBUST_DELTA = 0.008
 
 
 @dataclass(frozen=True)
@@ -428,6 +433,8 @@ def _product_groups(prod: dict) -> dict[tuple[int, int], list[dict]] | None:
         t_grid, W4V3_T_GRID, atol=0.0, rtol=0.0
     ):
         return None
+    if prod.get("complete") is False or prod.get("unmeasured"):
+        return None
     groups: dict[tuple[int, int], list[dict]] = {}
     for L in ladder:
         for k in range(len(t_grid)):
@@ -439,9 +446,17 @@ def _product_groups(prod: dict) -> dict[tuple[int, int], list[dict]] | None:
             ]
             if len(rr) != n_seeds:
                 return None
-            rr.sort(key=lambda r: int(r["s"]))
-            if [int(r["s"]) for r in rr] != list(range(n_seeds)):
+            rr.sort(key=lambda r: int(r.get("s", -1)))
+            if [int(r.get("s", -1)) for r in rr] != list(range(n_seeds)):
                 return None
+            expected_t = t_grid[k]
+            for r in rr:
+                s = int(r.get("s", -1))
+                expected_seed = W4V3_SEED_BASE + 1000 * L + 100 * k + s
+                if float(r.get("T", math.nan)) != expected_t:
+                    return None
+                if int(r.get("seed", -1)) != expected_seed:
+                    return None
             groups[(L, k)] = rr
     return groups
 
@@ -566,7 +581,111 @@ def robustness_variants(agg: dict, primary: CollapseFit) -> dict:
     return {
         "variants": variants,
         "max_delta": max_delta,
-        "passed": max_delta <= 0.008,
+        "passed": max_delta <= MAX_ROBUST_DELTA,
+    }
+
+
+
+def decision_label(
+    tbkt: float,
+    sigma_tot: float,
+    *,
+    gates_passed: bool = True,
+) -> str:
+    """Internal discrimination label with the full hypothesis overlap respected."""
+    if (
+        not gates_passed
+        or not math.isfinite(tbkt)
+        or not math.isfinite(sigma_tot)
+        or sigma_tot < 0.0
+        or sigma_tot > MAX_SIGMA_TOT
+    ):
+        return "INCONCLUSIVE"
+    lo = tbkt - 2.0 * sigma_tot
+    hi = tbkt + 2.0 * sigma_tot
+    if hi < DECISION_LOW_EDGE:
+        return "SUPPORTED_LOW"
+    if lo > DECISION_HIGH_EDGE:
+        return "SUPPORTED_LITERATURE"
+    # Any 95% interval intersecting the preregistered H_A/H_B overlap
+    # [0.570, 0.573] stays explicitly non-discriminating.
+    if hi >= DECISION_LOW_EDGE and lo <= DECISION_HIGH_EDGE:
+        return "OVERLAP"
+    return "INCONCLUSIVE"
+
+
+def assess_production(prod: dict, *, n_boot: int = 1000) -> dict:
+    """Single fail-closed G0/G4/G5/G6 adjudicator for real PHY049 data."""
+    g4 = g4_synthetic_recovery()
+    agg = product_to_aggregate(prod)
+    g0 = agg is not None
+    if not g0:
+        return {
+            "gates": {"G0_input": False, "G4_synthetic_recovery": bool(g4["passed"]),
+                      "G5_power": False, "G6_robustness": False},
+            "decision": "INCONCLUSIVE",
+            "physics_interpretation_enabled": False,
+            "claim_ceiling": "G0 failed: incomplete or invalid production evidence.",
+        }
+
+    primary = fit_collapse(agg)
+    if primary is None or not primary.quotable:
+        return {
+            "gates": {"G0_input": True, "G4_synthetic_recovery": bool(g4["passed"]),
+                      "G5_power": False, "G6_robustness": False},
+            "decision": "INCONCLUSIVE",
+            "physics_interpretation_enabled": False,
+            "claim_ceiling": "Primary collapse is non-quotable.",
+        }
+
+    boot = bootstrap_tbkt(prod, n_boot=n_boot)
+    robust = robustness_variants(agg, primary)
+    if boot is None:
+        sigma_boot = math.inf
+    else:
+        sigma_boot = float(boot["sigma_boot"])
+
+    variant_values = [primary.tbkt]
+    for item in robust["variants"].values():
+        if item["quotable"] and item["tbkt"] is not None:
+            variant_values.append(float(item["tbkt"]))
+    all_variants_quotable = len(variant_values) == 1 + len(robust["variants"])
+    sigma_model = (
+        max(MODEL_SIGMA_FLOOR,
+            0.5 * (max(variant_values) - min(variant_values)))
+        if all_variants_quotable
+        else math.inf
+    )
+    sigma_tot = math.hypot(sigma_boot, sigma_model)
+    g5 = bool(math.isfinite(sigma_tot) and sigma_tot <= MAX_SIGMA_TOT)
+    g6 = bool(robust["passed"] and all_variants_quotable)
+    gates = {
+        "G0_input": True,
+        "G4_synthetic_recovery": bool(g4["passed"]),
+        "G5_power": g5,
+        "G6_robustness": g6,
+    }
+    enabled = all(gates.values())
+    return {
+        "gates": gates,
+        "primary": {
+            "tbkt": primary.tbkt,
+            "c": primary.c,
+            "score": primary.score,
+            "profile_width": primary.profile_width,
+        },
+        "bootstrap": boot,
+        "robustness": robust,
+        "sigma_boot": sigma_boot,
+        "sigma_model": sigma_model,
+        "sigma_tot": sigma_tot,
+        "decision": decision_label(primary.tbkt, sigma_tot, gates_passed=enabled),
+        "physics_interpretation_enabled": enabled,
+        "claim_ceiling": (
+            "INTERNAL_W4_V03_DISCRIMINATION_ONLY; not an external best-value claim."
+            if enabled
+            else "NO_PHYSICS_INTERPRETATION until G0/G4/G5/G6 are green."
+        ),
     }
 
 
