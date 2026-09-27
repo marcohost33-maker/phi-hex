@@ -176,7 +176,8 @@ SOURCES.md  Provenance / SHA-256
 Vor jeder Honeycomb-Grossproduktion gilt jetzt
 `spec/260927 PHI HEX w4 preregistration v01.md`: Ein-Walker-Spread ist
 `unmeasured` statt 0, W4 braucht mindestens 3 Walker je verwendeter
-L-Groesse, und L=64 wird zuerst als Kosten-/Konvergenzkalibrierung gefahren.
+L-Groesse, und L=64 wird zuerst mit `PHY044` als Kosten-/Konvergenzkalibrierung
+(2 WL/1-t-Walker + kanonischer Wolff-Quercheck) gefahren.
 Der historische PHY042-JSON bleibt unveraendert; sein
 `domain_tmax_spread004["24"]=0.67` ist als Daten-Semantik-Erratum
 dokumentiert und darf nicht als gemessene Spread-Domaene gelesen werden.
