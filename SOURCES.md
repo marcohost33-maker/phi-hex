@@ -249,3 +249,13 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | 81332F7043BE1C20 | 2026-09-27 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (NEU: Stream-, Budget-, Input- und Stopregel-Gates fuer PHY044) |
 | FA91A37669C7A8ED | 2026-09-27 | spec | repo-native: `spec/260927 PHI HEX w4 preregistration v01.md` (Stand nach 1/t- und Sampler-Effizienz-Haertung; supersedet vorherige Zeile derselben Spec) |
 
+### W4 Review-Haertung nach PR-Review 2026-09-27
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| BA08B0AC7CACC701 | 2026-09-27 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (PR #51 Review: PHY032-Fallback bindet jetzt T_min UND T_max; W4-min_walkers kann nicht unter 3 abgesenkt werden) |
+| E4BF196D15705FDA | 2026-09-27 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression fuer untere Fallback-Domaenengrenze und unveraenderliches >=3-Walker-Produktionsgate) |
+| 3A40254686382E91 | 2026-09-27 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (PR #51 Review: 1%-Power-Aussage nur fuer fixierten 4-Seed/L19-Pilot; sonst UNASSESSED) |
+| A7328EB31C3E2707 | 2026-09-27 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression gegen Power-Claim-Generalisation) |
+| 0031239209534AF4 | 2026-09-27 | spec | repo-native: `spec/260808 PHI HEX phy043 triangular convention-free crossing method v01.md` (Power-Vertrag auf Pilotbudget begrenzt; andere Budgets brauchen eigene Analyse) |
+
