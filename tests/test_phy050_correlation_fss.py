@@ -167,3 +167,35 @@ def test_nonpreregistered_bootstrap_cannot_enable_production_adjudication():
     assert out["bootstrap_required"] == phy050.W4V3_N_BOOT == 1000
     assert out["decision"] == "INCONCLUSIVE"
     assert out["physics_interpretation_enabled"] is False
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("n_seeds", "12"),
+        ("n_seeds", 12.0),
+        ("n_therm", "1000"),
+        ("n_therm", 1000.5),
+        ("n_meas", "4000"),
+        ("n_meas", 4000.5),
+    ],
+)
+def test_g0_rejects_coerced_metadata_types(field, value):
+    prod = _synthetic_product_for_validation()
+    prod[field] = value
+    assert phy050._product_groups(prod) is None
+
+
+def test_g0_rejects_stringified_row_identity_and_temperature():
+    prod = _synthetic_product_for_validation()
+    for field in ("L", "t_idx", "s", "seed", "T"):
+        bad = {**prod, "rows": [dict(r) for r in prod["rows"]]}
+        bad["rows"][0][field] = str(bad["rows"][0][field])
+        assert phy050._product_groups(bad) is None
+
+
+def test_float_bootstrap_count_fails_closed_in_production_assessor():
+    prod = _synthetic_product_for_validation()
+    out = phy050.assess_production(prod, n_boot=1000.0)
+    assert out["decision"] == "INCONCLUSIVE"
+    assert out["physics_interpretation_enabled"] is False
