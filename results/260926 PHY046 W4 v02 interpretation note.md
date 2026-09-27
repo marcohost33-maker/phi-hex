@@ -63,8 +63,11 @@ Referenz T_BKT = 0.8929-0.8935. Paar-Crossings bei L = 32..256: 0.8919,
   4/(3 sqrt(3)) und vergleicht diesen korrigierten Modulus mit 2T/pi.
   - Der publizierte Helicity-Wert 0.576(4) ist daher kein roher per-Site-Wert.
   - Der normierungsfreie NN-Wert 0.572(3) bleibt ebenfalls oberhalb PHY046.
-  - Die de-Andrade-beta-Linie bleibt getrennt offen; deren genaue
-    Versions-/Normierungsprovenienz wird nicht aus Jiang extrapoliert.
+  - Primaertext-Nachtrag 2026-09-27: auch de Andrade v4 multipliziert
+    Upsilon/Upsilon_4 fuer Honeycomb explizit mit 4/(3 sqrt(3)) und verwendet
+    danach das Nelson-Kosterlitz-Kriterium. Die aktuelle direkte T-Linie ist
+    damit normierungsseitig geklaert; historische beta-Linien bleiben
+    versionsspezifische Lineage.
 - **Kandidaten fuer die Rest-Spannung:**
   - (a) honeycomb-spezifische Finite-Size-Korrekturen, groesser als auf square;
   - (b) Biases der normierungsfreien Literaturwerte (grobe Schaetzung; NN);
@@ -73,8 +76,10 @@ Referenz T_BKT = 0.8929-0.8935. Paar-Crossings bei L = 32..256: 0.8919,
 - **Naechster diskriminierender Schritt:** W4-v03/PHY049 ist am 2026-09-27
   vorregistriert: eigener normierungsfreier Correlation-Ratio-Schaetzer
   R=<g(L/2)>/<g(L/4)> auf L={48,72,96,144,192}. Die Mess-Engine ist
-  fail-closed; Physikinterpretation bleibt gesperrt, bis das synthetische
-  FSS-Recovery-Gate implementiert und gruen ist.
+  fail-closed. W4-v03a/PHY050 implementiert inzwischen das deterministische
+  FSS-Recovery-Gate mit positiven und adversarial synthetischen Kontrollen.
+  Ein gruener G4 autorisiert nur die Produktion; Physikinterpretation bleibt
+  bis G0/G5/G6 auf echten PHY049-Daten gesperrt.
 
 ## 4. Claim-Decke
 
