@@ -1,5 +1,6 @@
 # Phi-Hex
 
+> **Stand 2026-09-27 (W4-v03 / PHY049):** Jiang/PTEP primaertextlich nachgeprueft: der publizierte Honeycomb-Helicity-Modulus enthaelt den Faktor 4/(3 sqrt(3)); die per-Site-Erklaerung fuer 0.576(4) ist falsifiziert. Normierungsfreier Correlation-Ratio-Quercheck W4-v03 ist vorregistriert; PHY049 bleibt bis zum synthetischen FSS-Recovery-Gate fail-closed.  
 > **Status:** Forschungs-Repo (oeffentlich seit 2026-08-17) | XY/BKT-Physik auf Dreiecks-, Honeycomb- und Kagome-Gittern.  
 > **Lizenz:** Apache-2.0 | **Lineage/Provenance:** siehe `SOURCES.md`.  
 > **Stand 2026-09-26b (Selbstpruefung PR #50):** **Audit O1 entschieden - das NK-Kriterium verlangt Upsilon PRO FLAECHE** (PHY045: exakt + MC, per Site mit 22-54 sigma widerlegt). Alle per-Site-T_BKT-Werte auf triangular/honeycomb/kagome in diesem README sind damit konventions-verzerrt (Lineage bleibt; Neuauswertung separat). W4 laeuft nach Vorregistrierung v02 (Upsilon pro Flaeche, Wolff, HKS).  
@@ -186,10 +187,11 @@ interpretation note.md`.
   - Lehre fuer kuenftige Protokolle: groesstes Paar bzw. Paar-Mittel als
     Primaer-Schaetzer.
 - **Offene Spannung:** ~1.3 % (~2 sigma) unter den normierungsfreien
-  Literaturwerten (0.572-0.573). Die per-Site-Werte der Pipeline treffen
-  dagegen die Helicity-Literatur (HKS per Site 0.5713; Paare L=24..48 bei
-  ~0.589). Hypothese, am Primaertext zu pruefen: diese Literaturwerte sind per
-  Site normiert.
+  Literaturwerten (0.572-0.573). Primaertext-Abgleich 2026-09-27: Jiang/PTEP
+  verwendet fuer honeycomb explizit den Dichtefaktor 4/(3 sqrt(3)) im
+  Helicity-Modulus und vergleicht diesen korrigierten Gamma mit 2T/pi.
+  Die fruehere Erklaerung "Literaturwert ist per Site" ist fuer diesen
+  0.576(4)-Kanal damit falsifiziert. Die Diskrepanz bleibt offen.
 - Kein Bestwert. Vor einer externen Aussage braucht es einen eigenen
   normierungsfreien Schaetzer, den Primaertext-Abgleich und ein
   Cross-Family-Review.
@@ -300,8 +302,13 @@ SOURCES.md  Provenance / SHA-256
 
 ## Naechste Stufe nach Selbstpruefung / W4 v02 (2026-09-26b)
 
-1. **Normierungsfreier honeycomb-Schaetzer** (Correlation-Ratio oder eta = 1/4 mit multiplikativer Log-Korrektur) auf derselben Leiter/Seeds - vorher vorregistrieren (v03), um die ~1.3-%-Spannung zu W4 aufzuklaeren.
-2. **Primaertext-Abgleich** der Literatur-Normierungen (Jiang, de Andrade et al., Sorokin, Okabe/Otsuka) und der beta-Werte 1.687/1.635.
+1. **W4-v03 / PHY049:** normierungsfreier Correlation-Ratio-Quercheck ist
+   vorregistriert und als fail-closed Mess-Engine angelegt. Naechster Code-Gate:
+   synthetische BKT-FSS-Recovery implementieren; bis dahin explizit
+   NO_PHYSICS_INTERPRETATION. Erst danach Produktionsdaten rechnen.
+2. **Primaertext-Abgleich:** Jiang/PTEP ist fuer Helicity-Wert und
+   Honeycomb-Dichtefaktor geschlossen; offen bleiben insbesondere die genaue
+   Fassung/Normierung der de-Andrade-beta-Werte 1.687/1.635.
 3. **triangular und kagome pro Flaeche neu messen** (Wolff-Numba, Leiter bis 256, T-Gitter um 1.465 bzw. 0.82); triangular gegen die normierungsfreie Reihe 1.465.
 4. Protokoll-Lehre aus PHY048: in kuenftigen Vorregistrierungen das groesste Paar bzw. das Paar-Mittel als Primaer-Schaetzer, HKS-3-Parameter nur als Variante.
 
