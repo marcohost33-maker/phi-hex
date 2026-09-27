@@ -96,9 +96,12 @@ Fuer jedes geordnete Paar L1<L2:
 D(T)=R_L2(T)-R_L1(T).
 
 T_splay ist der kleinste T-Gitterpunkt, ab dem D(T) fuer mindestens drei
-aufeinanderfolgende Punkte und bis zum oberen Fensterrand dasselbe
-vorregistrierte Hochtemperatur-Vorzeichen mit |D| > 2 sigma_D besitzt.
-Fehlende/ungueltige Punkte brechen die Persistenz (fail closed).
+aufeinanderfolgende Punkte und bis zum oberen Fensterrand das **vor Daten fest
+fixierte negative Hochtemperatur-Vorzeichen** besitzt: fuer L1<L2 gilt oberhalb
+T_BKT bei endlicher Korrelationslaenge R_L2<R_L1, also D(T)<0, mit
+|D| > 2 sigma_D. Das Vorzeichen darf nicht aus dem beobachteten Tail gelernt
+werden. Fehlende, nicht-endliche oder ungueltige Punkte brechen die Persistenz
+(fail closed).
 
 ### 5.2 FSS-Schaetzer
 
@@ -135,9 +138,14 @@ sigma_tot = hypot(sigma_boot, sigma_model).
 
 Ausgabe:
 - SUPPORTED_LOW, wenn T_hat + 2 sigma_tot < 0.570;
-- SUPPORTED_LITERATURE, wenn T_hat - 2 sigma_tot > 0.570;
-- OVERLAP, wenn das 95%-Intervall 0.570 schneidet;
+- SUPPORTED_LITERATURE, wenn T_hat - 2 sigma_tot > 0.573;
+- OVERLAP, wenn das 95%-Intervall den gesamten vorregistrierten
+  Hypothesen-Ueberlapp [0.570, 0.573] schneidet;
 - INCONCLUSIVE, wenn ein Gate aus §7 scheitert oder sigma_tot > 0.010.
+
+**Korrektur 2026-09-27 vor Produktionsdaten:** Die fruehere Ein-Punkt-Regel bei
+0.570 war logisch zu permissiv und konnte Werte innerhalb H_A∩H_B faelschlich
+als SUPPORTED_LITERATURE etikettieren. Diese Fassung supersediert jene Regel.
 
 Diese Labels sind rein interne Diskriminationssemantik, kein externer
 Bestwert-Claim.
@@ -148,6 +156,11 @@ G0 INPUT:
 - alle erwarteten (L,T,Seed)-Jobs vorhanden;
 - endliche g(L/4), g(L/2);
 - Nenner |<g(L/4)>| > 1e-6.
+
+VAL-BIT BACKEND:
+- wenn Numba verfuegbar ist, muss ein identischer Tiny-Wolff-Lauf bei gleichem
+  Seed Python und Numba bit-identische Korrelationsreihen liefern; andernfalls
+  ist Produktion gesperrt.
 
 G1 GEOMETRY:
 - Translation um L liefert identische Siteindizes;
