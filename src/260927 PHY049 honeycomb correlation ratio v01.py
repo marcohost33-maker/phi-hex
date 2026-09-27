@@ -3,10 +3,11 @@
 Pre-registered contract:
   spec/260927 PHI HEX w4 honeycomb preregistration v03 correlation-ratio.md
 
-This module implements the measurement/preflight layer only. It MUST NOT emit
-an external T_BKT claim until the preregistered nonlinear FSS recovery gate is
-implemented and green. The fail-closed staging is intentional: measurement
-code can be validated without looking at production physics data.
+This module implements the measurement/preflight layer only. G4 synthetic FSS
+recovery is implemented and green, but it MUST NOT emit an external T_BKT claim
+until real production evidence passes G0/G5/G6. The fail-closed staging is
+intentional: measurement code can be validated without looking at production
+physics data.
 """
 from __future__ import annotations
 
@@ -58,6 +59,10 @@ W4V3_SPLAY_Z = 2.0
 W4V3_SPLAY_MIN_POINTS = 3
 # For ordered pairs L1<L2 above T_BKT, finite xi implies R_L2 < R_L1.
 W4V3_SPLAY_EXPECTED_SIGN = -1.0
+# Cached per interpreter/process. Numba is never production-selected solely
+# because it is installed: the same-seed Python/Numba trajectory must first
+# satisfy VAL-BIT in that process.
+_VAL_BIT_OK: bool | None = None
 
 
 def seed_for(L: int, t_idx: int, s: int) -> int:
@@ -133,7 +138,7 @@ def _job(args: tuple) -> dict:
         raise RuntimeError("unexpected honeycomb indexing")
     nbr, deg = _p45._nbr_arrays(lat)
     th = np.zeros(lat.n, dtype=float)
-    run = _nb_run_corr if HAVE_NUMBA else _py_run_corr
+    run = _production_run_backend()
     t0 = time.perf_counter()
     data = run(th, nbr, deg, 1.0 / T, n_therm, n_meas,
                seed_for(L, t_idx, s), L)
@@ -337,6 +342,27 @@ def _backend_bit_identity() -> bool:
     py = _py_run_corr(np.zeros(lat.n), *args)
     nb = _nb_run_corr(np.zeros(lat.n), *args)
     return py.dtype == nb.dtype and py.shape == nb.shape and np.array_equal(py, nb)
+
+
+def _production_run_backend():
+    """Return the production kernel only after fail-closed VAL-BIT approval.
+
+    The check is cached per interpreter. ProcessPool workers therefore verify
+    their own runtime before their first Numba job; a direct _job() call cannot
+    bypass VAL-BIT either.
+    """
+    global _VAL_BIT_OK
+    if not HAVE_NUMBA:
+        return _py_run_corr
+    if _nb_run_corr is None:
+        raise RuntimeError("Numba reported available but kernel is missing")
+    if _VAL_BIT_OK is None:
+        _VAL_BIT_OK = bool(_backend_bit_identity())
+    if not _VAL_BIT_OK:
+        raise RuntimeError(
+            "VAL-BIT failed: Numba backend is not production-eligible"
+        )
+    return _nb_run_corr
 
 
 def preflight() -> dict:
