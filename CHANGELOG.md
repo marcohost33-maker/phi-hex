@@ -17,6 +17,10 @@ Format lose an Keep-a-Changelog angelehnt.
 - **PHY041 1/t-Instrumentierung:** echte B&P-Aktivierung und Umschalt-Sweep
   werden jetzt im `WLResult` persistiert; zuvor blieben die geerbten
   Defaultwerte `False/0` trotz aktiver 1/t-Politur stehen.
+- **PR-Review-Haertung:** PHY032-Fallback-Domaenen pruefen jetzt beide
+  Temperaturgrenzen; das W4-Produktionsminimum kann nicht unter 3 Walker
+  abgesenkt werden; PHY043 generalisiert die 1-%-Power-Aussage nicht mehr
+  auf beliebige n_seeds/L-Budgets.
 
 ### Changed
 - Honeycomb-Literaturledger auf aktuelle Quellenfassungen rebaselined:
