@@ -1,6 +1,7 @@
 """Fast gates for PHY049 W4-v03 correlation-ratio staging."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import numpy as np
@@ -248,3 +249,197 @@ def test_product_records_preflight_gate_evidence(monkeypatch):
         wall_budget_h=0.0,
     )
     assert out["preflight_gates"] == gates
+
+
+
+def _green_preflight_for_checkpoint_tests():
+    gates = {
+        "VAL_BIT_numba": True,
+        "G1_geometry": True,
+        "G2_aligned_limit": True,
+        "G3_seed_unique": True,
+        "G4_fss_recovery": True,
+    }
+    return {"production_measurement_eligible": True, "gates": gates}
+
+
+def _fake_checkpoint_job(args):
+    L, t_idx, T, s, _n_therm, _n_meas = args
+    return {
+        "L": L,
+        "t_idx": t_idx,
+        "T": T,
+        "s": s,
+        "seed": phy049.seed_for(L, t_idx, s),
+        "g_quarter": 0.8 + 0.001 * s,
+        "g_half": 0.7 + 0.001 * s,
+        "wall_s": 0.01,
+    }
+
+
+def test_production_checkpoint_is_atomic_complete_and_resumable(
+    tmp_path, monkeypatch
+):
+    checkpoint = tmp_path / "phy049-production.json"
+    monkeypatch.setattr(
+        phy049, "preflight", _green_preflight_for_checkpoint_tests
+    )
+    monkeypatch.setattr(phy049, "_job", _fake_checkpoint_job)
+
+    out = phy049.produce(
+        ladder=(8,),
+        t_grid=(0.57,),
+        n_seeds=2,
+        n_therm=1,
+        n_meas=1,
+        max_workers=1,
+        wall_budget_h=1.0,
+        checkpoint_path=checkpoint,
+    )
+    assert out["complete"] is True
+    assert out["checkpoint_status"] == "COMPLETE"
+    assert checkpoint.exists()
+    assert not checkpoint.with_name(checkpoint.name + ".tmp").exists()
+    persisted = json.loads(checkpoint.read_text(encoding="utf-8"))
+    assert persisted == out
+
+    def must_not_recompute(_args):
+        raise AssertionError("completed checkpoint must not recompute jobs")
+
+    monkeypatch.setattr(phy049, "_job", must_not_recompute)
+    resumed = phy049.produce(
+        ladder=(8,),
+        t_grid=(0.57,),
+        n_seeds=2,
+        n_therm=1,
+        n_meas=1,
+        max_workers=1,
+        wall_budget_h=1.0,
+        checkpoint_path=checkpoint,
+        resume=True,
+    )
+    assert resumed == out
+
+
+def test_resume_rejects_partial_lattice_block(tmp_path, monkeypatch):
+    checkpoint = tmp_path / "partial.json"
+    monkeypatch.setattr(
+        phy049, "preflight", _green_preflight_for_checkpoint_tests
+    )
+    monkeypatch.setattr(phy049, "_job", _fake_checkpoint_job)
+    out = phy049.produce(
+        ladder=(8,),
+        t_grid=(0.57,),
+        n_seeds=2,
+        n_therm=1,
+        n_meas=1,
+        max_workers=1,
+        wall_budget_h=1.0,
+        checkpoint_path=checkpoint,
+    )
+    out["rows"] = out["rows"][:-1]
+    out["complete"] = False
+    out["checkpoint_status"] = "IN_PROGRESS"
+    checkpoint.write_text(json.dumps(out), encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="partial/invalid L=8 block"):
+        phy049.produce(
+            ladder=(8,),
+            t_grid=(0.57,),
+            n_seeds=2,
+            n_therm=1,
+            n_meas=1,
+            max_workers=1,
+            wall_budget_h=1.0,
+            checkpoint_path=checkpoint,
+            resume=True,
+        )
+
+
+def test_checkpoint_requires_explicit_resume(tmp_path, monkeypatch):
+    checkpoint = tmp_path / "existing.json"
+    checkpoint.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(
+        phy049, "preflight", _green_preflight_for_checkpoint_tests
+    )
+    with pytest.raises(FileExistsError, match="resume=True"):
+        phy049.produce(
+            ladder=(8,),
+            t_grid=(0.57,),
+            n_seeds=1,
+            n_therm=1,
+            n_meas=1,
+            max_workers=1,
+            wall_budget_h=1.0,
+            checkpoint_path=checkpoint,
+        )
+
+
+def test_wall_budget_stop_checkpoint_is_terminal(tmp_path, monkeypatch):
+    checkpoint = tmp_path / "budget-stop.json"
+    monkeypatch.setattr(
+        phy049, "preflight", _green_preflight_for_checkpoint_tests
+    )
+    monkeypatch.setattr(
+        phy049,
+        "_job",
+        lambda _args: (_ for _ in ()).throw(
+            AssertionError("zero-budget campaign must not start a job")
+        ),
+    )
+    out = phy049.produce(
+        ladder=(8,),
+        t_grid=(0.57,),
+        n_seeds=2,
+        n_therm=1,
+        n_meas=1,
+        max_workers=1,
+        wall_budget_h=0.0,
+        checkpoint_path=checkpoint,
+    )
+    assert out["checkpoint_status"] == "WALL_BUDGET_STOP"
+    assert out["complete"] is False
+    assert len(out["unmeasured"]) == 2
+
+    with pytest.raises(RuntimeError, match="cannot be resumed"):
+        phy049.produce(
+            ladder=(8,),
+            t_grid=(0.57,),
+            n_seeds=2,
+            n_therm=1,
+            n_meas=1,
+            max_workers=1,
+            wall_budget_h=0.0,
+            checkpoint_path=checkpoint,
+            resume=True,
+        )
+
+
+def test_resume_contract_mismatch_fails_closed(tmp_path, monkeypatch):
+    checkpoint = tmp_path / "contract.json"
+    monkeypatch.setattr(
+        phy049, "preflight", _green_preflight_for_checkpoint_tests
+    )
+    monkeypatch.setattr(phy049, "_job", _fake_checkpoint_job)
+    phy049.produce(
+        ladder=(8,),
+        t_grid=(0.57,),
+        n_seeds=2,
+        n_therm=1,
+        n_meas=1,
+        max_workers=1,
+        wall_budget_h=1.0,
+        checkpoint_path=checkpoint,
+    )
+    with pytest.raises(RuntimeError, match="contract does not match"):
+        phy049.produce(
+            ladder=(8,),
+            t_grid=(0.57,),
+            n_seeds=3,
+            n_therm=1,
+            n_meas=1,
+            max_workers=1,
+            wall_budget_h=1.0,
+            checkpoint_path=checkpoint,
+            resume=True,
+        )
