@@ -160,15 +160,18 @@ Bestwert-Claim.
 
 G0 INPUT:
 - exakt die vorregistrierten Metadaten n_seeds=12, n_therm=1000,
-  n_meas=4000;
+  n_meas=4000, max_workers=4 und wall_budget_h=24.0;
+- ein exakt dazu passender persistierter `campaign_contract`; kein
+  nachtraeglich verlaengertes Budget oder veraenderte Worker-Konfiguration;
 - exakt die persistierten Preflight-Gates
   {VAL_BIT_numba,G1_geometry,G2_aligned_limit,G3_seed_unique,G4_fss_recovery}
   mit literal `true` fuer jeden Eintrag und ohne Zusatz-Gates;
 - exakt 5*29*12 erwartete Rohzeilen, keine Zusatz-/Fremdzeilen;
 - `complete is True` und `unmeasured == []`;
 - alle erwarteten (L,T,Seed)-Jobs mit exakter (L,t_idx,T,s,seed)-Identitaet;
-- endliche, numerisch parsebare g(L/4), g(L/2); malformed Werte fail closed
-  statt den Adjudikator zu crashen;
+- endliche, strikt numerische g(L/4), g(L/2) innerhalb der physikalisch
+  moeglichen Mittelwertgrenzen [-1,1] sowie endliche wall_s >= 0; malformed
+  oder unmoegliche Werte fail closed statt den Adjudikator zu crashen;
 - Nenner |<g(L/4)>| > 1e-6.
 
 VAL-BIT BACKEND:
