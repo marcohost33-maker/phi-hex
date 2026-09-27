@@ -133,6 +133,20 @@ def test_pair_tbkt_recovers_synthetic_wm_in_honeycomb_band():
         assert tb is not None and abs(tb - T_true) < 1e-3, (La, Lb, tb)
 
 
+
+
+
+def test_one_over_t_metadata_contract():
+    """Persist the real B&P 1/t state instead of inherited false defaults."""
+    assert phy041._one_over_t_metadata(False, None) == {
+        "one_over_t_engaged": False,
+        "sweeps_at_1t": 0,
+    }
+    assert phy041._one_over_t_metadata(True, 59091) == {
+        "one_over_t_engaged": True,
+        "sweeps_at_1t": 59091,
+    }
+
 def test_honeycomb_arrays_geometry():
     """Bond-Projektionen: je Zelle sum(ax^2) = sum(ay^2) = 1.5 (Isotropie
     des T=0-Grenzwerts); 3 Kanten je Zelle, Einheitslaenge."""
@@ -155,4 +169,6 @@ def test_wl_honeycomb_smoke_energy_matches_wolff():
                                  n_burn=100)
     assert abs(c["E"][1] / res.n - ref["E_ps"]) < 0.05
     assert phy041.canonical_edge_leak(res, 0.62) < 1e-3
+    assert res.one_over_t_engaged
+    assert 0 < res.sweeps_at_1t <= res.wl_sweeps
     assert meta["window_ps"][0] >= phy041.E0_PER_SITE
