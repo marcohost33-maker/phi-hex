@@ -204,8 +204,10 @@ fail-open paths. They are now part of the binding contract:
   prerequisite is non-quotable.
 - **Exact production contract:** G0 requires n_seeds=12, n_therm=1000,
   n_meas=4000, max_workers=4, wall_budget_h=24.0, the matching persisted
-  `campaign_contract`, exactly 5*29*12 raw rows, `complete is True`,
-  `unmeasured == []`, exact row identity, finite wall_s >= 0, and finite
+  `campaign_contract`, exact PHY049 module/spec identity,
+  `checkpoint_status == "COMPLETE"`, finite top-level wall_s >= 0,
+  exactly 5*29*12 raw rows, `complete is True`, `unmeasured == []`,
+  exact row identity, finite row wall_s >= 0, and finite
   correlation means constrained to [-1,1]. It also requires the exact
   persisted PHY049 preflight gate map with every VAL-BIT/G1-G4 verdict
   literally true.
@@ -224,3 +226,20 @@ fail-open paths. They are now part of the binding contract:
 These changes are preproduction hardening, not post-hoc tuning: no PHY049
 production curve or transition estimate had been generated when they were
 committed.
+
+
+## 10. Resume-/Durability-Hardening - 2026-09-28, weiterhin pre-data
+
+- `campaign_contract` und Preflight-Gate-Map werden JSON-typstreng verglichen;
+  numerisch gleiche, aber typfremde Werte sind keine identische Evidenz.
+- Jeder gestartete L-Block wird vor Jobsubmission als `BLOCK_IN_PROGRESS`
+  mit Wall-Clock-Anker persistiert. Bei Resume wird der Block neu berechnet,
+  seine gesamte seit Start verstrichene Zeit inklusive Downtime aber dem
+  kumulierten 24-h-Budget zugerechnet.
+- `WALL_BUDGET_STOP` ist durch seinen Status terminal, nicht nur durch die
+  Truthiness von `unmeasured`.
+- Fehlende/ungueltige kumulierte `wall_s`, nicht-ganzzahlige Seedidentitaet
+  oder inkoharente Checkpoint-Statusfelder fail closed.
+- G0 akzeptiert nur `checkpoint_status == "COMPLETE"`; ein numerisch
+  vollstaendiger, transaktional nicht finalisierter Datensatz ist nicht
+  adjudizierbar.

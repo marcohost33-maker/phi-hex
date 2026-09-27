@@ -76,6 +76,13 @@ def _synthetic_product_for_validation():
                     "wall_s": 0.01,
                 })
     return {
+        "module": "PHY049_honeycomb_correlation_ratio_v01",
+        "spec": (
+            "spec/260927 PHI HEX w4 honeycomb preregistration v03 "
+            "correlation-ratio.md"
+        ),
+        "checkpoint_status": "COMPLETE",
+        "wall_s": 123.0,
         "ladder": list(phy050.W4V3_LADDER),
         "t_grid": list(phy050.W4V3_T_GRID),
         "n_seeds": phy050.W4V3_N_SEEDS,
@@ -299,3 +306,22 @@ def test_g0_rejects_impossible_or_untyped_row_evidence(field, value):
     out = phy050.assess_production(prod)
     assert out["gates"]["G0_input"] is False
     assert out["decision"] == "INCONCLUSIVE"
+
+
+def test_g0_requires_exact_complete_checkpoint_envelope():
+    prod = _synthetic_product_for_validation()
+    assert phy050._product_groups(prod) is not None
+    for field in ("module", "spec", "checkpoint_status", "wall_s"):
+        missing = dict(prod)
+        missing.pop(field)
+        assert phy050._product_groups(missing) is None
+    assert phy050._product_groups({**prod, "checkpoint_status": "IN_PROGRESS"}) is None
+    assert phy050._product_groups({**prod, "wall_s": "123.0"}) is None
+
+
+def test_g0_campaign_contract_rejects_python_numeric_coercion():
+    prod = _synthetic_product_for_validation()
+    coerced = {**prod, "campaign_contract": dict(prod["campaign_contract"])}
+    coerced["campaign_contract"]["n_seeds"] = float(phy050.W4V3_N_SEEDS)
+    assert coerced["campaign_contract"]["n_seeds"] == phy050.W4V3_N_SEEDS
+    assert phy050._product_groups(coerced) is None

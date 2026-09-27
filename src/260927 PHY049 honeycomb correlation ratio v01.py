@@ -4,10 +4,11 @@ Pre-registered contract:
   spec/260927 PHI HEX w4 honeycomb preregistration v03 correlation-ratio.md
 
 This module implements the measurement/preflight layer only. G4 synthetic FSS
-recovery is implemented and green, but it MUST NOT emit an external T_BKT claim
-until real production evidence passes G0/G5/G6. The fail-closed staging is
-intentional: measurement code can be validated without looking at production
-physics data.
+recovery is deterministic and must pass at runtime before production, but a
+repository-level validation claim additionally requires a committed gate log.
+It MUST NOT emit an external T_BKT claim until real production evidence passes
+G0/G5/G6. The fail-closed staging is intentional: measurement code can be
+validated without looking at production physics data.
 """
 from __future__ import annotations
 
@@ -177,7 +178,7 @@ def _campaign_contract(
 
 
 def _atomic_write_json(path: Path, payload: dict) -> None:
-    """Durably replace a checkpoint; never expose a partially written JSON."""
+    """Crash-durably replace a checkpoint; never expose partial JSON."""
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + ".tmp")
     with tmp.open("w", encoding="utf-8", newline="\n") as handle:
@@ -186,6 +187,30 @@ def _atomic_write_json(path: Path, payload: dict) -> None:
         handle.flush()
         os.fsync(handle.fileno())
     os.replace(tmp, path)
+    if os.name == "posix":
+        dir_fd = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)
+
+
+def _strict_json_equal(value: object, expected: object) -> bool:
+    """Compare JSON semantics without bool/int or int/float coercion."""
+    try:
+        lhs = json.dumps(
+            value, sort_keys=True, separators=(",", ":"), allow_nan=False
+        )
+        rhs = json.dumps(
+            expected, sort_keys=True, separators=(",", ":"), allow_nan=False
+        )
+    except (TypeError, ValueError):
+        return False
+    return lhs == rhs
+
+
+def _json_number(value: object) -> bool:
+    return type(value) in (int, float) and math.isfinite(float(value))
 
 
 def _completed_block_valid(
@@ -202,6 +227,8 @@ def _completed_block_valid(
     seen = set()
     for r in rr:
         try:
+            if type(r.get("L")) is not int or r["L"] != L:
+                return False
             k = r["t_idx"]
             seed_idx = r["s"]
             if type(k) is not int or type(seed_idx) is not int:
@@ -211,7 +238,10 @@ def _completed_block_valid(
             if (k, seed_idx) in seen:
                 return False
             seen.add((k, seed_idx))
-            if r.get("seed") != seed_for(L, k, seed_idx):
+            if (
+                type(r.get("seed")) is not int
+                or r["seed"] != seed_for(L, k, seed_idx)
+            ):
                 return False
             if type(r.get("T")) not in (int, float):
                 return False
@@ -235,6 +265,8 @@ def _checkpoint_payload(
     unmeasured: list[dict],
     wall_s: float,
     status: str,
+    inflight_L: int | None = None,
+    inflight_started_epoch_s: float | None = None,
 ) -> dict:
     expected = (
         len(contract["ladder"])
@@ -251,6 +283,10 @@ def _checkpoint_payload(
         "campaign_contract": dict(contract),
         "checkpoint_status": "COMPLETE" if complete else status,
         "wall_s": wall_s,
+        "inflight_L": None if complete else inflight_L,
+        "inflight_started_epoch_s": (
+            None if complete else inflight_started_epoch_s
+        ),
         "rows": rows,
         "unmeasured": unmeasured,
         "complete": complete,
@@ -315,42 +351,92 @@ def produce(
             saved = json.load(handle)
         if not isinstance(saved, dict):
             raise RuntimeError("checkpoint root must be a JSON object")
-        if saved.get("campaign_contract") != contract:
+        if saved.get("module") != "PHY049_honeycomb_correlation_ratio_v01":
+            raise RuntimeError("checkpoint module identity is invalid")
+        if saved.get("spec") != (
+            "spec/260927 PHI HEX w4 honeycomb preregistration v03 "
+            "correlation-ratio.md"
+        ):
+            raise RuntimeError("checkpoint spec identity is invalid")
+        if not _strict_json_equal(saved.get("campaign_contract"), contract):
             raise RuntimeError("checkpoint contract does not match this campaign")
-        if saved.get("preflight_gates") != pre["gates"]:
+        if not _strict_json_equal(saved.get("preflight_gates"), pre["gates"]):
             raise RuntimeError("checkpoint preflight evidence does not match")
-        if saved.get("unmeasured"):
+
+        status = saved.get("checkpoint_status")
+        if status == "WALL_BUDGET_STOP":
             raise RuntimeError(
                 "terminal WALL_BUDGET_STOP checkpoint cannot be resumed"
             )
-        raw_rows = saved.get("rows", [])
+        if status not in {"IN_PROGRESS", "BLOCK_IN_PROGRESS", "COMPLETE"}:
+            raise RuntimeError("checkpoint_status is invalid")
+
+        raw_unmeasured = saved.get("unmeasured")
+        if not isinstance(raw_unmeasured, list):
+            raise RuntimeError("checkpoint unmeasured must be a list")
+        raw_rows = saved.get("rows")
         if not isinstance(raw_rows, list) or any(
             not isinstance(r, dict) for r in raw_rows
         ):
             raise RuntimeError("checkpoint rows must be a list of objects")
+
+        wall_value = saved.get("wall_s")
+        if not _json_number(wall_value) or float(wall_value) < 0.0:
+            raise RuntimeError("checkpoint wall_s is invalid")
+        prior_wall_s = float(wall_value)
+
         rows = list(raw_rows)
-        if any(r.get("L") not in ladder for r in rows):
+        if any(type(r.get("L")) is not int or r["L"] not in ladder for r in rows):
             raise RuntimeError("checkpoint contains foreign lattice rows")
         for L in ladder:
-            count = sum(
-                1 for r in rows
-                if isinstance(r, dict) and r.get("L") == L
-            )
+            count = sum(1 for r in rows if r.get("L") == L)
             if count == 0:
                 continue
             if not _completed_block_valid(rows, L, t_grid, n_seeds):
                 raise RuntimeError(f"checkpoint has partial/invalid L={L} block")
             completed.add(L)
-        if saved.get("complete") is True:
+
+        if status == "COMPLETE":
+            if saved.get("complete") is not True or raw_unmeasured != []:
+                raise RuntimeError("COMPLETE checkpoint envelope is incoherent")
+            if (
+                saved.get("inflight_L") is not None
+                or saved.get("inflight_started_epoch_s") is not None
+            ):
+                raise RuntimeError("COMPLETE checkpoint cannot have in-flight state")
             if completed != set(ladder):
                 raise RuntimeError("checkpoint claims complete with missing L")
             return saved
-        try:
-            prior_wall_s = float(saved.get("wall_s", 0.0))
-        except (TypeError, ValueError, OverflowError) as exc:
-            raise RuntimeError("checkpoint wall_s is invalid") from exc
-        if not math.isfinite(prior_wall_s) or prior_wall_s < 0.0:
-            raise RuntimeError("checkpoint wall_s is invalid")
+
+        if saved.get("complete") is not False or raw_unmeasured != []:
+            raise RuntimeError("nonterminal checkpoint envelope is incoherent")
+
+        if status == "IN_PROGRESS":
+            if (
+                saved.get("inflight_L") is not None
+                or saved.get("inflight_started_epoch_s") is not None
+            ):
+                raise RuntimeError("IN_PROGRESS checkpoint has stale in-flight state")
+        else:
+            inflight_L = saved.get("inflight_L")
+            started_epoch_s = saved.get("inflight_started_epoch_s")
+            if (
+                type(inflight_L) is not int
+                or inflight_L not in ladder
+                or inflight_L in completed
+            ):
+                raise RuntimeError("BLOCK_IN_PROGRESS lattice identity is invalid")
+            if not _json_number(started_epoch_s) or float(started_epoch_s) < 0.0:
+                raise RuntimeError("BLOCK_IN_PROGRESS start time is invalid")
+            now_epoch_s = time.time()
+            if (
+                not math.isfinite(now_epoch_s)
+                or now_epoch_s < float(started_epoch_s)
+            ):
+                raise RuntimeError("wall clock moved backwards across resume")
+            prior_wall_s += now_epoch_s - float(started_epoch_s)
+            if not math.isfinite(prior_wall_s):
+                raise RuntimeError("checkpoint accumulated wall time is invalid")
     elif checkpoint is not None and checkpoint.exists():
         raise FileExistsError(
             "checkpoint exists; pass resume=True or choose a new path"
@@ -384,6 +470,22 @@ def produce(
                             "reason": "WALL_BUDGET_STOP",
                         })
             break
+
+        if checkpoint is not None:
+            started_epoch_s = time.time()
+            if not math.isfinite(started_epoch_s) or started_epoch_s < 0.0:
+                raise RuntimeError("wall-clock anchor is invalid")
+            payload = _checkpoint_payload(
+                pre=pre,
+                contract=contract,
+                rows=rows,
+                unmeasured=[],
+                wall_s=elapsed,
+                status="BLOCK_IN_PROGRESS",
+                inflight_L=L,
+                inflight_started_epoch_s=started_epoch_s,
+            )
+            _atomic_write_json(checkpoint, payload)
 
         if max_workers <= 1:
             block = [_job(j) for j in jobs]

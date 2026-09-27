@@ -12,6 +12,7 @@ whose T_BKT is not identifiable even if their raw collapse score is small.
 """
 from __future__ import annotations
 
+import json
 import math
 from dataclasses import dataclass
 
@@ -445,6 +446,19 @@ def _is_json_number(value: object) -> bool:
     )
 
 
+def _strict_json_equal(value: object, expected: object) -> bool:
+    try:
+        lhs = json.dumps(
+            value, sort_keys=True, separators=(",", ":"), allow_nan=False
+        )
+        rhs = json.dumps(
+            expected, sort_keys=True, separators=(",", ":"), allow_nan=False
+        )
+    except (TypeError, ValueError):
+        return False
+    return lhs == rhs
+
+
 def _product_groups(prod: dict) -> dict[tuple[int, int], list[dict]] | None:
     """Validate the exact preregistered raw-production contract, fail closed."""
     try:
@@ -452,6 +466,18 @@ def _product_groups(prod: dict) -> dict[tuple[int, int], list[dict]] | None:
         t_grid_raw = prod["t_grid"]
         rows = list(prod["rows"])
     except (KeyError, TypeError):
+        return None
+
+    if (
+        prod.get("module") != "PHY049_honeycomb_correlation_ratio_v01"
+        or prod.get("spec") != (
+            "spec/260927 PHI HEX w4 honeycomb preregistration v03 "
+            "correlation-ratio.md"
+        )
+        or prod.get("checkpoint_status") != "COMPLETE"
+        or not _is_json_number(prod.get("wall_s"))
+        or float(prod["wall_s"]) < 0.0
+    ):
         return None
 
     if (
@@ -502,7 +528,7 @@ def _product_groups(prod: dict) -> dict[tuple[int, int], list[dict]] | None:
         "max_workers": W4V3_MAX_WORKERS,
         "wall_budget_h": W4V3_WALL_BUDGET_H,
     }
-    if prod.get("campaign_contract") != expected_contract:
+    if not _strict_json_equal(prod.get("campaign_contract"), expected_contract):
         return None
     if prod.get("complete") is not True or prod.get("unmeasured") != []:
         return None

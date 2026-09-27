@@ -473,3 +473,116 @@ def test_resume_rejects_malformed_checkpoint_root_or_contract(
             checkpoint_path=checkpoint,
             resume=True,
         )
+
+
+def test_completed_block_rejects_float_seed_identity():
+    rows = [_fake_checkpoint_job((8, 0, 0.57, 0, 1, 1))]
+    rows[0]["seed"] = float(rows[0]["seed"])
+    assert phy049._completed_block_valid(rows, 8, (0.57,), 1) is False
+
+
+def test_resume_rejects_missing_accumulated_wall_time(tmp_path, monkeypatch):
+    checkpoint = tmp_path / "missing-wall.json"
+    monkeypatch.setattr(phy049, "preflight", _green_preflight_for_checkpoint_tests)
+    monkeypatch.setattr(phy049, "_job", _fake_checkpoint_job)
+    out = phy049.produce(
+        ladder=(8,), t_grid=(0.57,), n_seeds=1, n_therm=1, n_meas=1,
+        max_workers=1, wall_budget_h=1.0, checkpoint_path=checkpoint,
+    )
+    out.pop("wall_s")
+    checkpoint.write_text(json.dumps(out), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="wall_s is invalid"):
+        phy049.produce(
+            ladder=(8,), t_grid=(0.57,), n_seeds=1, n_therm=1, n_meas=1,
+            max_workers=1, wall_budget_h=1.0, checkpoint_path=checkpoint,
+            resume=True,
+        )
+
+
+def test_wall_budget_status_is_terminal_even_if_unmeasured_is_empty(
+    tmp_path, monkeypatch
+):
+    checkpoint = tmp_path / "malformed-terminal.json"
+    monkeypatch.setattr(phy049, "preflight", _green_preflight_for_checkpoint_tests)
+    monkeypatch.setattr(phy049, "_job", _fake_checkpoint_job)
+    out = phy049.produce(
+        ladder=(8,), t_grid=(0.57,), n_seeds=1, n_therm=1, n_meas=1,
+        max_workers=1, wall_budget_h=1.0, checkpoint_path=checkpoint,
+    )
+    out["checkpoint_status"] = "WALL_BUDGET_STOP"
+    out["complete"] = False
+    out["unmeasured"] = []
+    checkpoint.write_text(json.dumps(out), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="cannot be resumed"):
+        phy049.produce(
+            ladder=(8,), t_grid=(0.57,), n_seeds=1, n_therm=1, n_meas=1,
+            max_workers=1, wall_budget_h=1.0, checkpoint_path=checkpoint,
+            resume=True,
+        )
+
+
+def test_interrupted_block_wall_time_cannot_be_rolled_back(tmp_path, monkeypatch):
+    checkpoint = tmp_path / "interrupted.json"
+    monkeypatch.setattr(phy049, "preflight", _green_preflight_for_checkpoint_tests)
+    monkeypatch.setattr(phy049.time, "time", lambda: 1000.0)
+
+    def crash(_args):
+        raise RuntimeError("simulated worker crash")
+
+    monkeypatch.setattr(phy049, "_job", crash)
+    with pytest.raises(RuntimeError, match="simulated worker crash"):
+        phy049.produce(
+            ladder=(8,), t_grid=(0.57,), n_seeds=1, n_therm=1, n_meas=1,
+            max_workers=1, wall_budget_h=1.0, checkpoint_path=checkpoint,
+        )
+
+    saved = json.loads(checkpoint.read_text(encoding="utf-8"))
+    assert saved["checkpoint_status"] == "BLOCK_IN_PROGRESS"
+    assert saved["inflight_L"] == 8
+    assert saved["inflight_started_epoch_s"] == 1000.0
+
+    monkeypatch.setattr(phy049.time, "time", lambda: 4601.0)
+    monkeypatch.setattr(
+        phy049, "_job",
+        lambda _args: (_ for _ in ()).throw(
+            AssertionError("expired resumed campaign must not start a job")
+        ),
+    )
+    out = phy049.produce(
+        ladder=(8,), t_grid=(0.57,), n_seeds=1, n_therm=1, n_meas=1,
+        max_workers=1, wall_budget_h=1.0, checkpoint_path=checkpoint,
+        resume=True,
+    )
+    assert out["checkpoint_status"] == "WALL_BUDGET_STOP"
+    assert out["complete"] is False
+    assert len(out["unmeasured"]) == 1
+
+
+def test_resume_rejects_coerced_gate_and_contract_types(tmp_path, monkeypatch):
+    checkpoint = tmp_path / "coerced.json"
+    monkeypatch.setattr(phy049, "preflight", _green_preflight_for_checkpoint_tests)
+    monkeypatch.setattr(phy049, "_job", _fake_checkpoint_job)
+    out = phy049.produce(
+        ladder=(8,), t_grid=(0.57,), n_seeds=1, n_therm=1, n_meas=1,
+        max_workers=1, wall_budget_h=1.0, checkpoint_path=checkpoint,
+    )
+
+    bad_gate = json.loads(json.dumps(out))
+    bad_gate["preflight_gates"]["G1_geometry"] = 1
+    checkpoint.write_text(json.dumps(bad_gate), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="preflight evidence"):
+        phy049.produce(
+            ladder=(8,), t_grid=(0.57,), n_seeds=1, n_therm=1, n_meas=1,
+            max_workers=1, wall_budget_h=1.0, checkpoint_path=checkpoint,
+            resume=True,
+        )
+
+    bad_contract = json.loads(json.dumps(out))
+    bad_contract["campaign_contract"]["n_seeds"] = 1.0
+    checkpoint.write_text(json.dumps(bad_contract), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="contract does not match"):
+        phy049.produce(
+            ladder=(8,), t_grid=(0.57,), n_seeds=1, n_therm=1, n_meas=1,
+            max_workers=1, wall_budget_h=1.0, checkpoint_path=checkpoint,
+            resume=True,
+        )

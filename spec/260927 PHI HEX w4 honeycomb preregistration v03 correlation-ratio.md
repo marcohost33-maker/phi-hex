@@ -167,7 +167,10 @@ G0 INPUT:
   {VAL_BIT_numba,G1_geometry,G2_aligned_limit,G3_seed_unique,G4_fss_recovery}
   mit literal `true` fuer jeden Eintrag und ohne Zusatz-Gates;
 - exakt 5*29*12 erwartete Rohzeilen, keine Zusatz-/Fremdzeilen;
-- `complete is True` und `unmeasured == []`;
+- exakte Produktidentitaet `module=PHY049_honeycomb_correlation_ratio_v01`
+  und Bindung an diese v03-Spec;
+- `checkpoint_status == "COMPLETE"`, `complete is True`,
+  `unmeasured == []` und endliche top-level `wall_s >= 0`;
 - alle erwarteten (L,T,Seed)-Jobs mit exakter (L,t_idx,T,s,seed)-Identitaet;
 - endliche, strikt numerische g(L/4), g(L/2) innerhalb der physikalisch
   moeglichen Mittelwertgrenzen [-1,1] sowie endliche wall_s >= 0; malformed
@@ -248,14 +251,18 @@ transaktional ausfuehrbar:
 
 - der offizielle CLI-Produktionspfad verwendet ausschliesslich die exakten
   W4-v03-Defaults und schreibt in eine explizite JSON-Ergebnisdatei;
-- persistiert wird atomar via Temp-Datei + fsync + Replace, sodass ein
-  Prozess-/Hostabbruch kein halb geschriebenes Evidenzartefakt hinterlaesst;
-- Checkpoints werden nur nach einem **vollstaendigen L-Block** committed.
-  Ein partieller L-Block ist beim Resume unzulaessig und wird nie als Evidenz
-  uebernommen;
-- Resume akzeptiert nur einen byte-semantisch identischen
-  `campaign_contract` (Leiter, T-Gitter, Seeds, Thermalisierung, Messungen,
-  Workerzahl, Wall-Budget) und identische gruene Preflight-Gates;
+- persistiert wird atomar via Temp-Datei + fsync + Replace; auf POSIX wird
+  danach auch das Elternverzeichnis fsync'ed, damit Datei-Bytes und
+  Rename-Verzeichniseintrag crash-durable sind;
+- vor Start jedes L-Blocks wird ein `BLOCK_IN_PROGRESS`-Checkpoint mit
+  `inflight_L`, kumulierter `wall_s` und Wall-Clock-Anker geschrieben.
+  Nach Prozess-/Hostabbruch wird der uncommittete L-Block neu berechnet, aber
+  die seit Blockstart vergangene Wall-Clock-Zeit inklusive Downtime wird
+  konservativ auf das 24-h-Budget angerechnet;
+- nur **vollstaendige L-Bloecke** gehen in `rows` ein;
+- Resume akzeptiert nur JSON-typstreng identische `campaign_contract`- und
+  Preflight-Gate-Strukturen; `12 == 12.0` oder `True == 1` duerfen die
+  Evidenzgrenze nicht umgehen;
 - ein terminaler `WALL_BUDGET_STOP` darf nicht per Resume in eine laengere
   Kampagne verwandelt werden. Fehlende Jobs bleiben explizit ungemessen;
 - ein bereits vollstaendiges Checkpoint wird ohne Neuberechnung wiedergegeben;
