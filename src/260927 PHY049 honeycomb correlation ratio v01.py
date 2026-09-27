@@ -18,10 +18,10 @@ import time
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
-import numpy as np
-
 for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
     os.environ.setdefault(_v, "1")
+
+import numpy as np  # noqa: E402
 
 _SRC = Path(__file__).resolve().parent
 
@@ -40,6 +40,8 @@ _p45 = _load("phy045_normalization_for_phy049",
              "260926 PHY045 helicity normalization O1 test v01.py")
 
 HAVE_NUMBA = _p45.HAVE_NUMBA
+_py_wolff_sweep = _p45._py_wolff_sweep
+_nb_wolff_sweep = getattr(_p45, "_nb_wolff_sweep", None)
 W4V3_LADDER = (48, 72, 96, 144, 192)
 W4V3_T_GRID = tuple(round(0.540 + 0.0025 * k, 4) for k in range(29))
 W4V3_N_SEEDS = 12
@@ -92,12 +94,12 @@ if HAVE_NUMBA:
         stack = np.zeros(2 * n, dtype=np.int64)
         incl = np.zeros(n, dtype=np.int64)
         for _ in range(n_therm):
-            _p45._nb_wolff_sweep(th, nbr, deg, beta, n, stack, incl)
+            _nb_wolff_sweep(th, nbr, deg, beta, n, stack, incl)
         out = np.zeros((n_meas, 2))
         rq = L // 4
         rh = L // 2
         for k in range(n_meas):
-            _p45._nb_wolff_sweep(th, nbr, deg, beta, n, stack, incl)
+            _nb_wolff_sweep(th, nbr, deg, beta, n, stack, incl)
             out[k, 0] = _nb_corr(th, L, rq)
             out[k, 1] = _nb_corr(th, L, rh)
         return out
@@ -109,10 +111,10 @@ def _py_run_corr(th, nbr, deg, beta, n_therm, n_meas, seed, L):
     stack = np.zeros(2 * n, dtype=np.int64)
     incl = np.zeros(n, dtype=np.int64)
     for _ in range(n_therm):
-        _p45._py_wolff_sweep(th, nbr, deg, beta, n, stack, incl)
+        _py_wolff_sweep(th, nbr, deg, beta, n, stack, incl)
     out = np.zeros((n_meas, 2))
     for k in range(n_meas):
-        _p45._py_wolff_sweep(th, nbr, deg, beta, n, stack, incl)
+        _py_wolff_sweep(th, nbr, deg, beta, n, stack, incl)
         out[k, 0] = _py_corr(th, L, L // 4)
         out[k, 1] = _py_corr(th, L, L // 2)
     return out
