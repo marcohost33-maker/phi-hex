@@ -124,39 +124,46 @@ REF_BAND = {  # T-Form, aus spec/260703 (beta-Kanaele konvertiert)
     "nn_ptep": (0.572, 0.003),
 }
 
-# Provenienz je Band-Kanal (Issue #45 §3). status:
-#   "contract_260703"  - Eintrag des Vertrags spec/260703 (Stand 2026-07-03)
-#   "search_corroborated" - durch >= 2 unabhaengige Web-Such-Snapshots des
-#       Abstracts belegt; Primaertext in dieser Umgebung NICHT abrufbar
-#       (Egress-Policy blockt arxiv.org/iopscience/oup, 2026-09-26)
-#   "version_unclear"  - Wert belegt, Fassung (v1..v4) nicht eindeutig
-# Offene Pflicht: Primaertext-Abgleich je Fassung (Spec 260926 §4).
+# Provenienz je Kanal. Historische Kanaele bleiben fuer Lineage im Dictionary,
+# duerfen aber nicht als aktuelle Referenzfamilie interpretiert werden.
+# Status 2026-09-27 wird durch spec/260926 ... provenance addendum supersediert.
 REF_PROVENANCE = {
     "multi_lattice": ("arXiv:2501.07388 v1 = J.Phys.A 58 065003 (2025)",
-                      "T, ohne Fehlerbalken", "contract_260703"),
+                      "T, ohne Fehlerbalken", "current_method_anchor"),
     "helicity_direct": ("arXiv:2406.14812 v1", "T, Helicity",
-                        "contract_260703"),
-    "nn_mc": ("arXiv:2406.14812 v1", "T, NN", "contract_260703"),
+                        "superseded_historical"),
+    "nn_mc": ("arXiv:2406.14812 v1", "T, NN", "superseded_historical"),
     "upsilon_beta": ("arXiv:2406.12076 v3/v4 = Phys.Scr. 100 065953 (2025)",
-                     "beta=1.687(3), Upsilon", "contract_260703"),
+                     "beta=1.687(3), Upsilon", "superseded_historical"),
     "upsilon4_beta": ("arXiv:2406.12076 v3/v4 = Phys.Scr. 100 065953 (2025)",
-                      "beta=1.635(11), Upsilon_4", "contract_260703"),
+                      "beta=1.635(11), Upsilon_4", "superseded_historical"),
     "binder_beta": ("arXiv:2406.12076 v2..v4 Abstract",
-                    "beta=1.724(2), Binder", "search_corroborated"),
+                    "beta=1.724(2), Binder", "superseded_historical"),
     "upsilon_wl_T": ("arXiv:2406.12076 Abstract (v4) = Phys.Scr. 100 065953",
-                     "T=0.576(3), Upsilon, Wang-Landau", "search_corroborated"),
+                     "T=0.576(3), Upsilon, Wang-Landau", "primary_text_verified"),
     "upsilon_sa_T": ("arXiv:2406.12076 Abstract (v4) = Phys.Scr. 100 065953",
                      "T=0.575(8), Upsilon, sim. annealing",
-                     "search_corroborated"),
+                     "primary_text_verified"),
     "upsilon4_wl_T": ("arXiv:2406.12076 Haupttext", "T=0.568(1), Upsilon_4, WL",
-                      "version_unclear"),
+                      "primary_text_verified"),
     "upsilon4_sa_T": ("arXiv:2406.12076 Haupttext",
-                      "T=0.551(11), Upsilon_4, SA", "version_unclear"),
+                      "T=0.551(11), Upsilon_4, SA", "primary_text_verified"),
     "helicity_ptep": ("PTEP 2024(10) 103A02 (Journal-Fassung arXiv:2406.14812)",
-                      "T=0.576(4), Helicity", "search_corroborated"),
+                      "T=0.576(4), Helicity", "primary_text_verified"),
     "nn_ptep": ("PTEP 2024(10) 103A02 (Journal-Fassung arXiv:2406.14812)",
-                "T=0.572(3), NN", "search_corroborated"),
+                "T=0.572(3), NN", "primary_text_verified"),
 }
+
+
+REF_CURRENT_KEYS = (
+    "multi_lattice",
+    "upsilon_wl_T",
+    "upsilon_sa_T",
+    "upsilon4_wl_T",
+    "upsilon4_sa_T",
+    "helicity_ptep",
+    "nn_ptep",
+)
 
 # PHY041-Bruecke: committed Reportwerte (results/260702 PHY041 ... report.txt)
 PHY041_PAIRS = {(12, 16): 0.5951, (12, 24): 0.6029, (16, 24): 0.6087}
