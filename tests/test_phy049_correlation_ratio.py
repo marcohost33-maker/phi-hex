@@ -186,3 +186,65 @@ def test_production_backend_caches_successful_val_bit(monkeypatch):
     assert phy049._production_run_backend() is phy049._nb_run_corr
     assert phy049._production_run_backend() is phy049._nb_run_corr
     assert calls["n"] == 1
+
+
+def test_public_produce_cannot_bypass_failed_preflight(monkeypatch):
+    monkeypatch.setattr(
+        phy049,
+        "preflight",
+        lambda: {
+            "production_measurement_eligible": False,
+            "gates": {
+                "VAL_BIT_numba": True,
+                "G1_geometry": True,
+                "G2_aligned_limit": True,
+                "G3_seed_unique": True,
+                "G4_fss_recovery": False,
+            },
+        },
+    )
+    monkeypatch.setattr(
+        phy049,
+        "_job",
+        lambda _args: (_ for _ in ()).throw(
+            AssertionError("job must not run after failed preflight")
+        ),
+    )
+    with pytest.raises(RuntimeError, match="G4_fss_recovery"):
+        phy049.produce(
+            ladder=(8,),
+            t_grid=(0.57,),
+            n_seeds=2,
+            n_therm=1,
+            n_meas=1,
+            max_workers=1,
+            wall_budget_h=0.0,
+        )
+
+
+def test_product_records_preflight_gate_evidence(monkeypatch):
+    gates = {
+        "VAL_BIT_numba": True,
+        "G1_geometry": True,
+        "G2_aligned_limit": True,
+        "G3_seed_unique": True,
+        "G4_fss_recovery": True,
+    }
+    monkeypatch.setattr(
+        phy049,
+        "preflight",
+        lambda: {
+            "production_measurement_eligible": True,
+            "gates": gates,
+        },
+    )
+    out = phy049.produce(
+        ladder=(8,),
+        t_grid=(0.57,),
+        n_seeds=1,
+        n_therm=1,
+        n_meas=1,
+        max_workers=1,
+        wall_budget_h=0.0,
+    )
+    assert out["preflight_gates"] == gates
