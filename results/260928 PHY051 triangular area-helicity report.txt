@@ -1,0 +1,61 @@
+PHY051 - triangular: T_BKT mit Upsilon pro Flaeche (Wolff, Paar-Crossings) - O1-Diskriminator
+Coworker Research / Coworkerz, 2026-09-28
+======================================================================
+Spec: spec/260928 PHI HEX phy051 triangular kagome per-area preregistration v01.md
+Leiter [33, 49, 65, 97, 129, 193, 257], T-Gitter 1.38..1.51 (27 Punkte), 8 Seeds x (500+1500) Sweeps, numba=True
+Wall 3534 s auf 4 Prozessen, CPU 3.80 h; unmeasured_L=[]
+
+--- PRIMAER: Upsilon pro Flaeche ---
+  Paar-Crossings T*(L1,L2) +- Jackknife-SE:
+    (33,65): 1.4603 +- 0.0018
+    (49,97): 1.4606 +- 0.0018
+    (65,129): 1.4660 +- 0.0040
+    (97,193): 1.4656 +- 0.0016
+    (129,257): 1.4611 +- 0.0015
+  PRIMAER gewichtetes Mittel grosser Paare: 1.4635 (n=3, weighted=True)
+  v1 alle Paare gewichtet: 1.4622
+  v2 groesstes Paar: 1.4611
+  v3 HKS 3-Par: 1.4641 (b=0.10)
+  v4 HKS b=1: 1.4664
+  v5 WM freies C: 1.4624
+  sigma_sampler (Jackknife) = 0.0011
+  sigma_FSS (halbe Spannweite, vor Floor) = 0.0027
+  Verdikt vs Band [1.45, 1.48]: {'verdict': 'CONSISTENT', 'rule': 'C', 'sigma_tot': 0.007407029804363048, 'sigma_fss_floored': 0.007317272178348479, 'interval': [1.4486403760609696, 1.4782684952784217], 'band': [1.45, 1.48]}
+  Diagnostik ohne v3 (NICHT entscheidend): sigma_FSS = 0.0027 -> CONSISTENT (C)
+  z vs ref_free = -0.26; z vs ref_free_alt = -0.01; z vs ref_helicity = 5.92
+
+--- QUERCHECK: per Site (Konvention, NICHT entscheidend) ---
+  Paar-Crossings T*(L1,L2) +- Jackknife-SE:
+    (33,65): 1.4081 +- 0.0004
+    (49,97): 1.4111 +- 0.0009
+    (65,129): 1.4124 +- 0.0016
+    (97,193): 1.4191 +- 0.0015
+    (129,257): 1.4172 +- 0.0032
+  PRIMAER gewichtetes Mittel grosser Paare: 1.4160 (n=3, weighted=True)
+  v1 alle Paare gewichtet: 1.4095
+  v2 groesstes Paar: 1.4172
+  v3 HKS 3-Par: 1.4387 (b=10.00)
+  v4 HKS b=1: 1.4287
+  v5 WM freies C: 1.4138
+  sigma_sampler (Jackknife) = 0.0009
+  sigma_FSS (halbe Spannweite, vor Floor) = 0.0146
+  Verdikt vs Band [1.45, 1.48]: {'verdict': 'NEGATIVE_RESULT', 'rule': 'S2', 'sigma_tot': 0.014601512144767877}
+  Diagnostik ohne v3 (NICHT entscheidend): sigma_FSS = 0.0096 -> INCONSISTENT (I)
+  z vs ref_free = -3.36; z vs ref_free_alt = -3.24; z vs ref_helicity = -0.13
+
+--- O1-Diskriminator (Spec Abschnitt 6) ---
+  NEGATIVE_RESULT
+
+--- Gates (Pipeline-Integritaet, keine Physik-Wahrheit) ---
+  [PASS] PASS_INPUT_COMPLETE
+  [PASS] PASS_T0_GEOMETRY_ORACLE
+  [PASS] PASS_LOW_T_MERGE
+  [PASS] PASS_HIGH_T_SPLAY
+  [PASS] PASS_CURVE_SE_BOUNDED
+  [PASS] PASS_MIN_PAIRS
+  OVERALL: PASS
+
+Referenzen: {"ref_free": {"label": "HT-Reihe Butera & Pernici arXiv:0806.1496, J_c = 0.6824(8)", "T": 1.4654, "sigma": 0.0017}, "ref_free_alt": {"label": "MC arXiv:1010.3075, J_c = 0.6833(6)", "T": 1.4635, "sigma": 0.0013}, "ref_helicity": {"label": "Sorokin (zitiert in arXiv:2305.00651), Helicity, Normierung unbelegt", "T": 1.418, "sigma": 0.002}}
+
+Grenzen: FINDING relativ zum vorregistrierten Band, kein Bestwert;
+externe Aussage erst nach Cross-Family-Review.
