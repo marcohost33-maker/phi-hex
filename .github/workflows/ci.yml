@@ -3,8 +3,10 @@ name: ci
 on:
   push:
     branches: [main]
+  # Run correctness gates for every PR, including stacked agent PRs whose
+  # temporary base is another feature branch. Restricting this event to
+  # branches: [main] silently left stacked PRs (e.g. W4-v03) unverified.
   pull_request:
-    branches: [main]
 
 permissions:
   contents: read
