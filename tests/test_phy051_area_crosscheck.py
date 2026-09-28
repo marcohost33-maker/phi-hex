@@ -225,6 +225,20 @@ def test_regenerate_roundtrip(tmp_path):
     assert (tmp_path / f"{stem}.txt").exists()
 
 
+def test_pool_is_fork_only_and_sequential_otherwise(monkeypatch):
+    import multiprocessing
+    assert phy051._pool(1) is None
+    ex = phy051._pool(2)
+    if ex is not None:                       # Plattform mit fork
+        assert ex._mp_context.get_start_method() == "fork"
+        ex.shutdown()
+
+    def _no_fork(method):
+        raise ValueError("cannot find context for 'fork'")
+    monkeypatch.setattr(multiprocessing, "get_context", _no_fork)
+    assert phy051._pool(4) is None           # fail-safe: sequenziell
+
+
 def test_analyse_with_incomplete_ladder_is_negative_s0():
     prod = _synthetic_prod("kagome", T0=0.825, ladder=[32, 48, 64, 96],
                            t_grid=phy051._grid(0.70, 0.95))
