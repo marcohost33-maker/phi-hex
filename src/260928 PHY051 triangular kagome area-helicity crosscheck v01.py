@@ -239,7 +239,7 @@ def estimate(curves: dict, curves_se: dict, t_grid, plan: dict,
             sig = None
     primary = weighted_pair_mean(pc, pair_sig, plan["L_min_primary"])
     v1 = weighted_pair_mean(pc, pair_sig, 0)
-    v2 = Ts[-1] if Ts else None
+    v2 = pc.get(tuple(pairs[-1]))        # groesstes Paar allein (Spec 5, v2)
     v3 = fit_hks(Ls, Ts, sig, b_range=PHY051_HKS_B_RANGE)
     v4 = fit_hks(Ls, Ts, sig, b_fixed=1.0)
     v5 = wm_free_c_fit(curves, curves_se, t_grid, ladder) if ladder else None
@@ -265,9 +265,9 @@ def verdict(t_p: float | None, sigma_sampler: float | None,
     """Regeln Spec Abschnitt 6 in fester Reihenfolge: S0, S1, S1b, S2, dann C/I."""
     if not ladder_complete:
         return {"verdict": "NEGATIVE_RESULT", "rule": "S0", "sigma_tot": None}
-    if n_pairs < PHY051_MIN_PAIRS or t_p is None:
+    if n_pairs < PHY051_MIN_PAIRS:
         return {"verdict": "NEGATIVE_RESULT", "rule": "S1", "sigma_tot": None}
-    if n_primary_pairs < PHY051_MIN_PRIMARY_PAIRS:
+    if n_primary_pairs < PHY051_MIN_PRIMARY_PAIRS or t_p is None:
         return {"verdict": "NEGATIVE_RESULT", "rule": "S1b", "sigma_tot": None}
     if sigma_sampler is None or sigma_fss is None:
         return {"verdict": "NEGATIVE_RESULT", "rule": "S2", "sigma_tot": None}
@@ -336,9 +336,19 @@ def analyse(prod: dict, key: str = "ups_area") -> dict:
                 else full["v5_wm_free_c"]["T"]]
     vv = [v for v in variants if v is not None]
     sigma_fss = 0.5 * (max(vv) - min(vv)) if len(vv) >= 2 else None
+    # Diagnostik (Nachtrag v01a, vor Sicht der Daten; NICHT entscheidend):
+    # halbe Spannweite OHNE die 3-Parameter-HKS-Variante v3, die PHY048 auf
+    # square als rauschverstaerkend ausgewiesen hat. Zeigt, ob ein S2-Stop
+    # allein von v3 getragen wuerde. Das Verdikt bleibt bei sigma_fss (v01).
+    vv_no3 = [v for k, v in enumerate(variants) if v is not None and k != 3]
+    sigma_fss_no_hks3 = (0.5 * (max(vv_no3) - min(vv_no3))
+                         if len(vv_no3) >= 2 else None)
     sigma_sampler = _jk_se(jk_T)
     vd = verdict(t_p, sigma_sampler, sigma_fss, full["n_pairs_with_crossing"],
                  prim["n_pairs"], plan["band"], ladder_complete=complete)
+    vd_no3 = verdict(t_p, sigma_sampler, sigma_fss_no_hks3,
+                     full["n_pairs_with_crossing"], prim["n_pairs"],
+                     plan["band"], ladder_complete=complete)
     return {"channel": key, "ladder_used": ladder,
             "ladder_complete": complete, "estimates": full,
             "pair_jackknife_se": {f"{a}_{b}": v
@@ -346,6 +356,9 @@ def analyse(prod: dict, key: str = "ups_area") -> dict:
             "T_P": t_p, "sigma_sampler": sigma_sampler,
             "sigma_fss_raw": sigma_fss, "variants": variants,
             "verdict": vd,
+            "diagnostic_without_hks3par": {"sigma_fss_raw": sigma_fss_no_hks3,
+                                           "verdict": vd_no3,
+                                           "decisive": False},
             "z_vs_ref_free": _z(t_p, plan["ref_free"], vd.get("sigma_tot")),
             "z_vs_ref_free_alt": _z(t_p, plan["ref_free_alt"],
                                     vd.get("sigma_tot")),
@@ -501,6 +514,10 @@ def write_text_report(rep: dict, path: Path) -> None:
                   f"  sigma_FSS (halbe Spannweite, vor Floor) = "
                   f"{_fmt(ch['sigma_fss_raw'])}",
                   f"  Verdikt vs Band {rep['band']}: {ch['verdict']}",
+                  f"  Diagnostik ohne v3 (NICHT entscheidend): sigma_FSS = "
+                  f"{_fmt(ch['diagnostic_without_hks3par']['sigma_fss_raw'])}"
+                  f" -> {ch['diagnostic_without_hks3par']['verdict'].get('verdict')}"
+                  f" ({ch['diagnostic_without_hks3par']['verdict'].get('rule')})",
                   f"  z vs ref_free = {_fmt(ch['z_vs_ref_free'], '.2f')}; "
                   f"z vs ref_free_alt = {_fmt(ch['z_vs_ref_free_alt'], '.2f')}; "
                   f"z vs ref_helicity = {_fmt(ch['z_vs_ref_helicity'], '.2f')}",
@@ -532,8 +549,40 @@ def run_lattice(lattice: str, max_workers: int = 4,
     return rep
 
 
+def prod_from_report(rep: dict) -> dict:
+    """Produktions-Dict (Rohdaten + Metadaten) aus einem Report-JSON."""
+    pr = rep["production"]
+    return {"lattice": rep["lattice"], "t_grid": pr["t_grid"],
+            "ladder": pr["ladder"], "n_seeds": pr["n_seeds"],
+            "n_therm": pr["n_therm"], "n_meas": pr["n_meas"],
+            "unmeasured_L": pr["unmeasured_L"], "wall_s": pr["wall_s"],
+            "cpu_s": pr["cpu_s"], "max_workers": pr["max_workers"],
+            "have_numba": pr["have_numba"],
+            "ups_area": rep["data"]["ups_area"],
+            "ups_site": rep["data"]["ups_site"]}
+
+
+def regenerate(lattice: str, out_dir: Path | None = None) -> dict:
+    """Report MC-frei aus den committeten Rohdaten neu ableiten (Auswertung
+    ist eine deterministische Funktion der Rohdaten; Rohdaten unveraendert)."""
+    res = out_dir or (_ROOT / "results")
+    stem = report_stem(lattice)
+    old = json.loads((res / f"{stem}.json").read_text(encoding="utf-8"))
+    rep = _clean(build_report(prod_from_report(old)))
+    (res / f"{stem}.json").write_text(
+        json.dumps(rep, indent=1, allow_nan=False) + "\n", encoding="utf-8")
+    write_text_report(rep, res / f"{stem}.txt")
+    print(f"Regenerated: results/{stem}.{{json,txt}}; O1={rep['o1_label']}",
+          flush=True)
+    return rep
+
+
 if __name__ == "__main__":
     which = sys.argv[1] if len(sys.argv) > 1 else "all"
+    if which == "regenerate":
+        for name in (sys.argv[2:] or ("triangular", "kagome")):
+            regenerate(name)
+        sys.exit(0)
     workers = int(sys.argv[2]) if len(sys.argv) > 2 else 4
     names = ("triangular", "kagome") if which == "all" else (which,)
     for name in names:

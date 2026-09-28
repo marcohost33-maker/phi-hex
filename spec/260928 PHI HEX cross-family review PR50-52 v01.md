@@ -104,7 +104,7 @@ erledigt.
 | Referenz | Was es ist | Wert(e) | Normierungs-Status |
 |---|---|---|---|
 | arXiv:2501.07388 = Okabe & Otsuka, J. Phys. A 58 (2025) 065003 | MC **Correlation-Ratio** (Verhaeltnis der Korrelationsfunktion bei zwei Distanzen) + ML-Phasenklassifikation; honeycomb, kagome, diced; triangular aus "previously calculated data" | honeycomb 0.573, kagome 0.825 (beide "rough estimate") | normierungsfrei (kein Helicity-Faktor) |
-| arXiv:2305.00651 = Otsuka, Shiina, Okabe, J. Phys. A 56 (2023) 235001 | XY + 6-state clock auf **triangular**, L = 48/72/96/144/192, Helicity + Correlation-Ratio + Level-Spectroscopy; **zitiert Sorokin: T_BKT = 1.418(2) aus dem Helicity-Modul** | 1.418(2) (Sorokin, Helicity) | **Helicity-Wert; Normierung unbelegt.** Der eigene Okabe-Otsuka-Wert fuer triangular konnte per Snippet nicht extrahiert werden (offen). |
+| arXiv:2305.00651 = Otsuka, Shiina, Okabe, J. Phys. A 56 (2023) 235001 | Hauptgegenstand laut Abstract: AF-3-State-Potts (square, NNN) und triangular AF-Ising (anisotrope NNN) - ML-Phasenklassifikation, Correlation-Ratio-MC, Level-Spectroscopy. Ein zweiter Such-Snapshot ordnet der Arbeit zusaetzlich XY + 6-state clock auf **triangular** (L = 48/72/96/144/192, Helicity + Correlation-Ratio) zu und nennt: **zitiert Sorokin, T_BKT = 1.418(2) aus dem Helicity-Modul**. Die beiden Snapshots widersprechen sich nicht, sind aber nicht am Primaertext geprueft. | 1.418(2) (Sorokin, Helicity) | **Helicity-Wert; Normierung unbelegt; Sorokin-Primaerquelle per Websuche nicht lokalisierbar** (2026-09-28). Ein eigener Okabe-Otsuka-Correlation-Ratio-Wert fuer triangular ist offen. |
 | Butera & Pernici, arXiv:0806.1496 (2008) | Hochtemperatur-Reihe der Korrelationsfunktion, triangular bis Ordnung 20 | J_c = 0.6824(8) -> **T_BKT = 1.4654(17)** (Snippet, zusaetzlich als Zitat in arXiv:1010.3075 bestaetigt) | normierungsfrei (Reihe) |
 | arXiv:1010.3075 (PRE 83, 011124) | MC, BKT-artige Perkolation, square + triangular | J_c = 0.6833(6) -> 1.4635(13) (Snippet-Ebene, aus PR #50 uebernommen) | normierungsfrei |
 | Butera & Comi, PRB 50, 3052 (1994); cond-mat/9902326 | HT-Reihe triangular bis Ordnung 14 | (Vorgaenger von 0806.1496) | normierungsfrei |
@@ -178,7 +178,13 @@ der C-eliminierte Paar-Schaetzer bleibt anwendbar.
   #52 Nachtrag 3/4 widerspricht fuer Jiang/de Andrade. Sollte #52 mergen,
   ist die Note als supersedet zu markieren (nicht umschreiben).
 - Der PHY048-Befund "3-Parameter-HKS rauschverstaerkend" ist in PHY051
-  als Protokoll-Lehre umgesetzt (Paar-Mittel als Primaer).
+  als Protokoll-Lehre umgesetzt (Paar-Mittel als Primaer; Diagnostik der
+  sigma_FSS-Spannweite ohne v3, nicht entscheidend).
+- PHY046 `estimate()`: Variante v3 "groesstes Paar" ist als `Ts[-1]`
+  implementiert = groesstes Paar MIT Crossing. Fuer den committeten Lauf
+  ohne Folge (alle 5 Paare kreuzen); bei fehlendem Crossing des groessten
+  Paares wuerde still das naechstkleinere gezaehlt. PHY051 bindet v2 an das
+  groesste Paar allein (None, falls kein Crossing).
 
 ## 6. Offen nach diesem Review
 

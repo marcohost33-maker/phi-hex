@@ -167,7 +167,7 @@ def test_stop_rules_fail_closed():
     assert phy051.verdict(1.46, 0.001, 0.001, 5, 3, band,
                           ladder_complete=False)["rule"] == "S0"
     assert phy051.verdict(1.46, 0.001, 0.001, 2, 2, band)["rule"] == "S1"
-    assert phy051.verdict(None, 0.001, 0.001, 5, 3, band)["rule"] == "S1"
+    assert phy051.verdict(None, 0.001, 0.001, 5, 3, band)["rule"] == "S1b"
     assert phy051.verdict(1.46, 0.001, 0.001, 3, 1, band)["rule"] == "S1b"
     assert phy051.verdict(1.46, None, 0.001, 5, 3, band)["rule"] == "S2"
     assert phy051.verdict(1.46, 0.02, 0.001, 5, 3, band)["rule"] == "S2"
@@ -183,6 +183,46 @@ def test_stop_rules_fail_closed():
     assert phy051.o1_label("INCONSISTENT", "INCONSISTENT") == "TENSION_BOTH_CHANNELS"
     assert phy051.o1_label("NEGATIVE_RESULT", "CONSISTENT") == "NEGATIVE_RESULT"
     assert phy051.o1_label("CONSISTENT", "NEGATIVE_RESULT") == "NEGATIVE_RESULT"
+
+
+def test_v2_is_the_largest_pair_alone_and_diagnostic_is_not_decisive():
+    """Spec 5 (v2): groesstes Paar ALLEIN - fehlt dessen Crossing, ist v2 None
+    (nicht das naechstkleinere Paar). Nachtrag v01a: die Diagnostik ohne v3
+    traegt decisive=False und aendert das Verdikt nicht."""
+    prod = _synthetic_prod("triangular", T0=1.465,
+                           t_grid=phy051._grid(1.30, 1.60))
+    # groesstes Paar (129,257) durch Rauschen unbrauchbar machen: NaN-freie,
+    # aber konstant zu hohe Kurve fuer L=257 -> kein WM-Crossing
+    prod["ups_area"]["257"] = (np.asarray(prod["ups_area"]["257"]) + 5.0).tolist()
+    out = phy051.analyse(prod, "ups_area")
+    e = out["estimates"]
+    assert e["pairs"]["129_257"] is None
+    assert e["v2_largest_pair"] is None
+    assert e["n_pairs_with_crossing"] == 4
+    assert out["diagnostic_without_hks3par"]["decisive"] is False
+    assert out["verdict"]["verdict"] in ("CONSISTENT", "INCONSISTENT",
+                                         "NEGATIVE_RESULT")
+
+
+def test_stop_rule_s1b_when_primary_missing_but_three_pairs():
+    band = (1.45, 1.48)
+    assert phy051.verdict(None, 0.001, 0.001, 3, 0, band)["rule"] == "S1b"
+    assert phy051.verdict(1.46, 0.001, 0.001, 3, 1, band)["rule"] == "S1b"
+    assert phy051.verdict(1.46, 0.001, 0.001, 2, 2, band)["rule"] == "S1"
+
+
+def test_regenerate_roundtrip(tmp_path):
+    """Report -> prod_from_report -> build_report ist idempotent."""
+    prod = _synthetic_prod("kagome", T0=0.825, t_grid=phy051._grid(0.70, 0.95))
+    rep = phy051._clean(phy051.build_report(prod))
+    stem = phy051.report_stem("kagome")
+    (tmp_path / f"{stem}.json").write_text(json.dumps(rep), encoding="utf-8")
+    again = phy051.regenerate("kagome", out_dir=tmp_path)
+    assert again["o1_label"] == rep["o1_label"]
+    assert again["primary_per_area"]["T_P"] == pytest.approx(
+        rep["primary_per_area"]["T_P"], abs=1e-12)
+    assert again["pass_gates"] == rep["pass_gates"]
+    assert (tmp_path / f"{stem}.txt").exists()
 
 
 def test_analyse_with_incomplete_ladder_is_negative_s0():

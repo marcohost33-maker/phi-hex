@@ -159,3 +159,29 @@ OVERALL = alle Gates. Ein FAIL schreibt trotzdem Report + Evidenz.
   end-to-end; committete Reports (falls vorhanden) gegen den Plan.
 - Kein Parameter dieses Vertrags darf nach Sicht der PHY051-Daten geaendert
   werden (sonst v02 als datierter post-hoc-Nachtrag).
+
+## 9. Nachtrag v01a (2026-09-28, waehrend der laufenden Produktion, VOR Sicht jeglicher PHY051-Daten)
+
+Anlass: Selbstpruefung der Vorregistrierung gegen Spec-Wortlaut und die
+PHY048-Lehre, bevor ein Report existiert (der Lauf schreibt Reports erst am
+Ende jedes Gitters; zum Zeitpunkt dieses Nachtrags existierte keiner).
+Die Regeln S0/S1/S1b/S2/C/I, Baender, Primaer-Schaetzer, sigma_FSS-
+Definition und die Wahrheitstafel bleiben UNVERAENDERT. Drei Praezisierungen:
+
+1. **v2 "groesstes Paar allein"** war im Code als "groesstes Paar mit
+   Crossing" implementiert. Jetzt spec-konform: v2 = Crossing des groessten
+   Paares, None falls es nicht kreuzt (fliesst dann nicht in sigma_FSS ein).
+2. **S1/S1b-Reihenfolge:** S1 prueft nur die Paar-Anzahl; S1b greift, wenn
+   der Primaer-Schaetzer fehlt (weniger als 2 grosse Paare).
+3. **Diagnostik (nicht entscheidend, `decisive=False`):** zusaetzlich wird
+   sigma_FSS OHNE die 3-Parameter-HKS-Variante v3 berichtet, samt dem
+   Verdikt, das sich damit ergaebe. Grund: PHY048 hat v3 auf square als
+   rauschverstaerkend ausgewiesen (Spannweite bis 0.905 bei 0.893); ein
+   S2-Stop, der allein von v3 getragen wuerde, soll sichtbar sein. Das
+   vorregistrierte Verdikt rechnet weiter MIT v3.
+
+Zusaetzlich: CLI `regenerate` leitet die Reports MC-frei und deterministisch
+aus den committeten Rohdaten neu ab (`tests/...::test_regenerate_roundtrip`).
+Die Rohdaten des laufenden Produktionsprozesses (alter Code im Speicher)
+werden nach dem Lauf mit dem hier beschriebenen Stand regeneriert; die
+Rohdaten selbst bleiben byte-identisch zur Produktion.
