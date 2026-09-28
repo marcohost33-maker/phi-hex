@@ -47,6 +47,12 @@ das im eigenen `ci.yml` korrigiert; #54 traegt denselben Hunk byte-identisch
    CI gruen abwarten, dann mergen.
 4. **#54** analog; Konfliktflaeche zu #52: nur append-only `SOURCES.md`,
    `README.md`- und `CHANGELOG.md`-Abschnitte (rebase trivial).
+   Squash-Merge-Hinweis (AGENTS.md: `--squash`, "zweiter paralleler PR
+   rebased"): nach dem Squash von #50 enthalten #52 und #54 dessen
+   Original-Commits weiter als Vorfahren; beide sind dann mit
+   `git rebase --onto main 21b51d1 <branch>` auf main zu setzen
+   (kein Force-Push auf fremde Branches; auf eigenen Agent-Branches ist
+   `--force-with-lease` nach Rebase die Konvention).
 5. **#51 schliessen** (nicht mergen) mit Verweis auf den Autor-Kommentar
    vom 2026-09-27; die noch nicht portierten Teile (PHY044 v01-Kalibrier-
    Runner, PHY041-1/t-Metadaten) sind in #52 als Lineage vermerkt.
@@ -185,6 +191,18 @@ der C-eliminierte Paar-Schaetzer bleibt anwendbar.
   ohne Folge (alle 5 Paare kreuzen); bei fehlendem Crossing des groessten
   Paares wuerde still das naechstkleinere gezaehlt. PHY051 bindet v2 an das
   groesste Paar allein (None, falls kein Crossing).
+
+- **PHY046 `produce()` (und PHY045 `part_b`/`part_c`) nutzen
+  `ProcessPoolExecutor` ohne `mp_context`.** Die Module sind per importlib
+  unter Kunstnamen geladen (Dateinamen mit Leerzeichen); spawn-/forkserver-
+  Kinder koennen sie nicht per Modulname importieren. Python 3.14 macht
+  `forkserver` zum Linux-Default (What's new in Python 3.14, docs.python.org,
+  abgerufen 2026-09-28), Windows nutzt `spawn`: Produktionslaeufe mit
+  `max_workers > 1` brechen dort im Worker (`ModuleNotFoundError`). Die CI
+  (py3.14-Matrix) sieht das nicht, weil alle Tests `max_workers=1` fahren.
+  Fix wie in PHY051 (`db90cd2`): expliziter `fork`-Kontext, sonst sequenziell.
+  Nicht blockierend fuer #50 (committete Laeufe liefen unter fork); fuer
+  jede Neu-Produktion auf py3.14/Windows relevant.
 
 ## 6. Offen nach diesem Review
 
