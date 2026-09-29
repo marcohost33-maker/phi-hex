@@ -2,6 +2,7 @@
 
 > **Status:** Forschungs-Repo (oeffentlich seit 2026-08-17) | XY/BKT-Physik auf Dreiecks-, Honeycomb- und Kagome-Gittern.  
 > **Lizenz:** Apache-2.0 | **Lineage/Provenance:** siehe `SOURCES.md`.  
+> **Stand 2026-09-29 (PR #54, PHY051 + Cross-Family-Review):** triangular und kagome mit Upsilon PRO FLAECHE auf Leitern bis L=257/192 gemessen (vorregistriert): pro Flaeche **CONSISTENT** mit den normierungsfreien Baendern (triangular 1.4635 vs HT-Reihe 1.4654(17), z=-0.26; kagome 0.8155 vs 0.825 grob), per Site trifft auf triangular die Helicity-Referenz 1.418(2) (z=-0.13). O1-Label formal NEGATIVE_RESULT (NR-PHY051-01: S2 allein durch HKS-3-Parameter-Variante) - kein post-hoc-Regelwechsel. Cross-Family-Review des PR-Stapels #50/#51/#52: `spec/260928 PHI HEX cross-family review PR50-52 v01.md`.  
 > **Stand 2026-09-26b (Selbstpruefung PR #50):** **Audit O1 entschieden - das NK-Kriterium verlangt Upsilon PRO FLAECHE** (PHY045: exakt + MC, per Site mit 22-54 sigma widerlegt). Alle per-Site-T_BKT-Werte auf triangular/honeycomb/kagome in diesem README sind damit konventions-verzerrt (Lineage bleibt; Neuauswertung separat). W4 laeuft nach Vorregistrierung v02 (Upsilon pro Flaeche, Wolff, HKS).  
 > **Stand 2026-09-26 (Issue #45, PR #50):** Integritaets-Reparatur (PHY042-Domaenen-Semantik, Referenzband-Provenienz, PHY043-Text-Drift), W4-Vorregistrierung (vor der Kalibrierung committet) und blinde WL-Kalibrierung PHY044 mit bit-identischem Numba-Kernel: **W4-GO** mit Rezept "4x Produktion" (ohne Marge), kein T_BKT-Wert (Blind-Vertrag). Details: Abschnitt PHY044 unten.  
 > **Aktueller Review-Stand:** Review-Nachtrag 2026-08-08 (`spec/260710 ... v01.md` §4): Messpipeline erneut gegen unabhaengige Orakel defektfrei; PHY040-M3-Guard, Lint-Baseline-Pin, O8/O9 inventarisiert. PHY043 (Audit O1): konventionsfreier Quercheck triangular — qualitativ konsistent mit der Referenz-Lage, keine 1%-Diskriminierung (siehe unten). Davor: Code-Audit 2026-07-10: P0-Geometrie-Fix im Quadratgitter (PHY028/039/040 neu gerechnet, V&V-Anker ehrlich auf ~1% herabgestuft), Pol-Guards in allen Paar-Schaetzern; PHY042/PR #20 als Pipeline-Finding, **kein neuer T_BKT-Bestwert** (Grenzen NR-PHY042-02/03).
@@ -250,6 +251,87 @@ Befunde (ehrlich):
 - Reproduzierbarkeit: np.dot haengt ab n=12288 (L=64) bitweise von der
   BLAS-Thread-Zahl ab (verifiziert) -> PHY044 pinnt BLAS auf 1 Thread.
 
+## PHY051 — triangular + kagome mit Upsilon pro Flaeche (O1-Diskriminator, vorregistriert; FINDING)
+
+Protokoll: `spec/260928 PHI HEX phy051 triangular kagome per-area
+preregistration v01.md` (Vorregistrierung `994fdf9` und Nachtrag v01a
+`7d1d9f9` beide VOR Sicht der Daten committet). Kanonischer Wolff (Numba,
+PHY045-Kernel), 8 Seeds x (500+1500) Sweeps, Paar-Crossings (L1, ~2L1),
+Primaer = gewichtetes Mittel der grossen Paare (Lehre PHY048). Gate-Logs:
+`results/260928 PHY051 triangular area-helicity report.*` und
+`results/260928 PHY051 kagome area-helicity report.*` (beide OVERALL PASS
+6/6; Reports deterministisch aus den Rohdaten reproduzierbar:
+`python "src/260928 PHY051 ... v01.py" regenerate`).
+Cross-Family-Review des PR-Stapels: `spec/260928 PHI HEX cross-family
+review PR50-52 v01.md`.
+
+**triangular** (a_s = 0.866; Leiter 33..257, 27 T-Punkte, 3.8 CPU-h):
+
+| Paar (L1, L2) | (33,65) | (49,97) | (65,129) | (97,193) | (129,257) |
+|---|---:|---:|---:|---:|---:|
+| T*, Upsilon pro Flaeche | 1.4603 | 1.4606 | 1.4660 | 1.4656 | 1.4611 |
+| T*, per Site (Quercheck) | 1.4081 | 1.4111 | 1.4124 | 1.4191 | 1.4172 |
+
+- **Pro Flaeche: T_P = 1.4635, sigma_tot = 0.0074** (Jackknife 0.0011;
+  sigma_FSS 0.0027, Floor 0.5 %) -> vorregistriertes Verdikt **CONSISTENT**
+  mit B_tri = [1.450, 1.480]. Abstand zu den normierungsfreien Referenzen:
+  HT-Reihe 1.4654(17) z = -0.26; MC 1.4635(13) z = -0.01. Die Paare sind
+  ueber L = 33..257 flach (keine aufloesbare Drift).
+- **Per Site (Quercheck): 1.4160** - z = -0.13 zur Helicity-Referenz
+  1.418(2) (Sorokin) und -3.4 sigma zu den normierungsfreien Referenzen.
+  Der per-Site-Kanal reproduziert damit den Literatur-Helicity-Wert, der
+  per-Flaeche-Kanal die normierungsfreien Werte. Das ist konsistent mit
+  der Hypothese, dass 1.418(2) per Site normiert ist (Primaertext offen);
+  der fruehere interne per-Site-Wert 1.4007 (L <= 19) war zusaetzlich
+  finite-size-tief.
+- **NR-PHY051-01 (Grenze, vorregistriert):** Der O1-Diskriminator lautet
+  formal **NEGATIVE_RESULT**, weil der per-Site-Kanal an S2 scheitert
+  (sigma_tot 0.0146 > 1 %): die 3-Parameter-HKS-Variante v3 sitzt mit
+  b = 10 am Bereichsrand bei 1.4387 und bestimmt allein die halbe
+  Spannweite. Die (nicht entscheidende) Diagnostik ohne v3 gibt
+  sigma_FSS = 0.0096 -> per Site INCONSISTENT, d. h. das Label waere
+  `O1_PER_AREA_CORROBORATED`. Das Verdikt wird NICHT post hoc geaendert;
+  Protokoll-Lehre fuer v02 (wie PHY048): v3 nicht in sigma_FSS fuehren
+  bzw. b-Randlagen als ungueltig werten. Pro Flaeche ist die Aussage von
+  v3 unabhaengig (Diagnostik ohne v3: ebenfalls CONSISTENT).
+
+**kagome** (a_s = 1.155; Leiter 32..192, 17 T-Punkte, 3.0 CPU-h; Lauf
+2026-09-29 14:41-15:26 UTC nach Container-Neustart, Zeitstempel im Report):
+
+| Paar (L1, L2) | (32,64) | (48,96) | (64,128) | (96,192) |
+|---|---:|---:|---:|---:|
+| T*, Upsilon pro Flaeche | 0.8150 | 0.8163 | 0.8151 | 0.8160 |
+| T*, per Site (Quercheck) | 0.8367 | 0.8363 | 0.8343 | 0.8316 |
+
+- **Pro Flaeche: T_P = 0.8155, sigma_tot = 0.0041** -> vorregistriertes
+  Verdikt **CONSISTENT** mit B_kag = [0.808, 0.842]; 1.2 % unter der groben
+  Referenz 0.825 (ohne Fehlerbalken; z = -2.3 nur gegen sigma_tot). Paare
+  flach ueber L = 32..192.
+- **Per Site (Quercheck): 0.8318** (+0.8 % zu 0.825; per-Site-Paare driften
+  mit L nach unten, 0.8367 -> 0.8316). S2 (sigma_FSS 0.0086 > 1 %), erneut
+  allein durch v3 mit b am Bereichsrand (0.8189); Diagnostik ohne v3:
+  CONSISTENT -> das Label waere `NON_DISCRIMINATING`. Kagome diskriminiert
+  bei +/- 2 % Bandbreite (grobe Referenz) nicht - in der Spec so vorgesehen;
+  O1-Label formal **NEGATIVE_RESULT** (NR-PHY051-01 gilt auch hier).
+
+
+**Einordnung (ehrlich):**
+
+- Auf triangular liegt die per-Flaeche-Pipeline bei L >= 33 auf < 0.3 %
+  an zwei unabhaengigen normierungsfreien Referenzen mit Fehlerbalken; ein
+  gitterunabhaengiger Tiefbias der Pipeline ist damit NICHT zu sehen.
+- Muster ueber alle vier Gitter (pro Flaeche, grosses L, relativ zur
+  normierungsfreien Referenz): square -0.1..-0.5 % (PHY048), triangular
+  -0.1 % (PHY051), honeycomb -1.3..-2 % (PHY046 vs 0.572-0.576), kagome
+  -1.2 % (PHY051 vs 0.825). In Spannung stehen genau die beiden Gitter,
+  deren Referenzen grobe Schaetzungen ohne Fehlerbalken sind
+  (arXiv:2501.07388) - Beobachtung, kein Claim. Der diskriminierende
+  naechste Test ist die normierungsfreie Correlation-Ratio auf derselben
+  Leiter (honeycomb: W4-v03/PHY049 in PR #52; kagome analog).
+- Kein Bestwert-Claim. Die Aussage "per Site trifft Helicity-Literatur,
+  per Flaeche trifft normierungsfreie Literatur" ist ein FINDING; der
+  Konventions-Nachweis je Referenz bleibt Primaertext-Arbeit.
+
 ## Methodische Kernformeln
 
 ```text
@@ -274,6 +356,7 @@ python "src/260616 PHY040 wang-landau entropic helicity v01.py"
 python "src/260702 PHY041 honeycomb wang-landau entropic helicity v01.py"
 python "src/260706 PHY042 honeycomb wl fss v01.py"
 python "src/260808 PHY043 triangular convention-free crossing v01.py"
+python "src/260928 PHY051 triangular kagome area-helicity crosscheck v01.py" all 4   # ~1.9 h auf 4 Kernen; `regenerate` fuer Report aus Rohdaten
 python "src/260706 PHY042 honeycomb wl fss v01.py" --reanalyse   # Domaenen-Erratum
 python "src/260926 PHY045 helicity normalization O1 test v01.py" all > ab.json   # O1-Nachweis
 python "src/260926 PHY046 honeycomb w4 wolff area-helicity v01.py"               # W4 v02 (~45 min)
@@ -297,6 +380,15 @@ tests/      schnelle Gates + slow Mess-Smokes
 archive/    Vorgaenger-Versionen
 SOURCES.md  Provenance / SHA-256
 ```
+
+## Naechste Stufe nach PHY051 + Cross-Family-Review (2026-09-29)
+
+1. **W4-v03/PHY049-Produktion** (honeycomb Correlation-Ratio, PR #52) - der einzige verbleibende Diskriminator fuer die honeycomb-Spannung; analog eine Correlation-Ratio-Leiter fuer kagome (Kandidat PHY052, vorher vorregistrieren).
+2. **Protokoll v02 fuer Paar-Verdikte (NR-PHY051-01):** die 3-Parameter-HKS-Variante nicht in sigma_FSS fuehren bzw. b-Randlagen als ungueltig werten; rueckwirkend nur als Diagnostik, nie als Umdeutung.
+3. **Primaertext-Abgleich** (Sorokin-Normierung; Faktor 4/(3 sqrt 3) bei Jiang/de Andrade): PDFs nach `007acc2/00_EINGANG` legen, dann in einer Session abgleichen (Review-Doc Abschnitt 3.0).
+4. **Merge-Reihenfolge** laut Review-Doc: Dependabot -> #50 -> #52 (+ SOURCES-Zeile) -> #54; #51 schliessen; nach Squash-Merge von #50 die gestapelten PRs per `rebase --onto main` nachziehen.
+5. Bei Neu-Produktion PHY045/046: `mp_context=fork` wie PHY051 (py3.14/Windows).
+6. Kein Bestwert-Claim; Cross-Family-Review vor jeder externen Aussage.
 
 ## Naechste Stufe nach Selbstpruefung / W4 v02 (2026-09-26b)
 

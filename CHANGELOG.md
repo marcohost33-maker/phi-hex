@@ -3,6 +3,74 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-09-28] PHY051 - triangular + kagome Upsilon pro Flaeche (O1-Diskriminator) + Cross-Family-Review PR #50-52
+
+Vertragsquellen: `spec/260928 PHI HEX phy051 triangular kagome per-area
+preregistration v01.md` (+ Nachtrag v01a, beide vor Sicht der Daten
+committet), `spec/260928 PHI HEX cross-family review PR50-52 v01.md`.
+
+### Added (PHY051, vorregistriert; FINDING, kein Bestwert)
+- `src/260928 PHY051 triangular kagome area-helicity crosscheck v01.py` +
+  `tests/test_phy051_area_crosscheck.py` (15 Gates: Spec-Bindung
+  zeichengenau, Seed-Disjunktheit 51M, T=0-Orakel exakt, Schaetzer-Orakel
+  beide Richtungen der O1-Wahrheitstafel, fails-closed Stop-Regeln
+  S0/S1/S1b/S2, Budget-Stop, fork-only-Pool, regenerate-Roundtrip,
+  Report-Reproduktion) + Gate-Logs in `results/`.
+- Kernel/Builder 1:1 PHY045, Schaetzer-Bausteine 1:1 PHY046/PHY040;
+  Primaer-Schaetzer = gewichtetes Mittel der grossen Paare (Lehre PHY048),
+  HKS nur Variante. Auswertepfad vorab an den committeten PHY046-Rohdaten
+  validiert (alle 5 honeycomb-Paare + Jackknife-SEs exakt reproduziert).
+- **triangular** (L = 33..257, 27 T-Punkte, 8 Seeds, 3.8 CPU-h): pro Flaeche
+  Paare 1.4603 / 1.4606 / 1.4660 / 1.4656 / 1.4611 (flach), **T_P = 1.4635,
+  sigma_tot = 0.0074 -> CONSISTENT** mit B_tri = [1.450, 1.480]; z = -0.26
+  zur HT-Reihe 1.4654(17) (arXiv:0806.1496), z = -0.01 zu MC 1.4635(13)
+  (arXiv:1010.3075). Per Site (Quercheck) T_P = 1.4160: z = -0.13 zur
+  Helicity-Referenz 1.418(2) (Sorokin), -3.4 sigma zu den normierungsfreien
+  Werten.
+- **NR-PHY051-01:** O1-Label formal NEGATIVE_RESULT (S2 im per-Site-Kanal,
+  allein durch die 3-Parameter-HKS-Variante v3 mit b am Bereichsrand;
+  Diagnostik ohne v3: per Site INCONSISTENT -> waere
+  O1_PER_AREA_CORROBORATED). Verdikt nicht post hoc geaendert; Lehre fuer
+  v02: v3 aus sigma_FSS nehmen / b-Randlagen ungueltig.
+- **kagome** (L = 32..192, 17 T-Punkte, 8 Seeds, 3.0 CPU-h; Lauf 2026-09-29
+  nach Container-Neustart): pro Flaeche Paare 0.8150 / 0.8163 / 0.8151 /
+  0.8160 (flach), **T_P = 0.8155, sigma_tot = 0.0041 -> CONSISTENT** mit
+  B_kag = [0.808, 0.842] (1.2 % unter der groben Referenz 0.825). Per Site
+  0.8318 (+0.8 %), S2 allein durch v3 (Diagnostik ohne v3: CONSISTENT ->
+  NON_DISCRIMINATING); O1-Label formal NEGATIVE_RESULT.
+- **Gitteruebergreifendes Muster (Beobachtung, kein Claim):** pro Flaeche
+  liegt die Pipeline bei grossem L auf square -0.1..-0.5 % (PHY048),
+  triangular -0.1 % (PHY051, zwei Referenzen mit Fehlerbalken), honeycomb
+  -1.3..-2 % (PHY046 vs 0.572-0.576) und kagome -1.2 % (vs 0.825 grob). In
+  Spannung stehen genau die beiden Gitter, deren normierungsfreie
+  Referenzen grobe Schaetzungen ohne Fehlerbalken sind (arXiv:2501.07388).
+  Diskriminierender naechster Test: Correlation-Ratio auf derselben Leiter
+  (honeycomb: W4-v03/PHY049, PR #52; kagome analog).
+- Reports deterministisch reproduzierbar (`regenerate`-CLI); Lauf-
+  Zeitstempel im Report (triangular: None, Lauf 2026-09-28 18:59-19:58 UTC).
+
+### Review (Cross-Family, PR-Stapel)
+- Merge-Reihenfolge Dependabot -> #50 -> #52 (+ SOURCES-Zeile) -> #54;
+  #51 schliessen (Autor-Kommentar 2026-09-27; 10 Dateien Ueberlappung mit
+  #52, Doppel-PHY044). CI-Rot #52/#51 exakt: SHA-First-Gate nach Nach-Edit
+  (Fix-Zeile fuer #52 lokal verifiziert, als Kommentar hinterlegt).
+- Literatur: 1.418(2) ist eine HELICITY-Zahl (Sorokin, zitiert ueber
+  arXiv:2305.00651), keine normierungsfreie Groesse; einzige
+  normierungsfreie triangular-Referenz mit Fehlerbalken ist die HT-Reihe
+  1.4654(17). Egress-Grenze je Host verifiziert; konkreter Weg fuer den
+  Primaertext-Abgleich (PDFs nach `007acc2/00_EINGANG`).
+- O1 unabhaengig nachgerechnet (Upsilon_site = a_s * rho_s): Entscheid per
+  Flaeche physikalisch korrekt.
+- Befunde (nicht blockierend): PHY045/046-Prozesspools ohne `mp_context`
+  brechen unter Python 3.14 (forkserver-Default) und Windows (spawn);
+  PHY046 v3 "groesstes Paar" = groesstes Paar MIT Crossing.
+
+### Infra
+- `ci.yml`: `pull_request` ohne Branch-Filter, damit gestapelte Agent-PRs
+  CI bekommen (Hunk byte-identisch zu #52).
+- PHY051-Prozesspool nur mit fork-Kontext, sonst sequenzieller Fallback
+  (Ergebnisse prozessmodell-unabhaengig).
+
 ## [2026-09-26b] Selbstpruefung PR #50: Audit O1 entschieden (Upsilon pro Flaeche) + W4 v02
 
 Vertragsquellen: `spec/260926 PHI HEX PR50 self-review v01.md`,
