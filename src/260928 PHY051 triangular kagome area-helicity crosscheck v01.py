@@ -29,6 +29,7 @@ import os
 for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
     os.environ.setdefault(_v, "1")
 
+import datetime  # noqa: E402
 import json  # noqa: E402
 import math  # noqa: E402
 import sys  # noqa: E402
@@ -173,6 +174,8 @@ def produce(lattice: str, ladder=None, t_grid=None, n_seeds=PHY051_N_SEEDS,
     area = {L: np.full((len(t_grid), n_seeds), np.nan) for L in ladder}
     site = {L: np.full((len(t_grid), n_seeds), np.nan) for L in ladder}
     unmeasured, cpu = [], 0.0
+    run_utc_start = datetime.datetime.now(datetime.timezone.utc).isoformat(
+        timespec="seconds")
     t_start = time.perf_counter()
     ex = _pool(max_workers)
     try:
@@ -202,7 +205,12 @@ def produce(lattice: str, ladder=None, t_grid=None, n_seeds=PHY051_N_SEEDS,
             "ups_site": {str(L): site[L].tolist() for L in ladder},
             "unmeasured_L": sorted(unmeasured),
             "wall_s": time.perf_counter() - t_start, "cpu_s": cpu,
-            "max_workers": max_workers, "have_numba": bool(_p45.HAVE_NUMBA)}
+            "max_workers": max_workers, "have_numba": bool(_p45.HAVE_NUMBA),
+            # Lauf-Zeitstempel (Reality-Anchor); Laeufe vor Einfuehrung des
+            # Feldes tragen None (Zeitpunkt dann aus Commit-Historie).
+            "run_utc_start": run_utc_start,
+            "run_utc_end": datetime.datetime.now(
+                datetime.timezone.utc).isoformat(timespec="seconds")}
 
 
 # ============================================================================
@@ -462,10 +470,12 @@ def build_report(prod: dict) -> dict:
             "band": list(plan["band"]),
             "references": {k: plan[k] for k in
                            ("ref_free", "ref_free_alt", "ref_helicity")},
-            "production": {k: prod[k] for k in (
+            "production": {**{k: prod[k] for k in (
                 "t_grid", "ladder", "n_seeds", "n_therm", "n_meas",
                 "unmeasured_L", "wall_s", "cpu_s", "max_workers",
                 "have_numba")},
+                "run_utc_start": prod.get("run_utc_start"),
+                "run_utc_end": prod.get("run_utc_end")},
             "geometry_oracle": oracle,
             "primary_per_area": area,
             "convention_crosscheck_per_site": site,
@@ -509,6 +519,7 @@ def write_text_report(rep: dict, path: Path) -> None:
              f"({p['n_therm']}+{p['n_meas']}) Sweeps, numba={p['have_numba']}",
              f"Wall {p['wall_s']:.0f} s auf {p['max_workers']} Prozessen, "
              f"CPU {p['cpu_s'] / 3600:.2f} h; unmeasured_L={p['unmeasured_L']}",
+             f"Lauf (UTC): {p.get('run_utc_start')} .. {p.get('run_utc_end')}",
              ""]
     for title, ch in (("PRIMAER: Upsilon pro Flaeche", rep["primary_per_area"]),
                       ("QUERCHECK: per Site (Konvention, NICHT entscheidend)",
@@ -576,6 +587,8 @@ def prod_from_report(rep: dict) -> dict:
             "unmeasured_L": pr["unmeasured_L"], "wall_s": pr["wall_s"],
             "cpu_s": pr["cpu_s"], "max_workers": pr["max_workers"],
             "have_numba": pr["have_numba"],
+            "run_utc_start": pr.get("run_utc_start"),
+            "run_utc_end": pr.get("run_utc_end"),
             "ups_area": rep["data"]["ups_area"],
             "ups_site": rep["data"]["ups_site"]}
 

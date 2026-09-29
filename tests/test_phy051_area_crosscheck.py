@@ -267,8 +267,10 @@ def test_mini_production_end_to_end(tmp_path):
              / np.asarray(prod["ups_area"]["9"]))
     assert np.allclose(ratio, phy051.AREA_PER_SITE["triangular"])
     assert prod["unmeasured_L"] == []
+    assert prod["run_utc_start"] <= prod["run_utc_end"]
     rep = phy051._clean(phy051.build_report(prod))
     json.dumps(rep, allow_nan=False)
+    assert rep["production"]["run_utc_end"] == prod["run_utc_end"]
     assert rep["o1_label"] == "NEGATIVE_RESULT"       # Leiter != Plan -> S0
     phy051.write_text_report(rep, tmp_path / "r.txt")
     txt = (tmp_path / "r.txt").read_text(encoding="utf-8")

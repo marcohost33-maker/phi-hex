@@ -4,6 +4,7 @@ Coworker Research / Coworkerz, 2026-09-28
 Spec: spec/260928 PHI HEX phy051 triangular kagome per-area preregistration v01.md
 Leiter [33, 49, 65, 97, 129, 193, 257], T-Gitter 1.38..1.51 (27 Punkte), 8 Seeds x (500+1500) Sweeps, numba=True
 Wall 3534 s auf 4 Prozessen, CPU 3.80 h; unmeasured_L=[]
+Lauf (UTC): None .. None
 
 --- PRIMAER: Upsilon pro Flaeche ---
   Paar-Crossings T*(L1,L2) +- Jackknife-SE:
