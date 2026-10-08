@@ -102,14 +102,27 @@ wolff_reference = _p41.wolff_reference
 aligned_upsilon_zero = _p41.aligned_upsilon_zero
 upsilon_curves = _p41.upsilon_curves
 tbkt_pair_from_curves = _p41.tbkt_pair_from_curves
-REF_BAND = {  # T-Form, aus spec/260703 (beta-Kanaele konvertiert)
-    "multi_lattice": 0.573,
-    "helicity_direct": (0.571, 0.008),
-    "nn_mc": (0.560, 0.009),
-    "upsilon_beta": (0.5928, 0.0011),
-    "upsilon4_beta": (0.6116, 0.0041),
-    "binder_beta": (0.5800, 0.0007),
+# Versionierter Evidenz-Ledger (Audit 2026-09-27, Issue #45).
+# WICHTIG: Das ist KEIN Min/Max-Akzeptanzband. Alte arXiv-v1/beta-Werte aus
+# 2406.14812/2406.12076 sind in der Spec als supersedierte Historie erhalten.
+# Fuer aktuelle Vergleiche gelten die publizierte PTEP-Fassung bzw.
+# arXiv:2406.12076v4.
+REF_BAND = {
+    "okabe_otsuka_2501_v1_rough": (0.573, None),
+    "jiang_ptep_nn": (0.572, 0.003),
+    "jiang_ptep_helicity": (0.576, 0.004),
+    "andrade_v4_helicity_sa": (0.575, 0.008),
+    "andrade_v4_helicity_wl": (0.576, 0.003),
+    "andrade_v4_upsilon4_sa": (0.551, 0.011),
+    "andrade_v4_upsilon4_wl": (0.568, 0.001),
 }
+REF_PRIMARY_KEYS = (
+    "okabe_otsuka_2501_v1_rough",
+    "jiang_ptep_nn",
+    "jiang_ptep_helicity",
+    "andrade_v4_helicity_sa",
+    "andrade_v4_helicity_wl",
+)
 
 # PHY041-Bruecke: committed Reportwerte (results/260702 PHY041 ... report.txt)
 PHY041_PAIRS = {(12, 16): 0.5951, (12, 24): 0.6029, (16, 24): 0.6087}
@@ -153,6 +166,42 @@ def _validity_domain(spread: np.ndarray, thr: float) -> np.ndarray:
             break
         mask[k] = True
     return mask
+
+
+def _w4_validate_walker_plan(walkers: dict[int, int],
+                             min_walkers: int = 3) -> None:
+    """Fail-closed W4-Preflight: jede verwendete L-Groesse braucht genug
+    unabhaengige Walker, damit ein Spread ueberhaupt als gemessene
+    Sampler-Systematik interpretiert werden darf.
+
+    Issue #45 trennt damit explizit eine Ein-Walker-Bruecke von einer
+    gemessenen Walker-Validitaetsdomaene.
+    """
+    if min_walkers < 3:
+        raise ValueError(
+            "W4-Produktionspreflight darf min_walkers nicht unter 3 setzen")
+    bad = {L: n for L, n in walkers.items() if n < min_walkers}
+    if bad:
+        raise ValueError(
+            "W4 braucht mindestens "
+            f"{min_walkers} Walker je L; unzureichend: {bad}")
+
+
+def _pair_inside_domains(
+    tb: float | None,
+    bounds_a: tuple[float, float] | None,
+    bounds_b: tuple[float, float] | None,
+) -> bool:
+    """Quotierbarkeit nur innerhalb BEIDER belegter [T_min,T_max]-Domaenen.
+
+    Insbesondere darf ein PHY032-Fallback, dessen Evidenz erst bei T=0.56
+    beginnt, kein Crossing bei T<0.56 freigeben.
+    """
+    if tb is None or bounds_a is None or bounds_b is None:
+        return False
+    lo = max(bounds_a[0], bounds_b[0])
+    hi = min(bounds_a[1], bounds_b[1])
+    return bool(lo <= tb <= hi)
 
 
 def _uncovered_mass(res, T: float) -> float:
@@ -273,34 +322,43 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
     # Y2-Kurven sampler-limitiert sind. Schwelle 0.04 = VAL-A-Y2-Toleranz;
     # 0.02/0.01 werden als strengere Domaenen mit ausgewiesen.
     print("\n[DOMAIN] Validitaets-Domaenen aus Walker-Spread (L>=32):")
-    spreads: dict[int, np.ndarray] = {}
-    domains: dict[int, np.ndarray] = {}
-    domain_tmax: dict[int, float] = {}
+    spreads: dict[int, np.ndarray | None] = {}
+    domains: dict[int, np.ndarray | None] = {}
+    domain_tmax: dict[int, float | None] = {}
+    domain_basis: dict[int, str] = {}
     for L in Ls:
         if walkers[L] < 2:
-            spreads[L] = np.zeros(len(t_grid))
-            domains[L] = np.ones(len(t_grid), dtype=bool)
-            domain_tmax[L] = float(t_grid[-1])
+            # Ein Walker liefert KEINE Walker-Spread-Messung. Historisch wurde
+            # hier 0.0/all-valid serialisiert; Issue #45 korrigiert diese
+            # Daten-Semantik fail-closed auf unknown/null.
+            spreads[L] = None
+            domains[L] = None
+            domain_tmax[L] = None
+            domain_basis[L] = "unmeasured_single_walker"
             continue
         stack = np.stack([curves[(L, w)]["y2"] for w in range(walkers[L])])
         spreads[L] = stack.max(axis=0) - stack.min(axis=0)
         domains[L] = _validity_domain(spreads[L], 0.04)
         domain_tmax[L] = (float(t_grid[domains[L]].max())
-                          if domains[L].any() else float("nan"))
+                          if domains[L].any() else None)
+        domain_basis[L] = "walker_spread_lt_0.04"
         strict = {thr: (float(t_grid[_validity_domain(spreads[L], thr)].max())
                         if _validity_domain(spreads[L], thr).any() else None)
                   for thr in (0.01, 0.02)}
-        print(f"      L={L}: T<= {domain_tmax[L]:.4f} (Spread<0.04); "
+        tmax_txt = "None" if domain_tmax[L] is None else f"{domain_tmax[L]:.4f}"
+        print(f"      L={L}: T<= {tmax_txt} (Spread<0.04); "
               f"strenger: <0.02 -> T<={strict[0.02]}, <0.01 -> T<={strict[0.01]}; "
               f"max Spread {spreads[L].max():.4f}")
-    print("      L=24: Einzel-Walker (PHY041-Bruecke) - Domaene formal voll;"
-          " Sampler-Guard ist VAL-B (PHY032-Gitter bis T=0.6475).")
+    if 24 in Ls and walkers[24] < 2:
+        print("      L=24: Einzel-Walker (PHY041-Bruecke) - "
+              "Walker-Spread NICHT GEMESSEN; domain_tmax_spread004=None. "
+              "VAL-B bleibt ein separater Drift-Guard.")
 
     # --- Coverage-Massen-Gate (nur innerhalb der Domaene bindend) ----------
     unc_max = 0.0
     for (L, w), res in results.items():
         for k, T in enumerate(t_grid):
-            if domains[L][k]:
+            if domains[L] is None or domains[L][k]:
                 unc_max = max(unc_max, _uncovered_mass(res, float(T)))
     unc_ok = unc_max < 1e-3
     print(f"\n[COVER] max. kanonische Masse auf unbesetzten Bins "
@@ -315,7 +373,7 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
     for T in (0.55, 0.60, 0.65):
         c = main_curve[32]
         k = int(np.argmin(np.abs(c["T"] - T)))
-        in_dom = bool(domains[32][k])
+        in_dom = bool(domains[32] is not None and domains[32][k])
         Ewl = c["E"][k] / results[(32, 0)].n
         y2wl = c["y2"][k]
         ref = wolff_reference(32, T, master_seed=master_seed)
@@ -358,6 +416,30 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
               f"(d={abs(y2wl - u032):.4f}, tol={tol:.4f}) "
               f"{'ok' if ok else 'ABWEICHUNG'}")
 
+    # Effektive Quotierbarkeits-Domaene: Walker-Spread bleibt die primaere
+    # Messung. Fuer die historische L=24-Bruecke darf separat der unabhaengige
+    # PHY032-Drift-Guard verwendet werden, aber er wird NICHT als Walker-Spread
+    # umetikettiert. So bleibt domain_tmax_spread004 bei L=24 ehrlich None.
+    effective_domain_bounds: dict[int, tuple[float, float] | None] = {}
+    effective_domain_basis = dict(domain_basis)
+    for L in Ls:
+        if domains[L] is not None and domains[L].any():
+            valid_t = t_grid[domains[L]]
+            effective_domain_bounds[L] = (
+                float(valid_t.min()), float(valid_t.max()))
+        else:
+            effective_domain_bounds[L] = None
+
+    if 24 in Ls and effective_domain_bounds.get(24) is None and grid_rows:
+        if all(bool(row["ok"]) for row in grid_rows):
+            # Fallback-Evidenz ist nur auf dem tatsaechlich validierten
+            # PHY032-Gitter gueltig; BEIDE Grenzen sind bindend.
+            effective_domain_bounds[24] = (
+                min(float(row["T"]) for row in grid_rows),
+                max(float(row["T"]) for row in grid_rows),
+            )
+            effective_domain_basis[24] = "PHY032_drift_guard"
+
     # --- VAL-C: PHY041-Bruecke (bitgleiche L=24-Reproduktion) --------------
     c24 = main_curve[24]
     k24 = int(np.argmin(c24["y4_scaled"]))
@@ -377,15 +459,15 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
         tb = tbkt_pair_from_curves(t_grid, main_curve[La]["y2"], La,
                                    main_curve[Lb]["y2"], Lb)
         pair_tbkt[(La, Lb)] = tb
-        q = (tb is not None
-             and tb <= min(domain_tmax[La], domain_tmax[Lb]))
+        q = _pair_inside_domains(
+            tb, effective_domain_bounds.get(La), effective_domain_bounds.get(Lb))
         pair_quotable[(La, Lb)] = q
         if tb is None:
             print(f"      T_BKT({La},{Lb}): kein Nulldurchgang im T-Fenster")
         else:
             tag = ("QUOTIERBAR" if q else
-                   f"NR: Crossing ausserhalb Domaene "
-                   f"(min T_max={min(domain_tmax[La], domain_tmax[Lb]):.4f})")
+                   "NR: Crossing ausserhalb oder ohne zwei belegte "
+                   "Domaenen")
             print(f"      T_BKT({La},{Lb}) = {tb:.4f}  "
                   f"(vs Multi-Lattice 0.573: "
                   f"{(tb - 0.573) / 0.573 * 100:+.2f}%)  [{tag}]")
@@ -469,8 +551,9 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
         sy = walker_pairs.get((24, 32), {}).get("spread", float("nan"))
         print(f"    - QUOTIERBAR: T_BKT(24,32) = {tb2432:.4f} "
               f"+- {sy / 2:.4f} (Sampler-Systematik = halber Walker-Spread); "
-              f"Lage im Referenzband: nahe Upsilon-beta-Kanal 0.5928, "
-              f"unterhalb PHY041 (16,24)=0.6087.")
+              f"Einordnung gegen den aktuellen, versionierten "
+              f"Literatur-Ledger separat; unterhalb PHY041 "
+              f"(16,24)=0.6087.")
     # Haertung 2026-07-10 (Code-Audit L2): default schuetzt den
     # n_walkers=1-Pfad (leerer Generator -> ValueError VOR dem Report).
     max_spread = max((spreads[L].max() for L in Ls if walkers[L] > 1),
@@ -517,8 +600,20 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
                     for (L, w) in results},
         "leak_max": leak_max,
         "uncovered_mass_max_in_domain": unc_max,
-        "walker_spread": {str(L): spreads[L].tolist() for L in Ls},
+        "walker_spread": {
+            str(L): (None if spreads[L] is None else spreads[L].tolist())
+            for L in Ls
+        },
         "domain_tmax_spread004": {str(L): domain_tmax[L] for L in Ls},
+        "domain_basis": {str(L): domain_basis[L] for L in Ls},
+        "effective_domain_bounds": {
+            str(L): (None if effective_domain_bounds.get(L) is None
+                     else list(effective_domain_bounds[L]))
+            for L in Ls
+        },
+        "effective_domain_basis": {
+            str(L): effective_domain_basis.get(L) for L in Ls
+        },
         "validation_vs_wolff_L32": val_rows,
         "validation_vs_phy032_grid": grid_rows,
         "phy041_bridge": {"y4_dip_L24": y4_dip_24,

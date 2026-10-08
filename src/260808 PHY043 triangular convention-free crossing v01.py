@@ -499,6 +499,24 @@ def _clean(o):
     return o
 
 
+def _power_limit_note(n_seeds: int, max_L: int) -> str:
+    """Do not infer discrimination power from arbitrary run metadata.
+
+    Spec §6's negative 1%-power statement belongs only to the documented
+    4-seed/L<=19 pilot budget. Other budgets require an explicit uncertainty
+    or power analysis; larger n/L alone does not prove 1% discrimination.
+    """
+    if n_seeds == 4 and max_L == 19:
+        return (
+            "n_seeds=4, L<=19: keine 1%-Diskriminierung erwartet "
+            "(fixierter Pilot-Vertrag, Spec §6)."
+        )
+    return (
+        f"n_seeds={n_seeds}, L<={max_L}: 1%-Power UNASSESSED; "
+        "keine Power-Aussage allein aus Laufmetadaten (Spec §6)."
+    )
+
+
 def write_report(report: dict, path: Path) -> None:
     lines = []
     lines.append("PHY043 - Konventionsfreier Quercheck triangular "
@@ -583,8 +601,9 @@ def write_report(report: dict, path: Path) -> None:
     lines.append("Grenzen (ehrlich):")
     lines.append("  - Kein T_BKT-Bestwert; Crossing-/Splay-Lagen driften "
                  "logarithmisch.")
-    lines.append("  - n_seeds=4, L<=19: keine 1%-Diskriminierung erwartbar "
-                 "(Spec §6).")
+    lines.append(
+        "  - " + _power_limit_note(
+            int(w["n_seeds"]), int(max(report["lattices_L"]))))
     lines.append("  - Universeller (xi_2/L)*-Anker bewusst NICHT verwendet "
                  "(Rhombus-Torus,")
     lines.append("    tau=exp(i pi/3) — Hasenbusch-Wert gilt fuer tau=i).")

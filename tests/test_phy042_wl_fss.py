@@ -77,24 +77,55 @@ def test_phy041_bridge_constants_match_committed_report():
 
 
 def test_reference_band_matches_conventions_audit_spec():
-    """REF_BAND (T-Form) muss mit der Vertragsquelle
-    spec/260703 ... reference conventions audit uebereinstimmen."""
+    """Aktueller Evidenz-Ledger muss mit der Vertragsquelle uebereinstimmen.
+
+    Issue #45: keine stillen arXiv-v1/beta-Altwerte mehr als aktuelle
+    Vergleichswerte; jede aktuelle Quelle ist versioniert benannt.
+    """
     spec = (ROOT / "spec" /
             "260703 PHI HEX honeycomb reference conventions audit v01.md"
             ).read_text(encoding="utf-8")
     band = phy042.REF_BAND
-    assert band["multi_lattice"] == 0.573 and "0.573" in spec
-    # Haertung 2026-07-10 (Code-Audit): exakte Token statt rstrip("0")-
-    # Degradierung ("0.5800" -> "0.58" haette fast alles gematcht). Wert UND
-    # Unsicherheit muessen zeichengenau in der Vertragsquelle stehen.
-    for key, (val, sig) in ((k, v) for k, v in band.items()
-                            if isinstance(v, tuple)):
-        assert f"{val:.4f}" in spec or f"{val:.3f}" in spec, key
-        assert f"{sig:g}" in spec, (key, sig)
-    # beta-Konversions-Kanaele explizit (exakte 4-Dezimal-Token)
-    for tok in ("0.5928", "0.6116", "0.5800"):
-        assert tok in spec
 
+    expected = {
+        "okabe_otsuka_2501_v1_rough": (0.573, None),
+        "jiang_ptep_nn": (0.572, 0.003),
+        "jiang_ptep_helicity": (0.576, 0.004),
+        "andrade_v4_helicity_sa": (0.575, 0.008),
+        "andrade_v4_helicity_wl": (0.576, 0.003),
+        "andrade_v4_upsilon4_sa": (0.551, 0.011),
+        "andrade_v4_upsilon4_wl": (0.568, 0.001),
+    }
+    assert band == expected
+    for key in expected:
+        assert key in spec
+    for token in ("0.573", "0.572 +/- 0.003", "0.576 +/- 0.004",
+                  "0.575 +/- 0.008", "0.576 +/- 0.003",
+                  "0.551 +/- 0.011", "0.568 +/- 0.001"):
+        assert token in spec
+    assert "superseded" in spec.lower()
+
+
+def test_w4_walker_plan_requires_three_per_l():
+    """W4 darf eine Spread-Domaene nicht aus 1-2 Walkern ableiten."""
+    phy042._w4_validate_walker_plan({64: 3, 96: 3, 128: 4})
+    with pytest.raises(ValueError, match="mindestens 3 Walker"):
+        phy042._w4_validate_walker_plan({64: 3, 96: 2, 128: 3})
+    # Der Schwellwert selbst ist Teil des W4-Vertrags und darf nicht durch
+    # einen Caller auf Kalibrierungsniveau abgesenkt werden.
+    with pytest.raises(ValueError, match="nicht unter 3"):
+        phy042._w4_validate_walker_plan({64: 2}, min_walkers=2)
+
+
+def test_pair_inside_domains_checks_lower_and_upper_bounds():
+    a = (0.56, 0.6475)  # z.B. PHY032-Fallback
+    b = (0.52, 0.60)
+    assert phy042._pair_inside_domains(0.575, a, b)
+    assert not phy042._pair_inside_domains(0.555, a, b)  # unter Fallback-Evidenz
+    assert not phy042._pair_inside_domains(0.61, a, b)
+    assert not phy042._pair_inside_domains(0.575, None, b)
+    assert not phy042._pair_inside_domains(0.575, a, None)
+    assert not phy042._pair_inside_domains(None, a, b)
 
 def test_pair_trend_inputs_are_sorted_ascending():
     """Die PHY041-Paar-Sequenz (Trend-Referenz) ist nach min-L sortiert und

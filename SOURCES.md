@@ -222,3 +222,42 @@ bleiben unveraendert als Lineage stehen; letzte Zeile pro Pfad gewinnt.
 | 40D186525B32FB06 | 2026-08-08 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (NEU: PHY043-Gates (iid-U4-Orakel exakt 2-1/N, Moden-Buchhaltung exakt, Splay-/Crossing-Vertraege fails-closed, Mini-MC-Smoke)) |
 | 5C8023B58DEE5DD0 | 2026-08-08 | results | repo-native: `results/260808 PHY043 triangular convention-free crossing report.txt` (NEU: Gate-Evidenz PHY043 Finallauf L=9/13/19/25, T=1.36..1.70, 8 Seeds/800 Messungen, seed=42, OVERALL PASS 6/6, ~688 s; Splay-Lagen 1.50..1.64, NR-PHY043-01) |
 | 3DDB36EB7D36C425 | 2026-08-17 | tests | repo-native: `tests/test_sources_integrity.py` (stand: Plattform-Portabilitaets-Fix 2026-08-17 - Gate hasht Index-Bytes statt Arbeitsbaum (core.autocrlf machte 68 von 88 Dateien zu falschen Positiven unter Windows) + neue Regel 5 Arbeitsbaum-vs-Index-Drift) |
+
+## W4 Evidence-Contract Hardening 2026-09-27 — append-only
+
+Issue #45: Quellenversions- und Validitaetssemantik gehaertet. Historische
+Zeilen bleiben unveraendert; die folgenden repo-native SHA-256-Praefixe sind
+die aktuellen Bytes auf dem W4-Haertungs-Branch.
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| 400E0775C1008893 | 2026-09-27 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (Issue #45: Ein-Walker-Spread/Domaene fail-closed `null`; getrennte effektive Evidenzbasis; aktueller versionierter Honeycomb-Ledger; W4-Walker-Preflight) |
+| 0A9BCB93A92C35E6 | 2026-09-27 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (Issue #45: Report-Limit-Metadaten aus echtem Lauf statt Hardcode) |
+| C7442E4CA5FBCD8B | 2026-09-27 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Issue #45: Referenzledger-, >=3-Walker- und fail-closed-Domaenen-Gates) |
+| D2C1E1DBEE31F24F | 2026-09-27 | tests | repo-native: `tests/test_honeycomb_reference_conventions.py` (Issue #45: aktuelle Quellenfassungen statt supersedierter beta/v1-Annahmen) |
+| 5C808981447254C8 | 2026-09-27 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Issue #45: dynamische Report-Metadaten gegen Drift getestet) |
+| FDF312FCABD7EF24 | 2026-09-27 | spec | repo-native: `spec/260703 PHI HEX honeycomb reference conventions audit v01.md` (Quellenversions-Audit 2026-09-27; aktuelle vs supersedierte Evidenz getrennt) |
+| A54242EEE218464C | 2026-09-27 | spec | repo-native: `spec/260927 PHI HEX w4 preregistration v01.md` (NEU: fail-closed W4-Praeregistrierung, Kalibrier-/Stop-/Modellwahl-Vertrag) |
+
+### W4 Kalibrierungs-Runner + 1/t-Instrumentierung 2026-09-27
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| 0F229401722FBAF9 | 2026-09-27 | src | repo-native: `src/260702 PHY041 honeycomb wang-landau entropic helicity v01.py` (Issue #45: reale B&P-1/t-Aktivierung und Umschalt-Sweep werden im geerbten WLResult persistiert; vorher Default-False/0 trotz aktivem 1/t) |
+| 6C41C8B52BFC3161 | 2026-09-27 | tests | repo-native: `tests/test_phy041_honeycomb_wl.py` (Regression fuer 1/t-Metadaten + Slow-Smoke bindet Aktivierung an echten Lauf) |
+| E2F5DEB4948F0A7E | 2026-09-27 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (NEU: vorregistrierter L64-Kalibrierungsrunner; 2 WL-Walker + Wolff-Quercheck; Kosten/Konvergenz/Coverage; kein T_BKT-Claim) |
+| 81332F7043BE1C20 | 2026-09-27 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (NEU: Stream-, Budget-, Input- und Stopregel-Gates fuer PHY044) |
+| FA91A37669C7A8ED | 2026-09-27 | spec | repo-native: `spec/260927 PHI HEX w4 preregistration v01.md` (Stand nach 1/t- und Sampler-Effizienz-Haertung; supersedet vorherige Zeile derselben Spec) |
+
+### W4 Review-Haertung nach PR-Review 2026-09-27
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| BA08B0AC7CACC701 | 2026-09-27 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (PR #51 Review: PHY032-Fallback bindet jetzt T_min UND T_max; W4-min_walkers kann nicht unter 3 abgesenkt werden) |
+| E4BF196D15705FDA | 2026-09-27 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression fuer untere Fallback-Domaenengrenze und unveraenderliches >=3-Walker-Produktionsgate) |
+| 3A40254686382E91 | 2026-09-27 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (PR #51 Review: 1%-Power-Aussage nur fuer fixierten 4-Seed/L19-Pilot; sonst UNASSESSED) |
+| A7328EB31C3E2707 | 2026-09-27 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression gegen Power-Claim-Generalisation) |
+| 0031239209534AF4 | 2026-09-27 | spec | repo-native: `spec/260808 PHI HEX phy043 triangular convention-free crossing method v01.md` (Power-Vertrag auf Pilotbudget begrenzt; andere Budgets brauchen eigene Analyse) |
+| 6F15FC77555D3A72 | 2026-10-08 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (Stand f1c3ced: Kalibrier-Skalensignal von Produktionsgueltigkeit getrennt; Zeile nachgetragen, CI-Befund PR #51) |
+| B40EBE94734FEA47 | 2026-10-08 | tests | repo-native: `tests/test_phy041_honeycomb_wl.py` (Slow-Smoke: 1/t-Metadaten muessen den Lauf beschreiben; bei lnf_final=2e-4 greift 1/t nicht, engaged=False ist korrekt -- vorher Regression nur im slow-Lauf) |
+
