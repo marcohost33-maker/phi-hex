@@ -258,4 +258,6 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | 3A40254686382E91 | 2026-09-27 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (PR #51 Review: 1%-Power-Aussage nur fuer fixierten 4-Seed/L19-Pilot; sonst UNASSESSED) |
 | A7328EB31C3E2707 | 2026-09-27 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression gegen Power-Claim-Generalisation) |
 | 0031239209534AF4 | 2026-09-27 | spec | repo-native: `spec/260808 PHI HEX phy043 triangular convention-free crossing method v01.md` (Power-Vertrag auf Pilotbudget begrenzt; andere Budgets brauchen eigene Analyse) |
+| 6F15FC77555D3A72 | 2026-10-08 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (Stand f1c3ced: Kalibrier-Skalensignal von Produktionsgueltigkeit getrennt; Zeile nachgetragen, CI-Befund PR #51) |
+| B40EBE94734FEA47 | 2026-10-08 | tests | repo-native: `tests/test_phy041_honeycomb_wl.py` (Slow-Smoke: 1/t-Metadaten muessen den Lauf beschreiben; bei lnf_final=2e-4 greift 1/t nicht, engaged=False ist korrekt -- vorher Regression nur im slow-Lauf) |
 
