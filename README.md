@@ -10,8 +10,12 @@ values. The documentation is in German.
 
 **Was:** Phi-Hex misst die BKT-Uebergangstemperatur des 2D-XY-Modells auf
 Dreiecks-, Honeycomb- und Kagome-Gittern (Wolff, Wang-Landau, Finite-Size-Scaling).
-**Stand:** Forschungs-Pipeline mit gruenen Integritaets-Gates, keine publizierten
-Bestwerte. Letztes Release: `v0.2.1` (2026-06-19); dieses README beschreibt den
+**Stand:** Forschungs-Pipeline mit Integritaets-Gates, keine publizierten Bestwerte.
+Die CI-Gates (ruff, compileall, `pytest -m "not slow"`) laufen gruen; nicht alle
+Mess-Gates: die Neu-Rechnungen PHY028/PHY039/PHY040 vom 2026-07-10 melden
+`OVERALL: FAIL` (1%-Validierungsanker, Dip ausserhalb des T-Fensters bzw.
+Finite-Size-Befund; siehe Audit-Hinweis unter *Mess-Stand*).
+Letztes Release: `v0.2.1` (2026-06-19); dieses README beschreibt den
 neueren Stand bis PHY043 (2026-08-08), der noch nicht als Release markiert ist.
 Zitieren: siehe [Zitieren](#zitieren).
 
