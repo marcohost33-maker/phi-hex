@@ -1,7 +1,30 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-authors:
-  - name: "Coworker Research / Coworkerz"
+type: software
 title: "phi-hex"
+abstract: >-
+  Phi-Hex studies the two-dimensional XY model and the
+  Berezinskii-Kosterlitz-Thouless (BKT) transition on periodic triangular,
+  honeycomb and kagome lattices, with the square lattice as a validation
+  case. It combines the helicity modulus and the Nelson-Kosterlitz jump,
+  Wolff cluster updates, Wang-Landau densities of states and finite-size
+  scaling, with deterministic integrity gates and SHA-256 provenance.
+  Research code; results are internal findings, not published reference
+  values.
+authors:
+  - given-names: "Marco"
+    family-names: "Hostettler"
+    affiliation: "Coworker Research (Coworkerz)"
+version: "0.2.1"
+date-released: "2026-06-19"
 license: Apache-2.0
 repository-code: "https://github.com/marcohost33-maker/phi-hex"
+keywords:
+  - xy-model
+  - bkt-transition
+  - kosterlitz-thouless
+  - helicity-modulus
+  - wang-landau
+  - monte-carlo
+  - finite-size-scaling
+  - statistical-physics
