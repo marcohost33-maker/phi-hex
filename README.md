@@ -1,5 +1,9 @@
 # Phi-Hex
 
+[![ci](https://github.com/marcohost33-maker/phi-hex/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/marcohost33-maker/phi-hex/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Python >= 3.12](https://img.shields.io/badge/python-%E2%89%A5%203.12-blue.svg)](requirements-dev.txt)
+
 **English summary:** Phi-Hex studies the 2D XY model and the
 Berezinskii-Kosterlitz-Thouless (BKT) transition on triangular, honeycomb and
 kagome lattices, with the square lattice as a validation case. It uses the
@@ -7,6 +11,18 @@ helicity modulus, Wolff cluster updates, Wang-Landau densities of states and
 finite-size scaling. It is a research pipeline with integrity gates, not a
 library; the numbers below are internal results, not published reference
 values. The documentation is in German.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/phy042_helicity_honeycomb_dark.png">
+  <img src="docs/figures/phy042_helicity_honeycomb_light.png" width="720"
+       alt="Helicity modulus versus temperature on the honeycomb lattice for L = 24, 32 and 48, with the BKT criterion line 2T/pi and the reference temperature 0.573">
+</picture>
+
+*Helicity modulus Υ(T) on the honeycomb lattice, L = 24/32/48 (Wang–Landau, PHY042), next to the
+BKT criterion Υ = 2T/π. Every point is read from the committed gate report
+`results/260707 PHY042 honeycomb wl-fss L24-32-48 gate report.json`. Faded segments lie outside
+the quotable domain. This is a pipeline result, **not** a new T_BKT best value (see *Mess-Stand*).
+Regenerate with `python docs/figures/make_readme_figure.py`.*
 
 **Was:** Phi-Hex misst die BKT-Uebergangstemperatur des 2D-XY-Modells auf
 Dreiecks-, Honeycomb- und Kagome-Gittern (Wolff, Wang-Landau, Finite-Size-Scaling).
