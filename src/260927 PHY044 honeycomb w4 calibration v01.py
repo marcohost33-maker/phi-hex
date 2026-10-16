@@ -18,8 +18,12 @@ Coworker Research / Coworkerz | 2026-09-27
 from __future__ import annotations
 
 import importlib.util
+import inspect
 import json
 import math
+import platform
+import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -50,6 +54,7 @@ _STREAM_CAL_WL_BASE = 2_000_000
 DEFAULT_TEMPS = (0.565, 0.575, 0.585)
 SPREAD_LIMIT = 0.04
 MASS_LIMIT = 1e-3
+LNF_FINAL = 1e-5
 
 
 def _stream_for_calibration(walker: int) -> int:
@@ -78,6 +83,47 @@ def _validate_inputs(L: int, n_wl_walkers: int, temps) -> tuple[float, ...]:
     return ts
 
 
+def _git_state() -> tuple[str | None, bool | None]:
+    """Commit and dirty flag of the producing tree; (None, None) if unknown."""
+    try:
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=_ROOT, capture_output=True,
+            text=True, check=True).stdout.strip()
+        status = subprocess.run(
+            ["git", "status", "--porcelain"], cwd=_ROOT, capture_output=True,
+            text=True, check=True).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return None, None
+    return head, bool(status.strip())
+
+
+def _provenance(L: int, n_wl_walkers: int, wolff_n_seeds: int) -> dict:
+    """Spec §7 reproducibility record: code, environment, lnf_final, streams.
+
+    Stream IDs are derived from the constants the samplers actually use
+    (wl_entropic_lattice adds +L; Wolff anchor/reference use
+    _STREAM_ANCHOR/_STREAM_REF + s + 1000*L), so the record cannot drift
+    from the run (PR #51 Codex round 2026-10-16).
+    """
+    commit, dirty = _git_state()
+    anchor_seeds = inspect.signature(_p41.wolff_anchor).parameters["n_seeds"].default
+    return {
+        "git_commit": commit,
+        "git_dirty": dirty,
+        "python_version": sys.version.split()[0],
+        "numpy_version": np.__version__,
+        "platform": platform.platform(),
+        "lnf_final": LNF_FINAL,
+        "streams": {
+            "wl": [_stream_for_calibration(w) + L for w in range(n_wl_walkers)],
+            "wolff_anchor": [_p41._STREAM_ANCHOR + s + 1000 * L
+                             for s in range(anchor_seeds)],
+            "wolff_reference": [_p41._STREAM_REF + s + 1000 * L
+                                for s in range(wolff_n_seeds)],
+        },
+    }
+
+
 def _calibration_verdict(*, all_1t: bool, leak_max: float,
                          uncovered_max: float, max_y2_spread: float) -> str:
     """Pure, pre-registered stop/continue gate; never yields a T_BKT claim."""
@@ -98,7 +144,7 @@ def _run_one_wl(L: int, walker: int, e_lo: float, e_hi: float,
     t0 = time.perf_counter()
     res = _p41.wl_entropic_lattice(
         nbr_list, ei, ej, ax, ay, n, L, e_lo, e_hi,
-        lnf_final=1e-5,
+        lnf_final=LNF_FINAL,
         prod_sweeps=prod_sweeps,
         seed=master_seed,
         stream=_stream_for_calibration(walker),
@@ -170,6 +216,11 @@ def run_phy044_calibration(
     independent walkers in parallel after this calibration is accepted.
     """
     temps = _validate_inputs(L, n_wl_walkers, temps)
+    if wolff_n_seeds < 2:
+        # The Wolff SEM uses ddof=1; one seed gives NaN, which would let the
+        # verdict pass without the mandatory Wolff SEM. Refuse before the
+        # expensive run (PR #51 Codex round 2026-10-16).
+        raise ValueError("Wolff-Quercheck braucht mindestens 2 Seeds (SEM mit ddof=1)")
     total_t0 = time.perf_counter()
 
     # Shared anchor/window: same binning for every walker.
@@ -233,6 +284,7 @@ def run_phy044_calibration(
         "production_walker_requirement_met": n_wl_walkers >= 3,
         "calibration_is_not_production_validity": True,
         "master_seed": master_seed,
+        "provenance": _provenance(L, n_wl_walkers, wolff_n_seeds),
         "temperatures": list(temps),
         "window": {
             "anchor_lo": {"T": 0.50, "mean_ps": lo_mean, "std_ps": lo_std},

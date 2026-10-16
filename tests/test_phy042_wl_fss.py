@@ -177,3 +177,12 @@ def test_wl_job_smoke_small_lattice():
         assert phy042.canonical_edge_leak(res, T) < 1e-3
     c = phy042.upsilon_curves(res, phy042._T_GRID)
     assert c["y2"][0] > c["y2"][-1] + 0.1                # klar fallend
+
+
+def test_partial_phy032_grid_never_installs_the_fallback_domain():
+    """Teilgitter mit passenden Zeilen: grid_ok=False -> kein Fallback."""
+    rows = [{"T": 0.57, "ok": True}, {"T": 0.61, "ok": True}]
+    assert phy042._phy032_fallback_bounds(rows, False) is None
+    assert phy042._phy032_fallback_bounds(rows, True) == (0.57, 0.61)
+    assert phy042._phy032_fallback_bounds(rows + [{"T": 0.65, "ok": False}], True) is None
+    assert phy042._phy032_fallback_bounds([], True) is None

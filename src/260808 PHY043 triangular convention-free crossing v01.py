@@ -499,14 +499,31 @@ def _clean(o):
     return o
 
 
-def _power_limit_note(n_seeds: int, max_L: int) -> str:
+PILOT_LATTICES_L = (9, 13, 19)
+PILOT_N_MEASURE = 400
+PILOT_N_SEEDS = 4
+PILOT_T_MAX = 1.58
+
+
+def _power_limit_note(n_seeds: int, lattices_L, n_measure: int,
+                      temperatures) -> str:
     """Do not infer discrimination power from arbitrary run metadata.
 
     Spec §6's negative 1%-power statement belongs only to the documented
-    4-seed/L<=19 pilot budget. Other budgets require an explicit uncertainty
-    or power analysis; larger n/L alone does not prove 1% discrimination.
+    pilot of Spec §4: radii 4/6/9 (L 9/13/19), T <= 1.58, n_measure=400,
+    n_seeds=4. The full budget must match -- n_seeds and max L alone are
+    not the pilot (PR #51 Codex round 2026-10-16). Other budgets require an
+    explicit uncertainty or power analysis.
     """
-    if n_seeds == 4 and max_L == 19:
+    max_L = max(lattices_L)
+    is_pilot = (
+        tuple(sorted(int(x) for x in lattices_L)) == PILOT_LATTICES_L
+        and int(n_measure) == PILOT_N_MEASURE
+        and int(n_seeds) == PILOT_N_SEEDS
+        # grid step 0.02; 1e-9 absorbs float64 grid construction only
+        and max(float(t) for t in temperatures) <= PILOT_T_MAX + 1e-9
+    )
+    if is_pilot:
         return (
             "n_seeds=4, L<=19: keine 1%-Diskriminierung erwartet "
             "(fixierter Pilot-Vertrag, Spec §6)."
@@ -603,7 +620,8 @@ def write_report(report: dict, path: Path) -> None:
                  "logarithmisch.")
     lines.append(
         "  - " + _power_limit_note(
-            int(w["n_seeds"]), int(max(report["lattices_L"]))))
+            int(w["n_seeds"]), report["lattices_L"],
+            int(w["n_measure"]), report["temperatures"]))
     lines.append("  - Universeller (xi_2/L)*-Anker bewusst NICHT verwendet "
                  "(Rhombus-Torus,")
     lines.append("    tau=exp(i pi/3) — Hasenbusch-Wert gilt fuer tau=i).")

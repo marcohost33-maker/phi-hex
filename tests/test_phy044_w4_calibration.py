@@ -67,3 +67,21 @@ def test_calibration_verdict_contract():
     x = dict(common)
     x["max_y2_spread"] = phy044.SPREAD_LIMIT
     assert phy044._calibration_verdict(**x) == "CALIBRATION_NEEDS_MORE_WL"
+
+
+def test_single_wolff_seed_is_refused_before_the_run() -> None:
+    """ddof=1 SEM needs >= 2 seeds; refusal must come before any sampling."""
+    with pytest.raises(ValueError, match="mindestens 2 Seeds"):
+        phy044.run_phy044_calibration(L=8, n_wl_walkers=2, wolff_n_seeds=1)
+
+
+def test_provenance_records_spec7_fields_bound_to_the_samplers() -> None:
+    prov = phy044._provenance(16, 2, 3)
+    for key in ("git_commit", "git_dirty", "python_version", "numpy_version",
+                "lnf_final", "streams"):
+        assert key in prov
+    assert prov["lnf_final"] == phy044.LNF_FINAL
+    assert prov["streams"]["wl"] == [phy044._stream_for_calibration(w) + 16 for w in range(2)]
+    assert prov["streams"]["wolff_reference"] == [
+        phy044._p41._STREAM_REF + s + 1000 * 16 for s in range(3)]
+    assert len(prov["streams"]["wolff_anchor"]) == 3

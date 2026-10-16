@@ -261,3 +261,15 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | 6F15FC77555D3A72 | 2026-10-08 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (Stand f1c3ced: Kalibrier-Skalensignal von Produktionsgueltigkeit getrennt; Zeile nachgetragen, CI-Befund PR #51) |
 | B40EBE94734FEA47 | 2026-10-08 | tests | repo-native: `tests/test_phy041_honeycomb_wl.py` (Slow-Smoke: 1/t-Metadaten muessen den Lauf beschreiben; bei lnf_final=2e-4 greift 1/t nicht, engaged=False ist korrekt -- vorher Regression nur im slow-Lauf) |
 
+### PR #51 Codex-Runde 2026-10-16 (Kopf 2b13306)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| D62FEC9729262601 | 2026-10-16 | src | repo-native: `src/260702 PHY041 honeycomb wang-landau entropic helicity v01.py` (PR #51 Codex 2026-10-16: one_over_t_engaged erst nach mindestens einem ausgefuehrten 1/t-Sweep) |
+| 4C2252A22F2D7CD1 | 2026-10-16 | tests | repo-native: `tests/test_phy041_honeycomb_wl.py` (Regression: Schleifenende am Umschalter ist kein Engagement; Smoke verlangt sweeps_at_1t < wl_sweeps) |
+| 191352A3084BB58C | 2026-10-16 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (PR #51 Codex 2026-10-16: L=24-Fallback nur bei vollstaendigem PHY032-Gitter (grid_ok)) |
+| EF693C4E7FD35AEE | 2026-10-16 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression: Teilgitter installiert keine Fallback-Domaene) |
+| 6ABB9D3DD09E0ED4 | 2026-10-16 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (PR #51 Codex 2026-10-16: Pilot-Power-Aussage nur bei vollem Spec-§4-Pilotbudget (L 9/13/19, T<=1.58, n_measure=400, n_seeds=4)) |
+| F246426E3F54BC46 | 2026-10-16 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression: radii=(2,9)/n_measure=1/n_seeds=4 ist nicht der Pilot) |
+| 955544E84575E048 | 2026-10-16 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (PR #51 Codex 2026-10-16: Spec-§7-Provenienz (Commit, Versionen, lnf_final, Stream-IDs) im Report; wolff_n_seeds>=2 vor dem Lauf) |
+| 3E49E1799F7EA082 | 2026-10-16 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression: 1 Wolff-Seed wird vor dem Lauf abgewiesen; Provenienz an Sampler-Konstanten gebunden) |

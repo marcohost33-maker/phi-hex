@@ -232,6 +232,20 @@ def _wl_job(args: tuple) -> tuple:
     return (L, walker, res)
 
 
+def _phy032_fallback_bounds(grid_rows, grid_ok: bool):
+    """L=24-Fallback-Domaene aus dem PHY032-Drift-Guard, fail-closed.
+
+    Nur ein VOLLSTAENDIGES Gitter (grid_ok: alle acht L=24-Zeilen geparst und
+    validiert) traegt die Domaene; ein Teilgitter, dessen erhaltene Zeilen
+    passen, liefert None (PR #51 Codex-Runde 2026-10-16). Fallback-Evidenz
+    gilt nur auf dem validierten Gitter; BEIDE Grenzen sind bindend.
+    """
+    if not grid_ok or not grid_rows or not all(bool(r["ok"]) for r in grid_rows):
+        return None
+    return (min(float(r["T"]) for r in grid_rows),
+            max(float(r["T"]) for r in grid_rows))
+
+
 def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
                max_workers=4) -> dict:
     t_grid = _T_GRID
@@ -430,14 +444,10 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
         else:
             effective_domain_bounds[L] = None
 
-    if 24 in Ls and effective_domain_bounds.get(24) is None and grid_rows:
-        if all(bool(row["ok"]) for row in grid_rows):
-            # Fallback-Evidenz ist nur auf dem tatsaechlich validierten
-            # PHY032-Gitter gueltig; BEIDE Grenzen sind bindend.
-            effective_domain_bounds[24] = (
-                min(float(row["T"]) for row in grid_rows),
-                max(float(row["T"]) for row in grid_rows),
-            )
+    if 24 in Ls and effective_domain_bounds.get(24) is None:
+        fallback = _phy032_fallback_bounds(grid_rows, grid_ok)
+        if fallback is not None:
+            effective_domain_bounds[24] = fallback
             effective_domain_basis[24] = "PHY032_drift_guard"
 
     # --- VAL-C: PHY041-Bruecke (bitgleiche L=24-Reproduktion) --------------

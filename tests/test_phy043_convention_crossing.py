@@ -205,9 +205,21 @@ def test_run_phy043_smoke_structure(tmp_path) -> None:
 
 
 def test_power_limit_note_is_scoped_to_fixed_pilot_budget() -> None:
-    pilot = phy043._power_limit_note(4, 19)
+    pilot_T = [1.36 + 0.02 * k for k in range(12)]
+    pilot = phy043._power_limit_note(4, [9, 13, 19], 400, pilot_T)
     assert "keine 1%-Diskriminierung erwartet" in pilot
-    for n_seeds, max_l in ((8, 25), (4, 25), (8, 19), (2, 7)):
-        note = phy043._power_limit_note(n_seeds, max_l)
+    cases = (
+        (8, [9, 13, 19, 25], 800, pilot_T),
+        (4, [9, 13, 19, 25], 400, pilot_T),
+        (8, [9, 13, 19], 400, pilot_T),
+        (2, [5, 7], 400, pilot_T),
+        # Codex 2026-10-16: radii=(2, 9), n_measure=1, n_seeds=4 hat max_L 19,
+        # ist aber nicht der Pilot.
+        (4, [5, 19], 1, pilot_T),
+        (4, [9, 13, 19], 1, pilot_T),
+        (4, [9, 13, 19], 400, pilot_T + [1.70]),
+    )
+    for n_seeds, lattices, n_measure, temps in cases:
+        note = phy043._power_limit_note(n_seeds, lattices, n_measure, temps)
         assert "UNASSESSED" in note
         assert "allein aus Laufmetadaten" in note

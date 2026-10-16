@@ -137,13 +137,23 @@ def test_one_over_t_metadata_contract():
     """PHY041 muss die tatsaechlich aktivierte B&P-1/t-Phase im geerbten
     WLResult persistieren; Default-False aus PHY040 waere ein falsches
     Negativsignal fuer Kalibrierungs-/Audit-Consumer."""
-    assert phy041._one_over_t_metadata(False, None) == {
+    assert phy041._one_over_t_metadata(False, None, 40000) == {
         "one_over_t_engaged": False,
         "sweeps_at_1t": 0,
     }
-    assert phy041._one_over_t_metadata(True, 59091) == {
+    assert phy041._one_over_t_metadata(True, 59091, 60000) == {
         "one_over_t_engaged": True,
         "sweeps_at_1t": 59091,
+    }
+
+
+def test_one_over_t_not_engaged_when_the_loop_ends_at_the_switch():
+    """Umschalter gesetzt, aber kein 1/t-Sweep ausgefuehrt (lnf_final liegt
+    zwischen dem neuen 1/t-Wert und dem letzten Standard-WL-Faktor): das
+    darf nicht als engaged gemeldet werden (PR #51 Codex-Runde 2026-10-16)."""
+    assert phy041._one_over_t_metadata(True, 59091, 59091) == {
+        "one_over_t_engaged": False,
+        "sweeps_at_1t": 0,
     }
 
 
@@ -176,7 +186,7 @@ def test_wl_honeycomb_smoke_energy_matches_wolff():
     # werden (gemessen 2026-10-08: wl_sweeps=39272, engaged=False).
     assert res.one_over_t_engaged == (res.sweeps_at_1t > 0)
     if res.one_over_t_engaged:
-        assert 0 < res.sweeps_at_1t <= res.wl_sweeps
+        assert 0 < res.sweeps_at_1t < res.wl_sweeps
     else:
         assert 1.0 / res.wl_sweeps < 2e-4
     assert meta["window_ps"][0] >= phy041.E0_PER_SITE

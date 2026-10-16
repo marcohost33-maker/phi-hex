@@ -194,16 +194,23 @@ def _local_delta(thl: list, nbr: tuple, old: float, new: float) -> float:
     return d
 
 
-def _one_over_t_metadata(use_1t: bool, sweeps_1t: int | None) -> dict:
+def _one_over_t_metadata(use_1t: bool, sweeps_1t: int | None,
+                         wl_sweeps: int) -> dict:
     """Explizite Result-Metadaten fuer die B&P-1/t-Phase.
 
     Der PHY041-Kernel implementiert die 1/t-Politur, verwendete bisher aber
     die aus PHY040 geerbten WLResult-Defaults (False/0). Das machte die
     Objekt-Instrumentierung trotz korrekter Lauf-Logik falsch-negativ.
+
+    Engaged heisst: mindestens EIN Sweep lief mit der 1/t-Regel. Der
+    Umschalter setzt sweeps_1t = sweeps; liegt lnf_final schon unter dem
+    neuen 1/t-Wert, endet die Schleife ohne 1/t-Sweep (wl_sweeps ==
+    sweeps_1t) -- das ist KEIN Engagement (PR #51 Codex-Runde 2026-10-16).
     """
+    engaged = bool(use_1t) and sweeps_1t is not None and wl_sweeps > sweeps_1t
     return {
-        "one_over_t_engaged": bool(use_1t),
-        "sweeps_at_1t": int(sweeps_1t or 0),
+        "one_over_t_engaged": engaged,
+        "sweeps_at_1t": int(sweeps_1t) if engaged else 0,
     }
 
 
@@ -369,7 +376,7 @@ def wl_entropic_lattice(nbr_list, ei, ej, ax, ay, n: int, L: int,
     return WLResult(L=L, n=n, centers=centers, lng=lng_arr, mask=mask,
                     micro_x=micro_x, micro_y=micro_y, wl_sweeps=sweeps,
                     prod_sweeps=prod_sweeps,
-                    **_one_over_t_metadata(use_1t, sweeps_1t))
+                    **_one_over_t_metadata(use_1t, sweeps_1t, sweeps))
 
 
 def wang_landau_honeycomb(L: int, t_anchor_lo: float = 0.50,
