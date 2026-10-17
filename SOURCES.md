@@ -223,6 +223,14 @@ bleiben unveraendert als Lineage stehen; letzte Zeile pro Pfad gewinnt.
 | 5C8023B58DEE5DD0 | 2026-08-08 | results | repo-native: `results/260808 PHY043 triangular convention-free crossing report.txt` (NEU: Gate-Evidenz PHY043 Finallauf L=9/13/19/25, T=1.36..1.70, 8 Seeds/800 Messungen, seed=42, OVERALL PASS 6/6, ~688 s; Splay-Lagen 1.50..1.64, NR-PHY043-01) |
 | 3DDB36EB7D36C425 | 2026-08-17 | tests | repo-native: `tests/test_sources_integrity.py` (stand: Plattform-Portabilitaets-Fix 2026-08-17 - Gate hasht Index-Bytes statt Arbeitsbaum (core.autocrlf machte 68 von 88 Dateien zu falschen Positiven unter Windows) + neue Regel 5 Arbeitsbaum-vs-Index-Drift) |
 
+### README-Figur 2026-10-16 (repo-native, aus committetem Gate-Report)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| 6C7CE0F4BC813EF4 | 2026-10-16 | docs/figures | repo-native: `docs/figures/make_readme_figure.py` (README-Figur: liest ausschliesslich den committeten PHY042-Gate-Report, kein Fit/Smoothing) |
+| 5367E12B4D6596A8 | 2026-10-16 | docs/figures | repo-native: `docs/figures/phy042_helicity_honeycomb_light.png` (erzeugt von make_readme_figure.py aus results/260707 PHY042 ... gate report.json (hell)) |
+| F8A6D3CEC1A11895 | 2026-10-16 | docs/figures | repo-native: `docs/figures/phy042_helicity_honeycomb_dark.png` (erzeugt von make_readme_figure.py aus results/260707 PHY042 ... gate report.json (dunkel)) |
+
 ## W4 Evidence-Contract Hardening 2026-09-27 — append-only
 
 Issue #45: Quellenversions- und Validitaetssemantik gehaertet. Historische
