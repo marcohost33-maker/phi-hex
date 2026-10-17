@@ -37,7 +37,7 @@ Zitieren: siehe [Zitieren](#zitieren).
 
 > **Status:** Forschungs-Repo (oeffentlich seit 2026-08-17) | XY/BKT-Physik auf Dreiecks-, Honeycomb- und Kagome-Gittern.  
 > **Lizenz:** Apache-2.0 | **Lineage/Provenance:** siehe `SOURCES.md`.  
-> **Aktueller Review-Stand:** Review-Nachtrag 2026-08-08 (`spec/260710 ... v01.md` §4): Messpipeline erneut gegen unabhaengige Orakel defektfrei; PHY040-M3-Guard, Lint-Baseline-Pin, O8/O9 inventarisiert. PHY043 (Audit O1): konventionsfreier Quercheck triangular — qualitativ konsistent mit der Referenz-Lage, keine 1%-Diskriminierung (siehe unten). Davor: Code-Audit 2026-07-10: P0-Geometrie-Fix im Quadratgitter (PHY028/039/040 neu gerechnet, V&V-Anker ehrlich auf ~1% herabgestuft), Pol-Guards in allen Paar-Schaetzern; PHY042/PR #20 als Pipeline-Finding, **kein neuer T_BKT-Bestwert** (Grenzen NR-PHY042-02/03).
+> **Aktueller Review-Stand:** Review-Nachtrag 2026-08-08 (`spec/260710 ... v01.md` §4): Messpipeline erneut gegen unabhaengige Orakel defektfrei; PHY040-M3-Guard, Lint-Baseline-Pin, O8/O9 inventarisiert. PHY043 (Audit O1): konventionsfreier Quercheck triangular — qualitativ konsistent mit der Referenz-Lage, 1%-Diskriminierung unbewertet (siehe unten). Davor: Code-Audit 2026-07-10: P0-Geometrie-Fix im Quadratgitter (PHY028/039/040 neu gerechnet, V&V-Anker ehrlich auf ~1% herabgestuft), Pol-Guards in allen Paar-Schaetzern; PHY042/PR #20 als Pipeline-Finding, **kein neuer T_BKT-Bestwert** (Grenzen NR-PHY042-02/03).
 
 Phi-Hex untersucht das 2D-XY-Modell und BKT-Physik auf periodischen Gittern: Helicity-Modulus, Nelson-Kosterlitz-Sprung, Wolff-Cluster, Wang-Landau-DOS und Finite-Size-Scaling.
 
@@ -70,16 +70,21 @@ Wichtige Orakel:
 
 Ab PR #18/PHY041 gilt `spec/260703 PHI HEX honeycomb reference conventions audit v01.md` als Vertragsquelle. Honeycomb-Werte werden nicht mehr als ein einzelner harter Referenzwert gefuehrt, sondern als Band mit Quelle, Observable und beta/T-Konvention.
 
-| Quelle | berichtete Groesse | T-Form fuer Vergleich | Rolle |
-|---|---:|---:|---|
-| arXiv:2501.07388 | T-Wert | 0.573 | Multi-Lattice-Anker |
-| arXiv:2406.14812 | T_BKT,H = 0.571(8) | 0.571 +/- 0.008 | direkter Honeycomb-Helicity-Anker |
-| arXiv:2406.14812 | T_BKT,H = 0.560(9) | 0.560 +/- 0.009 | NN/MC-Zusatzanker |
-| arXiv:2406.12076 | beta_BKT = 1.687(3) | 0.5928 +/- 0.0011 | Upsilon / WL-Honeycomb |
-| arXiv:2406.12076 | beta_BKT = 1.635(11) | 0.6116 +/- 0.0041 | Upsilon_4 |
-| arXiv:2406.12076 | beta_BKT = 1.724(2) | 0.5800 +/- 0.0007 | Binder |
+| Quelle / Stand | Kanal | T-Form fuer Vergleich | Rolle |
+|---|---|---:|---|
+| arXiv:2501.07388v1 / J. Phys. A 2025 | Multi-Lattice-FSS | 0.573 (rough estimate) | Zusatzanker ohne zitierte Fehlerbar |
+| Jiang, PTEP 2024 103A02 (publiziert) | NN | 0.572 +/- 0.003 | aktueller Honeycomb-Anker |
+| Jiang, PTEP 2024 103A02 (publiziert) | Helicity | 0.576 +/- 0.004 | aktueller Honeycomb-Anker |
+| arXiv:2406.12076v4 | Upsilon / SA | 0.575 +/- 0.008 | aktueller Y2-Anker |
+| arXiv:2406.12076v4 | Upsilon / WL | 0.576 +/- 0.003 | aktueller Y2-Anker |
+| arXiv:2406.12076v4 | Upsilon_4 / SA | 0.551 +/- 0.011 | Diagnostik |
+| arXiv:2406.12076v4 | Upsilon_4 / WL | 0.568 +/- 0.001 | Diagnostik |
 
-Konversion: `T = 1 / beta`, `sigma_T = sigma_beta / beta^2`.
+**Quellenversions-Audit 2026-09-27 (#45):** Die zuvor hier gefuehrten
+0.571(8)/0.560(9) aus arXiv:2406.14812v1 und die beta-konvertierten
+0.5928/0.6116/0.5800 aus einer fruehen 2406.12076-Fassung sind fuer den
+aktuellen Vergleich **superseded**. Sie bleiben nur in der Vertrags-Spec als
+Lineage erhalten. Der aktuelle Ledger ist kein Min/Max-Akzeptanzband.
 
 ## Mess-Stand
 
@@ -156,9 +161,10 @@ Ergebnis (vorab festgelegter Interpretations-Vertrag, Spec §6):
   1.4007 oder darunter — qualitativ konsistent mit der Referenz-Lage.
 - Adjacent-Crossings im Merge-Bereich sind ueberwiegend < 2 sigma
   (Rauschen, ehrlich mit Flanken-Signifikanz berichtet).
-- **NR-PHY043-01 (Grenze):** Splay-Temperaturen sind obere Schranken der
-  Merge-Region und driften logarithmisch; eine 1%-Diskriminierung
-  zwischen 1.4007 und 1.418 leistet dieses Budget NICHT. O1 bleibt formal
+- **Grenze PHY043 (kein NR-Label, Power unbewertet):** Splay-Temperaturen sind obere Schranken der
+  Merge-Region und driften logarithmisch. Ob dieses Budget (8 Seeds, L=25)
+  1.4007 und 1.418 auf 1% trennt, ist UNBEWERTET -- es gibt keine
+  Power-Analyse dafuer (Power-Vertrag der PHY043-Methoden-Spec). O1 bleibt formal
   offen; naechster Pfad ist der Konventions-Nachweis je Referenz in
   SOURCES.md. Kein per-Site-Code-Fix ohne diesen Nachweis.
 
@@ -201,13 +207,24 @@ archive/    Vorgaenger-Versionen
 SOURCES.md  Provenance / SHA-256
 ```
 
+## W4-Haertung 2026-09-27 (Issue #45)
+
+Vor jeder Honeycomb-Grossproduktion gilt jetzt
+`spec/260927 PHI HEX w4 preregistration v01.md`: Ein-Walker-Spread ist
+`unmeasured` statt 0, W4 braucht mindestens 3 Walker je verwendeter
+L-Groesse, und L=64 wird zuerst mit `PHY044` als Kosten-/Konvergenzkalibrierung
+(2 WL/1-t-Walker + kanonischer Wolff-Quercheck) gefahren.
+Der historische PHY042-JSON bleibt unveraendert; sein
+`domain_tmax_spread004["24"]=0.67` ist als Daten-Semantik-Erratum
+dokumentiert und darf nicht als gemessene Spread-Domaene gelesen werden.
+
 ## Naechste Stufe nach PHY043 + Review-Nachtrag 2026-08-08
 
 1. Mehr Produktions-Statistik, damit die Crossings (24,48)/(32,48) in-Domaene und belastbar werden (NR-PHY042-02 aufloesen).
 2. Walker-robuster Upsilon_4-Dip fuer L>=32 (NR-PHY042-03 aufloesen), dann Dip-FSS Richtung T_BKT.
 3. Kein T_BKT-Bestwert-Claim ohne Cross-Family-Review.
 4. Square-V&V-Re-Baseline: mehr Statistik/groessere L, damit das 1%-Gate wieder belastbar bindet; PHY039-Dip-Fenster erweitern (Audit O-Punkte).
-5. O1 abschliessen: der MC-Quercheck-Teil ist mit PHY043 gelaufen (qualitativ konsistent mit Referenz-Lage, NR-PHY043-01: keine 1%-Diskriminierung); offen bleibt der Konventions-Nachweis je zitierter Referenz (per-Spin vs per-Flaeche) in SOURCES.md. Bis dahin kein per-Site-Code-Fix.
+5. O1 abschliessen: der MC-Quercheck-Teil ist mit PHY043 gelaufen (qualitativ konsistent mit Referenz-Lage; 1%-Diskriminierung unbewertet, keine Power-Analyse, daher kein NR-Label); offen bleibt der Konventions-Nachweis je zitierter Referenz (per-Spin vs per-Flaeche) in SOURCES.md. Bis dahin kein per-Site-Code-Fix.
 6. Re-Run PHY030v02/PHY032/PHY033 mit Pol-Guard bei der naechsten Produktions-Runde (Audit-Punkt O4).
 7. Bei Neu-Produktion PHY040: L in den WL-Stream aufnehmen (O8) und PHY039 auf ungebuchte Stream-Basis 800+ heben (O3).
 
