@@ -320,3 +320,10 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 |---|---|---|---|
 | CC310B3F4C55C6E3 | 2026-10-17 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (PR #51 Codex: Skalenentscheid nach bestandener Kalibrierung UNBEWERTET bis Wolff-/Kostenpruefung) |
 | 955028056A596D2D | 2026-10-17 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression _scale_decision UNASSESSED) |
+
+### PR #51 Codex-Runde 2026-10-17 (Kopf f4169d2)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| C78F8BF0F6653FB9 | 2026-10-17 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (NR-PHY043-01 nur beim bewerteten Pilot-Budget, sonst UNBEWERTET) |
+| C5A754BCFED90232 | 2026-10-17 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression _no_splay_finding) |

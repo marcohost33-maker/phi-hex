@@ -447,8 +447,7 @@ def run_phy043(radii=(4, 6, 9, 12),
     ts_largest = analysis["xi_ratio"][largest_pair]["T_splay"]
     print("\nFINDING (kein Gate, kein Bestwert-Claim):")
     if ts_largest is None:
-        print("  Kein persistenter xi_2/L-Splay im Fenster — nicht "
-              "diskriminierend (NR-PHY043-01).")
+        print("  " + _no_splay_finding(n_seeds, Ls, n_measure, T_grid))
     else:
         print(f"  xi_2/L-Splay {largest_pair} beginnt bei T={ts_largest:.2f}; "
               f"Einordnung relativ zu intern {INTERNAL_PER_SITE} und "
@@ -505,6 +504,32 @@ PILOT_N_SEEDS = 4
 PILOT_T_MAX = 1.58
 
 
+def _is_pilot_budget(n_seeds: int, lattices_L, n_measure: int, temperatures) -> bool:
+    """True only for the documented pilot of Spec §4 (the one budget whose
+    1%-power limit is assessed)."""
+    return (
+        tuple(sorted(int(x) for x in lattices_L)) == PILOT_LATTICES_L
+        and int(n_measure) == PILOT_N_MEASURE
+        and int(n_seeds) == PILOT_N_SEEDS
+        # grid step 0.02; 1e-9 absorbs float64 grid construction only
+        and max(float(t) for t in temperatures) <= PILOT_T_MAX + 1e-9
+    )
+
+
+def _no_splay_finding(n_seeds: int, lattices_L, n_measure: int, temperatures) -> str:
+    """Finding text when the largest pair shows no splay.
+
+    The NR-PHY043-01 label ("not discriminating") needs an assessed power
+    limit, which exists only for the pilot budget; any other budget reports
+    the missing splay with discrimination UNASSESSED (PR #51 Codex 2026-10-17).
+    """
+    if _is_pilot_budget(n_seeds, lattices_L, n_measure, temperatures):
+        return ("NR-PHY043-01: kein persistenter xi_2/L-Splay im Fenster -- "
+                "bei diesem Pilot-Budget nicht diskriminierend; O1 bleibt offen.")
+    return ("Kein persistenter xi_2/L-Splay im Fenster; Diskriminierung bei "
+            "diesem Budget UNBEWERTET (keine Power-Analyse) -- kein NR-Schluss.")
+
+
 def _power_limit_note(n_seeds: int, lattices_L, n_measure: int,
                       temperatures) -> str:
     """Do not infer discrimination power from arbitrary run metadata.
@@ -516,14 +541,7 @@ def _power_limit_note(n_seeds: int, lattices_L, n_measure: int,
     explicit uncertainty or power analysis.
     """
     max_L = max(lattices_L)
-    is_pilot = (
-        tuple(sorted(int(x) for x in lattices_L)) == PILOT_LATTICES_L
-        and int(n_measure) == PILOT_N_MEASURE
-        and int(n_seeds) == PILOT_N_SEEDS
-        # grid step 0.02; 1e-9 absorbs float64 grid construction only
-        and max(float(t) for t in temperatures) <= PILOT_T_MAX + 1e-9
-    )
-    if is_pilot:
+    if _is_pilot_budget(n_seeds, lattices_L, n_measure, temperatures):
         return (
             "n_seeds=4, L<=19: keine 1%-Diskriminierung erwartet "
             "(fixierter Pilot-Vertrag, Spec §6)."
@@ -598,11 +616,10 @@ def write_report(report: dict, path: Path) -> None:
     largest = f"({report['lattices_L'][-2]},{report['lattices_L'][-1]})"
     ts = report["pair_analysis"]["xi_ratio"][largest]["T_splay"]
     if ts is None:
-        lines.append("  NR-PHY043-01: kein persistenter xi_2/L-Splay im "
-                     "Fenster — bei diesem")
-        lines.append("  Budget nicht diskriminierend; O1 bleibt offen "
-                     "(naechster Pfad:")
-        lines.append("  Konventions-Nachweis je Referenz in SOURCES.md).")
+        lines.append("  " + _no_splay_finding(
+            int(w["n_seeds"]), report["lattices_L"],
+            int(w["n_measure"]), report["temperatures"]))
+        lines.append("  Naechster Pfad: Konventions-Nachweis je Referenz in SOURCES.md.")
     else:
         lines.append(f"  xi_2/L-Splay {largest} beginnt bei T={ts:.2f} "
                      f"(CI siehe oben).")

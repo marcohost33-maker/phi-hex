@@ -223,3 +223,12 @@ def test_power_limit_note_is_scoped_to_fixed_pilot_budget() -> None:
         note = phy043._power_limit_note(n_seeds, lattices, n_measure, temps)
         assert "UNASSESSED" in note
         assert "allein aus Laufmetadaten" in note
+
+
+def test_no_splay_nr_label_only_for_the_assessed_pilot_budget() -> None:
+    pilot_T = [1.40 + 0.02 * i for i in range(10)]
+    pilot = phy043._no_splay_finding(4, [9, 13, 19], 400, pilot_T)
+    assert pilot.startswith("NR-PHY043-01")
+    production = phy043._no_splay_finding(8, [9, 13, 19, 25], 400, pilot_T)
+    assert "NR-PHY043" not in production and "UNBEWERTET" in production
+
