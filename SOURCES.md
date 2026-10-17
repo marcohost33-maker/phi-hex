@@ -295,3 +295,12 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 |---|---|---|---|
 | C5FA247C144F72CD | 2026-10-17 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (PR #51 Codex 2026-10-17: leeres/ungueltiges Wolff-Messbudget vor dem Lauf abgewiesen) |
 | FC4C9C28C1786D2A | 2026-10-17 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression: wolff_n_measure <= 0, nicht ganzzahlig, bool und wolff_n_burn < 0 abgewiesen) |
+
+### PR #51 Codex-Runde 2026-10-17 (Kopf add66c1)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| D6AEFDE557B1A262 | 2026-10-17 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (PR #51 Codex: Paar-Quotierbarkeit verlangt beide Coverage-Gates) |
+| 6DE898DB6E6C7F2A | 2026-10-17 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (PR #51 Codex: Seeds ganzzahlig >=2; Skalenfreigabe nur aus dem L=64-Vertragslauf) |
+| 9B7D11BD4FA5F7FE | 2026-10-17 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression _pair_quotable mit Leck-/Restmassen-Gate) |
+| 868E97A857818F99 | 2026-10-17 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression Seeds-Typpruefung und _scale_decision) |

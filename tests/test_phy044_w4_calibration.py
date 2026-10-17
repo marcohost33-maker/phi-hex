@@ -86,12 +86,13 @@ def test_single_wolff_seed_is_refused_before_the_run() -> None:
         phy044.run_phy044_calibration(L=8, n_wl_walkers=2, wolff_n_seeds=1)
 
 
-@pytest.mark.parametrize("kw", [dict(wolff_n_measure=0), dict(wolff_n_measure=-3),
+@pytest.mark.parametrize("kw", [dict(wolff_n_seeds=2.5), dict(wolff_n_seeds=float("nan")),
+                                dict(wolff_n_seeds=True), dict(wolff_n_measure=0), dict(wolff_n_measure=-3),
                                 dict(wolff_n_measure=2.5), dict(wolff_n_measure=True),
                                 dict(wolff_n_burn=-1)])
 def test_empty_or_invalid_wolff_budget_is_refused_before_the_run(kw) -> None:
     """An empty Wolff budget gives NaN Y2/SEM that would be serialized as null."""
-    with pytest.raises(ValueError, match="wolff_n_"):
+    with pytest.raises(ValueError, match="wolff_n_|Seeds"):
         phy044.run_phy044_calibration(L=8, n_wl_walkers=2, **kw)
 
 
@@ -105,3 +106,12 @@ def test_provenance_records_spec7_fields_bound_to_the_samplers() -> None:
     assert prov["streams"]["wolff_reference"] == [
         phy044._p41._STREAM_REF + s + 1000 * 16 for s in range(3)]
     assert len(prov["streams"]["wolff_anchor"]) == 3
+
+
+def test_scale_decision_only_from_the_l64_contract_run():
+    ok = "CALIBRATION_PASS_FOR_COST_MODEL"
+    assert phy044._scale_decision(ok, 64) == "ELIGIBLE_TO_PLAN_PRODUCTION_NOT_A_VALIDITY_PASS"
+    assert phy044._scale_decision(ok, 32) == "NOT_A_CONTRACT_RUN_SMOKE_ONLY"
+    assert phy044._scale_decision(ok, 8) == "NOT_A_CONTRACT_RUN_SMOKE_ONLY"
+    assert phy044._scale_decision("CALIBRATION_NEEDS_MORE_WL", 64).startswith("DO_NOT_SCALE")
+

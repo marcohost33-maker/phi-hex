@@ -138,6 +138,19 @@ def _calibration_verdict(*, all_1t: bool, leak_max: float,
     return "CALIBRATION_PASS_FOR_COST_MODEL"
 
 
+CALIBRATION_L = 64  # the preregistered W4-G1 calibration lattice
+
+
+def _scale_decision(verdict: str, L: int) -> str:
+    """Production planning needs the L=64 contract run; smaller lattices are
+    smoke runs and never eligible (PR #51 Codex 2026-10-17)."""
+    if L != CALIBRATION_L:
+        return "NOT_A_CONTRACT_RUN_SMOKE_ONLY"
+    if verdict == "CALIBRATION_PASS_FOR_COST_MODEL":
+        return "ELIGIBLE_TO_PLAN_PRODUCTION_NOT_A_VALIDITY_PASS"
+    return "DO_NOT_SCALE_UNTIL_CALIBRATION_FAILURE_IS_RESOLVED"
+
+
 def _run_one_wl(L: int, walker: int, e_lo: float, e_hi: float,
                 temps: tuple[float, ...], master_seed: int) -> dict:
     _, nbr_list, ei, ej, ax, ay, n = _p41.honeycomb_arrays(L)
@@ -218,7 +231,7 @@ def run_phy044_calibration(
     independent walkers in parallel after this calibration is accepted.
     """
     temps = _validate_inputs(L, n_wl_walkers, temps)
-    if wolff_n_seeds < 2:
+    if isinstance(wolff_n_seeds, bool) or not isinstance(wolff_n_seeds, int) or wolff_n_seeds < 2:
         # The Wolff SEM uses ddof=1; one seed gives NaN, which would let the
         # verdict pass without the mandatory Wolff SEM. Refuse before the
         # expensive run (PR #51 Codex round 2026-10-16).
@@ -314,11 +327,7 @@ def run_phy044_calibration(
         "wolff_crosscheck": wolff,
         "comparison": comparison,
         "verdict": verdict,
-        "scale_decision": (
-            "ELIGIBLE_TO_PLAN_PRODUCTION_NOT_A_VALIDITY_PASS"
-            if verdict == "CALIBRATION_PASS_FOR_COST_MODEL"
-            else "DO_NOT_SCALE_UNTIL_CALIBRATION_FAILURE_IS_RESOLVED"
-        ),
+        "scale_decision": _scale_decision(verdict, L),
         "runtime_s_total": time.perf_counter() - total_t0,
     }
 

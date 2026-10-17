@@ -187,6 +187,13 @@ def _w4_validate_walker_plan(walkers: dict[int, int],
             f"{min_walkers} Walker je L; unzureichend: {bad}")
 
 
+def _pair_quotable(tb, dom_a, dom_b, leak_ok: bool, unc_ok: bool) -> bool:
+    """W4-G2: a crossing is quotable only inside both domains AND with both
+    coverage gates passed (PR #51 Codex 2026-10-17: a coverage-failing run
+    used to print QUOTIERBAR)."""
+    return bool(leak_ok) and bool(unc_ok) and _pair_inside_domains(tb, dom_a, dom_b)
+
+
 def _pair_inside_domains(
     tb: float | None,
     bounds_a: tuple[float, float] | None,
@@ -469,8 +476,8 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
         tb = tbkt_pair_from_curves(t_grid, main_curve[La]["y2"], La,
                                    main_curve[Lb]["y2"], Lb)
         pair_tbkt[(La, Lb)] = tb
-        q = _pair_inside_domains(
-            tb, effective_domain_bounds.get(La), effective_domain_bounds.get(Lb))
+        q = _pair_quotable(tb, effective_domain_bounds.get(La),
+                           effective_domain_bounds.get(Lb), leak_ok, unc_ok)
         pair_quotable[(La, Lb)] = q
         if tb is None:
             print(f"      T_BKT({La},{Lb}): kein Nulldurchgang im T-Fenster")

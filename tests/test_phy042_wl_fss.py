@@ -186,3 +186,12 @@ def test_partial_phy032_grid_never_installs_the_fallback_domain():
     assert phy042._phy032_fallback_bounds(rows, True) == (0.57, 0.61)
     assert phy042._phy032_fallback_bounds(rows + [{"T": 0.65, "ok": False}], True) is None
     assert phy042._phy032_fallback_bounds([], True) is None
+
+
+def test_pair_quotable_requires_both_coverage_gates():
+    a, b = (0.56, 0.59), (0.56, 0.59)
+    assert phy042._pair_quotable(0.575, a, b, True, True)
+    assert not phy042._pair_quotable(0.575, a, b, False, True)
+    assert not phy042._pair_quotable(0.575, a, b, True, False)
+    assert not phy042._pair_quotable(0.61, a, b, True, True)
+
