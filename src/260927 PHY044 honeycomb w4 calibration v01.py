@@ -223,6 +223,13 @@ def run_phy044_calibration(
         # verdict pass without the mandatory Wolff SEM. Refuse before the
         # expensive run (PR #51 Codex round 2026-10-16).
         raise ValueError("Wolff-Quercheck braucht mindestens 2 Seeds (SEM mit ddof=1)")
+    # An empty measurement budget averages empty arrays to NaN; the Wolff values
+    # never enter the verdict, so the mandatory cross-check would be serialized as
+    # null under a passing verdict (PR #51 Codex round 2026-10-17).
+    if isinstance(wolff_n_measure, bool) or not isinstance(wolff_n_measure, int) or wolff_n_measure < 1:
+        raise ValueError("wolff_n_measure muss eine ganze Zahl >= 1 sein")
+    if isinstance(wolff_n_burn, bool) or not isinstance(wolff_n_burn, int) or wolff_n_burn < 0:
+        raise ValueError("wolff_n_burn muss eine ganze Zahl >= 0 sein")
     total_t0 = time.perf_counter()
 
     # Shared anchor/window: same binning for every walker.

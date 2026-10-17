@@ -86,6 +86,15 @@ def test_single_wolff_seed_is_refused_before_the_run() -> None:
         phy044.run_phy044_calibration(L=8, n_wl_walkers=2, wolff_n_seeds=1)
 
 
+@pytest.mark.parametrize("kw", [dict(wolff_n_measure=0), dict(wolff_n_measure=-3),
+                                dict(wolff_n_measure=2.5), dict(wolff_n_measure=True),
+                                dict(wolff_n_burn=-1)])
+def test_empty_or_invalid_wolff_budget_is_refused_before_the_run(kw) -> None:
+    """An empty Wolff budget gives NaN Y2/SEM that would be serialized as null."""
+    with pytest.raises(ValueError, match="wolff_n_"):
+        phy044.run_phy044_calibration(L=8, n_wl_walkers=2, **kw)
+
+
 def test_provenance_records_spec7_fields_bound_to_the_samplers() -> None:
     prov = phy044._provenance(16, 2, 3)
     for key in ("git_commit", "git_dirty", "python_version", "numpy_version",

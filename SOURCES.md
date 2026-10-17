@@ -288,3 +288,10 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 |---|---|---|---|
 | A590AA9E3D2AFA0E | 2026-10-17 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (007acc2 R7: Kalibrier-Gate an wahre Vergleiche gebunden, NaN faellt geschlossen; np.max statt max()) |
 | B60BBAC5973AFE5A | 2026-10-17 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression: NaN in leak/uncovered/spread ergibt nie PASS) |
+
+### PR #51 Wolff-Budget-Gate PHY044 2026-10-17 (Codex)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| C5FA247C144F72CD | 2026-10-17 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (PR #51 Codex 2026-10-17: leeres/ungueltiges Wolff-Messbudget vor dem Lauf abgewiesen) |
+| FC4C9C28C1786D2A | 2026-10-17 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression: wolff_n_measure <= 0, nicht ganzzahlig, bool und wolff_n_burn < 0 abgewiesen) |
