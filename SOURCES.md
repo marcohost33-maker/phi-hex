@@ -281,3 +281,10 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | F246426E3F54BC46 | 2026-10-16 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression: radii=(2,9)/n_measure=1/n_seeds=4 ist nicht der Pilot) |
 | 955544E84575E048 | 2026-10-16 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (PR #51 Codex 2026-10-16: Spec-§7-Provenienz (Commit, Versionen, lnf_final, Stream-IDs) im Report; wolff_n_seeds>=2 vor dem Lauf) |
 | 3E49E1799F7EA082 | 2026-10-16 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression: 1 Wolff-Seed wird vor dem Lauf abgewiesen; Provenienz an Sampler-Konstanten gebunden) |
+
+### PR #51 NaN-Gate PHY044 2026-10-17 (007acc2 R7)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| A590AA9E3D2AFA0E | 2026-10-17 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (007acc2 R7: Kalibrier-Gate an wahre Vergleiche gebunden, NaN faellt geschlossen; np.max statt max()) |
+| B60BBAC5973AFE5A | 2026-10-17 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression: NaN in leak/uncovered/spread ergibt nie PASS) |

@@ -69,6 +69,17 @@ def test_calibration_verdict_contract():
     assert phy044._calibration_verdict(**x) == "CALIBRATION_NEEDS_MORE_WL"
 
 
+def test_calibration_verdict_nan_fails_closed():
+    common = dict(all_1t=True, leak_max=1e-6, uncovered_max=1e-6, max_y2_spread=0.01)
+    nan = float("nan")
+    for key, expected in (("leak_max", "CALIBRATION_FAIL_COVERAGE"),
+                          ("uncovered_max", "CALIBRATION_FAIL_COVERAGE"),
+                          ("max_y2_spread", "CALIBRATION_NEEDS_MORE_WL")):
+        x = dict(common)
+        x[key] = nan
+        assert phy044._calibration_verdict(**x) == expected, key
+
+
 def test_single_wolff_seed_is_refused_before_the_run() -> None:
     """ddof=1 SEM needs >= 2 seeds; refusal must come before any sampling."""
     with pytest.raises(ValueError, match="mindestens 2 Seeds"):

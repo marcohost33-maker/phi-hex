@@ -129,9 +129,11 @@ def _calibration_verdict(*, all_1t: bool, leak_max: float,
     """Pure, pre-registered stop/continue gate; never yields a T_BKT claim."""
     if not all_1t:
         return "CALIBRATION_FAIL_1T_NOT_ENGAGED"
-    if leak_max >= MASS_LIMIT or uncovered_max >= MASS_LIMIT:
+    # Each accepting branch is bound to a TRUE comparison, so NaN fails closed
+    # (``NaN >= limit`` is False and used to fall through to PASS; 007acc2 R7).
+    if not (leak_max < MASS_LIMIT and uncovered_max < MASS_LIMIT):
         return "CALIBRATION_FAIL_COVERAGE"
-    if max_y2_spread >= SPREAD_LIMIT:
+    if not max_y2_spread < SPREAD_LIMIT:
         return "CALIBRATION_NEEDS_MORE_WL"
     return "CALIBRATION_PASS_FOR_COST_MODEL"
 
@@ -240,8 +242,9 @@ def run_phy044_calibration(
     y2 = np.asarray([w["y2"] for w in walkers], dtype=float)
     y2_spread = y2.max(axis=0) - y2.min(axis=0)
     max_spread = float(y2_spread.max())
-    leak_max = max(max(w["leak"]) for w in walkers)
-    uncovered_max = max(max(w["uncovered_mass"]) for w in walkers)
+    # np.max propagates NaN; the builtin max() drops it depending on the order.
+    leak_max = float(np.max(np.concatenate([w["leak"] for w in walkers])))
+    uncovered_max = float(np.max(np.concatenate([w["uncovered_mass"] for w in walkers])))
     all_1t = all(w["one_over_t_engaged"] and w["sweeps_at_1t"] > 0
                  for w in walkers)
 
