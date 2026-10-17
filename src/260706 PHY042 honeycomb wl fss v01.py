@@ -187,11 +187,27 @@ def _w4_validate_walker_plan(walkers: dict[int, int],
             f"{min_walkers} Walker je L; unzureichend: {bad}")
 
 
+def _pair_reason(tb, dom_a, dom_b, leak_ok: bool, unc_ok: bool) -> str:
+    """W4-G2 verdict for one crossing, with the specific failed gate.
+
+    Coverage gates come first: a crossing inside both domains is still not
+    evidence when the energy window leaks or leaves canonical mass uncovered,
+    and that failure needs a different repair than a domain miss (PR #51
+    Codex 2026-10-17)."""
+    if tb is None:
+        return "NO_CROSSING"
+    if not leak_ok:
+        return "COVERAGE_LEAK"
+    if not unc_ok:
+        return "COVERAGE_UNCOVERED"
+    if not _pair_inside_domains(tb, dom_a, dom_b):
+        return "OUTSIDE_DOMAIN"
+    return "QUOTABLE"
+
+
 def _pair_quotable(tb, dom_a, dom_b, leak_ok: bool, unc_ok: bool) -> bool:
-    """W4-G2: a crossing is quotable only inside both domains AND with both
-    coverage gates passed (PR #51 Codex 2026-10-17: a coverage-failing run
-    used to print QUOTIERBAR)."""
-    return bool(leak_ok) and bool(unc_ok) and _pair_inside_domains(tb, dom_a, dom_b)
+    """Quotable only inside both domains AND with both coverage gates passed."""
+    return _pair_reason(tb, dom_a, dom_b, leak_ok, unc_ok) == "QUOTABLE"
 
 
 def _pair_inside_domains(
@@ -472,19 +488,26 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
              if Ls[j] > Ls[i]]
     pair_tbkt = {}
     pair_quotable = {}
+    pair_reason = {}
     for La, Lb in pairs:
         tb = tbkt_pair_from_curves(t_grid, main_curve[La]["y2"], La,
                                    main_curve[Lb]["y2"], Lb)
         pair_tbkt[(La, Lb)] = tb
-        q = _pair_quotable(tb, effective_domain_bounds.get(La),
-                           effective_domain_bounds.get(Lb), leak_ok, unc_ok)
+        reason = _pair_reason(tb, effective_domain_bounds.get(La),
+                              effective_domain_bounds.get(Lb), leak_ok, unc_ok)
+        q = reason == "QUOTABLE"
         pair_quotable[(La, Lb)] = q
+        pair_reason[(La, Lb)] = reason
         if tb is None:
             print(f"      T_BKT({La},{Lb}): kein Nulldurchgang im T-Fenster")
         else:
-            tag = ("QUOTIERBAR" if q else
-                   "NR: Crossing ausserhalb oder ohne zwei belegte "
-                   "Domaenen")
+            tag = {
+                "QUOTABLE": "QUOTIERBAR",
+                "COVERAGE_LEAK": "NR: Coverage-Gate Kantenleck verfehlt",
+                "COVERAGE_UNCOVERED": "NR: Coverage-Gate Restmasse verfehlt",
+                "OUTSIDE_DOMAIN": "NR: Crossing ausserhalb oder ohne zwei "
+                                  "belegte Domaenen",
+            }[reason]
             print(f"      T_BKT({La},{Lb}) = {tb:.4f}  "
                   f"(vs Multi-Lattice 0.573: "
                   f"{(tb - 0.573) / 0.573 * 100:+.2f}%)  [{tag}]")
@@ -579,9 +602,14 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
           "sampler-limitiert (Walker-Spread bis "
           f"{max_spread:.2f}); "
           "Validitaets-Domaenen oben ausgewiesen.")
+    nr_cov = [f"({a},{b})" for (a, b) in pairs
+              if pair_reason.get((a, b)) in ("COVERAGE_LEAK", "COVERAGE_UNCOVERED")]
+    if nr_cov:
+        print(f"    - Coverage: Paare {', '.join(nr_cov)} scheitern am Leck-/"
+              "Restmassen-Gate -- Energiefenster/Produktionsabdeckung "
+              "reparieren, nicht die Domaenen.")
     nr02 = [f"({a},{b})" for (a, b) in pairs
-            if pair_tbkt.get((a, b)) is not None
-            and not pair_quotable.get((a, b))]
+            if pair_reason.get((a, b)) == "OUTSIDE_DOMAIN"]
     if nr02:
         print(f"    - NR-PHY042-02: Paare {', '.join(nr02)} crossen "
               "ausserhalb der Domaene - bei diesem Statistik-Budget "
@@ -639,6 +667,7 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
                                   for (a, b), v in pair_tbkt.items()},
         "pair_quotable": {f"{a}_{b}": bool(v)
                           for (a, b), v in pair_quotable.items()},
+        "pair_reason": {f"{a}_{b}": v for (a, b), v in pair_reason.items()},
         "walker_pair_tbkt": {f"{a}_{b}": v
                              for (a, b), v in walker_pairs.items()},
         "phy041_pairs": {f"{a}_{b}": v for (a, b), v in PHY041_PAIRS.items()},

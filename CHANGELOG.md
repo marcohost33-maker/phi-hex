@@ -51,8 +51,9 @@ crossing method v01.md` + `spec/260710 PHI HEX code audit v01.md` §4.
   oberhalb 1.41, Merge-Region intakt, KEIN Splay unter 1.40. Qualitativ
   konsistent mit der Referenz-Lage 1.418; KEINE Stuetzung fuer ein wahres
   T_BKT beim per-Site-Wert 1.4007 oder darunter.
-- **NR-PHY043-01:** keine 1%-Diskriminierung bei diesem Budget
-  (Splay-Lagen sind logarithmisch driftende obere Schranken). O1 bleibt
+- **NR-PHY043-01:** 1%-Diskriminierung bei diesem Budget UNBEWERTET
+  (keine Power-Analyse; Splay-Lagen sind logarithmisch driftende obere
+  Schranken; Korrektur 2026-10-17 nach PR #51 Codex). O1 bleibt
   formal offen (naechster Pfad: Konventions-Nachweis je Referenz in
   SOURCES.md); kein per-Site-Code-Fix bis dahin.
 - Methodische Leitplanken: adjacent-Crossings nach M1/P2-Vertrag,

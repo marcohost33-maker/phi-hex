@@ -115,3 +115,9 @@ def test_scale_decision_only_from_the_l64_contract_run():
     assert phy044._scale_decision(ok, 8) == "NOT_A_CONTRACT_RUN_SMOKE_ONLY"
     assert phy044._scale_decision("CALIBRATION_NEEDS_MORE_WL", 64).startswith("DO_NOT_SCALE")
 
+
+@pytest.mark.parametrize("L, walkers", [(64, 2.5), (64, float("nan")), (64, True), (8.5, 2), (True, 2)])
+def test_non_integral_walkers_or_lattice_are_refused(L, walkers):
+    with pytest.raises(ValueError):
+        phy044._validate_inputs(L, walkers, (0.565, 0.575))
+

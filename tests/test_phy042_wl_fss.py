@@ -195,3 +195,12 @@ def test_pair_quotable_requires_both_coverage_gates():
     assert not phy042._pair_quotable(0.575, a, b, True, False)
     assert not phy042._pair_quotable(0.61, a, b, True, True)
 
+
+def test_pair_reason_names_the_failed_gate():
+    a, b = (0.56, 0.59), (0.56, 0.59)
+    assert phy042._pair_reason(None, a, b, True, True) == "NO_CROSSING"
+    assert phy042._pair_reason(0.575, a, b, False, True) == "COVERAGE_LEAK"
+    assert phy042._pair_reason(0.575, a, b, True, False) == "COVERAGE_UNCOVERED"
+    assert phy042._pair_reason(0.61, a, b, True, True) == "OUTSIDE_DOMAIN"
+    assert phy042._pair_reason(0.575, a, b, True, True) == "QUOTABLE"
+

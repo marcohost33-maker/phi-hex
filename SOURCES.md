@@ -304,3 +304,12 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | 6DE898DB6E6C7F2A | 2026-10-17 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (PR #51 Codex: Seeds ganzzahlig >=2; Skalenfreigabe nur aus dem L=64-Vertragslauf) |
 | 9B7D11BD4FA5F7FE | 2026-10-17 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression _pair_quotable mit Leck-/Restmassen-Gate) |
 | 868E97A857818F99 | 2026-10-17 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression Seeds-Typpruefung und _scale_decision) |
+
+### PR #51 Codex-Runde 2026-10-17 (Kopf ddaaeb7)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| FF3A7798C8D29D75 | 2026-10-17 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (PR #51 Codex: _pair_reason nennt das verfehlte Gate, NR-PHY042-02 nur fuer Domaenen-Faelle) |
+| C50E233C69205D4E | 2026-10-17 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (PR #51 Codex: L und WL-Walker ganzzahlig vor dem Lauf) |
+| 2EEE7BC293C01B44 | 2026-10-17 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression _pair_reason) |
+| 61124CA1A06DDCEC | 2026-10-17 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression ganzzahlige L/Walker) |

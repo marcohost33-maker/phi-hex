@@ -71,10 +71,10 @@ def _prod_sweeps_for(nbins: int) -> int:
 
 
 def _validate_inputs(L: int, n_wl_walkers: int, temps) -> tuple[float, ...]:
-    if L < 8:
-        raise ValueError("L muss >=8 sein")
-    if n_wl_walkers < 2:
-        raise ValueError("Kalibrierung braucht mindestens 2 WL-Walker")
+    if isinstance(L, bool) or not isinstance(L, int) or L < 8:
+        raise ValueError("L muss eine ganze Zahl >=8 sein")
+    if isinstance(n_wl_walkers, bool) or not isinstance(n_wl_walkers, int) or n_wl_walkers < 2:
+        raise ValueError("Kalibrierung braucht mindestens 2 WL-Walker (ganze Zahl)")
     ts = tuple(float(t) for t in temps)
     if not ts or any((not math.isfinite(t) or t <= 0.0) for t in ts):
         raise ValueError("temps muessen endlich und >0 sein")
