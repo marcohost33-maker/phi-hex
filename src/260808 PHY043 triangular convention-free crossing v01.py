@@ -501,7 +501,9 @@ def _clean(o):
 PILOT_LATTICES_L = (9, 13, 19)
 PILOT_N_MEASURE = 400
 PILOT_N_SEEDS = 4
-PILOT_T_MAX = 1.58
+# Spec §4: the pilot ran the production window minus its +0.12 extension,
+# i.e. 1.36..1.58 in steps of 0.02 (12 points).
+PILOT_TEMPS = tuple(round(1.36 + 0.02 * k, 2) for k in range(12))
 
 
 def _is_pilot_budget(n_seeds: int, lattices_L, n_measure: int, temperatures) -> bool:
@@ -511,8 +513,10 @@ def _is_pilot_budget(n_seeds: int, lattices_L, n_measure: int, temperatures) -> 
         tuple(sorted(int(x) for x in lattices_L)) == PILOT_LATTICES_L
         and int(n_measure) == PILOT_N_MEASURE
         and int(n_seeds) == PILOT_N_SEEDS
-        # grid step 0.02; 1e-9 absorbs float64 grid construction only
-        and max(float(t) for t in temperatures) <= PILOT_T_MAX + 1e-9
+        # the complete grid, not just its maximum (PR #51 Codex 2026-10-17);
+        # 1e-9 absorbs float64 grid construction only
+        and len(temperatures) == len(PILOT_TEMPS)
+        and all(abs(float(t) - p) <= 1e-9 for t, p in zip(sorted(temperatures), PILOT_TEMPS))
     )
 
 

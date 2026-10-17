@@ -327,3 +327,10 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 |---|---|---|---|
 | C78F8BF0F6653FB9 | 2026-10-17 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (NR-PHY043-01 nur beim bewerteten Pilot-Budget, sonst UNBEWERTET) |
 | C5A754BCFED90232 | 2026-10-17 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression _no_splay_finding) |
+
+### PR #51 Codex-Runde 2026-10-17 (Kopf 9bb54da)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| 080458CC9AB9ABE9 | 2026-10-17 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (Pilot-Budget verlangt das vollstaendige vorregistrierte T-Gitter 1.36..1.58) |
+| DD6F4C85607F04C2 | 2026-10-17 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression verkuerzte Gitter sind kein Pilot) |
