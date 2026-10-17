@@ -246,6 +246,10 @@ def run_phy044_calibration(
         raise ValueError("wolff_n_measure muss eine ganze Zahl >= 1 sein")
     if isinstance(wolff_n_burn, bool) or not isinstance(wolff_n_burn, int) or wolff_n_burn < 0:
         raise ValueError("wolff_n_burn muss eine ganze Zahl >= 0 sein")
+    # Provenance of the code that produces the walkers, captured BEFORE the
+    # long run: a checkout or edit during sampling must not be recorded
+    # instead (PR #51 Codex 2026-10-17).
+    provenance = _provenance(L, n_wl_walkers, wolff_n_seeds)
     total_t0 = time.perf_counter()
 
     # Shared anchor/window: same binning for every walker.
@@ -310,7 +314,7 @@ def run_phy044_calibration(
         "production_walker_requirement_met": n_wl_walkers >= 3,
         "calibration_is_not_production_validity": True,
         "master_seed": master_seed,
-        "provenance": _provenance(L, n_wl_walkers, wolff_n_seeds),
+        "provenance": provenance,
         "temperatures": list(temps),
         "window": {
             "anchor_lo": {"T": 0.50, "mean_ps": lo_mean, "std_ps": lo_std},

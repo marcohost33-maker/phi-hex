@@ -447,7 +447,7 @@ def run_phy043(radii=(4, 6, 9, 12),
     ts_largest = analysis["xi_ratio"][largest_pair]["T_splay"]
     print("\nFINDING (kein Gate, kein Bestwert-Claim):")
     if ts_largest is None:
-        print("  " + _no_splay_finding(n_seeds, Ls, n_measure, T_grid))
+        print("  " + _no_splay_finding(n_seeds, Ls, n_measure, T_grid, n_burn))
     else:
         print(f"  xi_2/L-Splay {largest_pair} beginnt bei T={ts_largest:.2f}; "
               f"Einordnung relativ zu intern {INTERNAL_PER_SITE} und "
@@ -501,18 +501,21 @@ def _clean(o):
 PILOT_LATTICES_L = (9, 13, 19)
 PILOT_N_MEASURE = 400
 PILOT_N_SEEDS = 4
+PILOT_N_BURN = 300  # PHY030 v02 pilot budget (n_burn=300)
 # Spec §4: the pilot ran the production window minus its +0.12 extension,
 # i.e. 1.36..1.58 in steps of 0.02 (12 points).
 PILOT_TEMPS = tuple(round(1.36 + 0.02 * k, 2) for k in range(12))
 
 
-def _is_pilot_budget(n_seeds: int, lattices_L, n_measure: int, temperatures) -> bool:
+def _is_pilot_budget(n_seeds: int, lattices_L, n_measure: int, temperatures,
+                     n_burn: int) -> bool:
     """True only for the documented pilot of Spec §4 (the one budget whose
     1%-power limit is assessed)."""
     return (
         tuple(sorted(int(x) for x in lattices_L)) == PILOT_LATTICES_L
         and int(n_measure) == PILOT_N_MEASURE
         and int(n_seeds) == PILOT_N_SEEDS
+        and int(n_burn) == PILOT_N_BURN
         # the complete grid, not just its maximum (PR #51 Codex 2026-10-17);
         # 1e-9 absorbs float64 grid construction only
         and len(temperatures) == len(PILOT_TEMPS)
@@ -520,14 +523,15 @@ def _is_pilot_budget(n_seeds: int, lattices_L, n_measure: int, temperatures) -> 
     )
 
 
-def _no_splay_finding(n_seeds: int, lattices_L, n_measure: int, temperatures) -> str:
+def _no_splay_finding(n_seeds: int, lattices_L, n_measure: int, temperatures,
+                      n_burn: int) -> str:
     """Finding text when the largest pair shows no splay.
 
     The NR-PHY043-01 label ("not discriminating") needs an assessed power
     limit, which exists only for the pilot budget; any other budget reports
     the missing splay with discrimination UNASSESSED (PR #51 Codex 2026-10-17).
     """
-    if _is_pilot_budget(n_seeds, lattices_L, n_measure, temperatures):
+    if _is_pilot_budget(n_seeds, lattices_L, n_measure, temperatures, n_burn):
         return ("NR-PHY043-01: kein persistenter xi_2/L-Splay im Fenster -- "
                 "bei diesem Pilot-Budget nicht diskriminierend; O1 bleibt offen.")
     return ("Kein persistenter xi_2/L-Splay im Fenster; Diskriminierung bei "
@@ -535,7 +539,7 @@ def _no_splay_finding(n_seeds: int, lattices_L, n_measure: int, temperatures) ->
 
 
 def _power_limit_note(n_seeds: int, lattices_L, n_measure: int,
-                      temperatures) -> str:
+                      temperatures, n_burn: int) -> str:
     """Do not infer discrimination power from arbitrary run metadata.
 
     Spec §6's negative 1%-power statement belongs only to the documented
@@ -545,7 +549,7 @@ def _power_limit_note(n_seeds: int, lattices_L, n_measure: int,
     explicit uncertainty or power analysis.
     """
     max_L = max(lattices_L)
-    if _is_pilot_budget(n_seeds, lattices_L, n_measure, temperatures):
+    if _is_pilot_budget(n_seeds, lattices_L, n_measure, temperatures, n_burn):
         return (
             "n_seeds=4, L<=19: keine 1%-Diskriminierung erwartet "
             "(fixierter Pilot-Vertrag, Spec §6)."
@@ -622,7 +626,7 @@ def write_report(report: dict, path: Path) -> None:
     if ts is None:
         lines.append("  " + _no_splay_finding(
             int(w["n_seeds"]), report["lattices_L"],
-            int(w["n_measure"]), report["temperatures"]))
+            int(w["n_measure"]), report["temperatures"], int(w["n_burn"])))
         lines.append("  Naechster Pfad: Konventions-Nachweis je Referenz in SOURCES.md.")
     else:
         lines.append(f"  xi_2/L-Splay {largest} beginnt bei T={ts:.2f} "
@@ -642,7 +646,7 @@ def write_report(report: dict, path: Path) -> None:
     lines.append(
         "  - " + _power_limit_note(
             int(w["n_seeds"]), report["lattices_L"],
-            int(w["n_measure"]), report["temperatures"]))
+            int(w["n_measure"]), report["temperatures"], int(w["n_burn"])))
     lines.append("  - Universeller (xi_2/L)*-Anker bewusst NICHT verwendet "
                  "(Rhombus-Torus,")
     lines.append("    tau=exp(i pi/3) — Hasenbusch-Wert gilt fuer tau=i).")

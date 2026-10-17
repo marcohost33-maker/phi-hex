@@ -177,10 +177,14 @@ def _w4_validate_walker_plan(walkers: dict[int, int],
     Issue #45 trennt damit explizit eine Ein-Walker-Bruecke von einer
     gemessenen Walker-Validitaetsdomaene.
     """
-    if min_walkers < 3:
+    # NaN/float thresholds or counts made every comparison False and let a
+    # one-walker run pass (PR #51 Codex 2026-10-17): integers only.
+    if isinstance(min_walkers, bool) or not isinstance(min_walkers, int) or min_walkers < 3:
         raise ValueError(
-            "W4-Produktionspreflight darf min_walkers nicht unter 3 setzen")
-    bad = {L: n for L, n in walkers.items() if n < min_walkers}
+            "W4-Produktionspreflight darf min_walkers nicht unter 3 setzen "
+            "(ganze Zahl)")
+    bad = {L: n for L, n in walkers.items()
+           if isinstance(n, bool) or not isinstance(n, int) or n < min_walkers}
     if bad:
         raise ValueError(
             "W4 braucht mindestens "

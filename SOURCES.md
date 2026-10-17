@@ -334,3 +334,13 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 |---|---|---|---|
 | 080458CC9AB9ABE9 | 2026-10-17 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (Pilot-Budget verlangt das vollstaendige vorregistrierte T-Gitter 1.36..1.58) |
 | DD6F4C85607F04C2 | 2026-10-17 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression verkuerzte Gitter sind kein Pilot) |
+
+### PR #51 Codex-Runde 2026-10-17 (Kopf 2407642)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| 0B33D08E2E4F8B28 | 2026-10-17 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (W4-Walker-Preflight nur ganzzahlig) |
+| F84E07F7EDCA026F | 2026-10-17 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (Pilot-Abgleich inkl. n_burn=300) |
+| 378728494242449F | 2026-10-17 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (Provenienz vor dem Lauf erfasst) |
+| 0716152C48C788F3 | 2026-10-17 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression nicht-ganzzahlige Walker) |
+| D56E2C85959D1197 | 2026-10-17 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression Burn-in im Pilot-Abgleich) |

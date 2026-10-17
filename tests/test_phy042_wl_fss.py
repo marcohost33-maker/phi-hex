@@ -204,3 +204,13 @@ def test_pair_reason_names_the_failed_gate():
     assert phy042._pair_reason(0.61, a, b, True, True) == "OUTSIDE_DOMAIN"
     assert phy042._pair_reason(0.575, a, b, True, True) == "QUOTABLE"
 
+
+
+def test_w4_walker_preflight_rejects_non_integral_values():
+    nan = float("nan")
+    for bad in ({64: nan}, {64: 2.5}, {64: True}):
+        with pytest.raises(ValueError):
+            phy042._w4_validate_walker_plan(bad)
+    for thr in (nan, 3.5, True):
+        with pytest.raises(ValueError):
+            phy042._w4_validate_walker_plan({64: 1}, min_walkers=thr)

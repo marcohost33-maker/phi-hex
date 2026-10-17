@@ -206,7 +206,7 @@ def test_run_phy043_smoke_structure(tmp_path) -> None:
 
 def test_power_limit_note_is_scoped_to_fixed_pilot_budget() -> None:
     pilot_T = [1.36 + 0.02 * k for k in range(12)]
-    pilot = phy043._power_limit_note(4, [9, 13, 19], 400, pilot_T)
+    pilot = phy043._power_limit_note(4, [9, 13, 19], 400, pilot_T, 300)
     assert "keine 1%-Diskriminierung erwartet" in pilot
     cases = (
         (8, [9, 13, 19, 25], 800, pilot_T),
@@ -220,17 +220,18 @@ def test_power_limit_note_is_scoped_to_fixed_pilot_budget() -> None:
         (4, [9, 13, 19], 400, pilot_T + [1.70]),
     )
     for n_seeds, lattices, n_measure, temps in cases:
-        note = phy043._power_limit_note(n_seeds, lattices, n_measure, temps)
+        note = phy043._power_limit_note(n_seeds, lattices, n_measure, temps, 300)
         assert "UNASSESSED" in note
         assert "allein aus Laufmetadaten" in note
 
 
 def test_no_splay_nr_label_only_for_the_assessed_pilot_budget() -> None:
     pilot_T = [1.36 + 0.02 * k for k in range(12)]
-    pilot = phy043._no_splay_finding(4, [9, 13, 19], 400, pilot_T)
+    pilot = phy043._no_splay_finding(4, [9, 13, 19], 400, pilot_T, 300)
     assert pilot.startswith("NR-PHY043-01")
     for short in ([1.58], pilot_T[:-1], [1.40 + 0.02 * k for k in range(10)]):
-        assert not phy043._is_pilot_budget(4, [9, 13, 19], 400, short)
-    production = phy043._no_splay_finding(8, [9, 13, 19, 25], 400, pilot_T)
+        assert not phy043._is_pilot_budget(4, [9, 13, 19], 400, short, 300)
+    assert not phy043._is_pilot_budget(4, [9, 13, 19], 400, pilot_T, 0)  # burn-in differs
+    production = phy043._no_splay_finding(8, [9, 13, 19, 25], 400, pilot_T, 300)
     assert "NR-PHY043" not in production and "UNBEWERTET" in production
 
