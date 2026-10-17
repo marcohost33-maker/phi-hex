@@ -313,3 +313,10 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | C50E233C69205D4E | 2026-10-17 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (PR #51 Codex: L und WL-Walker ganzzahlig vor dem Lauf) |
 | 2EEE7BC293C01B44 | 2026-10-17 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression _pair_reason) |
 | 61124CA1A06DDCEC | 2026-10-17 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression ganzzahlige L/Walker) |
+
+### PR #51 Codex-Runde 2026-10-17 (Kopf d83c61e)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| CC310B3F4C55C6E3 | 2026-10-17 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (PR #51 Codex: Skalenentscheid nach bestandener Kalibrierung UNBEWERTET bis Wolff-/Kostenpruefung) |
+| 955028056A596D2D | 2026-10-17 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression _scale_decision UNASSESSED) |

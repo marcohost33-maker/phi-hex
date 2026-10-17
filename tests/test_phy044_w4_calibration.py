@@ -110,7 +110,7 @@ def test_provenance_records_spec7_fields_bound_to_the_samplers() -> None:
 
 def test_scale_decision_only_from_the_l64_contract_run():
     ok = "CALIBRATION_PASS_FOR_COST_MODEL"
-    assert phy044._scale_decision(ok, 64) == "ELIGIBLE_TO_PLAN_PRODUCTION_NOT_A_VALIDITY_PASS"
+    assert phy044._scale_decision(ok, 64) == "SCALE_UNASSESSED_PENDING_WOLFF_AND_COST_REVIEW"
     assert phy044._scale_decision(ok, 32) == "NOT_A_CONTRACT_RUN_SMOKE_ONLY"
     assert phy044._scale_decision(ok, 8) == "NOT_A_CONTRACT_RUN_SMOKE_ONLY"
     assert phy044._scale_decision("CALIBRATION_NEEDS_MORE_WL", 64).startswith("DO_NOT_SCALE")

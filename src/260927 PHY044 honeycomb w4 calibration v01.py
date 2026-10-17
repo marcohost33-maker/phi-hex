@@ -147,7 +147,10 @@ def _scale_decision(verdict: str, L: int) -> str:
     if L != CALIBRATION_L:
         return "NOT_A_CONTRACT_RUN_SMOKE_ONLY"
     if verdict == "CALIBRATION_PASS_FOR_COST_MODEL":
-        return "ELIGIBLE_TO_PLAN_PRODUCTION_NOT_A_VALIDITY_PASS"
+        # Spec §6: scaling also needs the Wolff comparison and information per
+        # runtime; no preregistered threshold exists for them, so a passing
+        # calibration leaves the scale decision UNASSESSED (PR #51 Codex 2026-10-17).
+        return "SCALE_UNASSESSED_PENDING_WOLFF_AND_COST_REVIEW"
     return "DO_NOT_SCALE_UNTIL_CALIBRATION_FAILURE_IS_RESOLVED"
 
 
