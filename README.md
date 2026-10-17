@@ -161,7 +161,7 @@ Ergebnis (vorab festgelegter Interpretations-Vertrag, Spec §6):
   1.4007 oder darunter — qualitativ konsistent mit der Referenz-Lage.
 - Adjacent-Crossings im Merge-Bereich sind ueberwiegend < 2 sigma
   (Rauschen, ehrlich mit Flanken-Signifikanz berichtet).
-- **NR-PHY043-01 (Grenze):** Splay-Temperaturen sind obere Schranken der
+- **Grenze PHY043 (kein NR-Label, Power unbewertet):** Splay-Temperaturen sind obere Schranken der
   Merge-Region und driften logarithmisch. Ob dieses Budget (8 Seeds, L=25)
   1.4007 und 1.418 auf 1% trennt, ist UNBEWERTET -- es gibt keine
   Power-Analyse dafuer (Power-Vertrag der PHY043-Methoden-Spec). O1 bleibt formal
@@ -224,7 +224,7 @@ dokumentiert und darf nicht als gemessene Spread-Domaene gelesen werden.
 2. Walker-robuster Upsilon_4-Dip fuer L>=32 (NR-PHY042-03 aufloesen), dann Dip-FSS Richtung T_BKT.
 3. Kein T_BKT-Bestwert-Claim ohne Cross-Family-Review.
 4. Square-V&V-Re-Baseline: mehr Statistik/groessere L, damit das 1%-Gate wieder belastbar bindet; PHY039-Dip-Fenster erweitern (Audit O-Punkte).
-5. O1 abschliessen: der MC-Quercheck-Teil ist mit PHY043 gelaufen (qualitativ konsistent mit Referenz-Lage, NR-PHY043-01: 1%-Diskriminierung unbewertet, keine Power-Analyse); offen bleibt der Konventions-Nachweis je zitierter Referenz (per-Spin vs per-Flaeche) in SOURCES.md. Bis dahin kein per-Site-Code-Fix.
+5. O1 abschliessen: der MC-Quercheck-Teil ist mit PHY043 gelaufen (qualitativ konsistent mit Referenz-Lage; 1%-Diskriminierung unbewertet, keine Power-Analyse, daher kein NR-Label); offen bleibt der Konventions-Nachweis je zitierter Referenz (per-Spin vs per-Flaeche) in SOURCES.md. Bis dahin kein per-Site-Code-Fix.
 6. Re-Run PHY030v02/PHY032/PHY033 mit Pol-Guard bei der naechsten Produktions-Runde (Audit-Punkt O4).
 7. Bei Neu-Produktion PHY040: L in den WL-Stream aufnehmen (O8) und PHY039 auf ungebuchte Stream-Basis 800+ heben (O3).
 
