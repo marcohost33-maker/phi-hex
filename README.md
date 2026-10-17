@@ -1,5 +1,40 @@
 # Phi-Hex
 
+[![ci](https://github.com/marcohost33-maker/phi-hex/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/marcohost33-maker/phi-hex/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Python >= 3.12](https://img.shields.io/badge/python-%E2%89%A5%203.12-blue.svg)](requirements-dev.txt)
+
+**English summary:** Phi-Hex studies the 2D XY model and the
+Berezinskii-Kosterlitz-Thouless (BKT) transition on triangular, honeycomb and
+kagome lattices, with the square lattice as a validation case. It uses the
+helicity modulus, Wolff cluster updates, Wang-Landau densities of states and
+finite-size scaling. It is a research pipeline with integrity gates, not a
+library; the numbers below are internal results, not published reference
+values. The documentation is in German.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/phy042_helicity_honeycomb_dark.png">
+  <img src="docs/figures/phy042_helicity_honeycomb_light.png" width="720"
+       alt="Helicity modulus versus temperature on the honeycomb lattice for L = 24, 32 and 48, with the BKT criterion line 2T/pi and the reference temperature 0.573">
+</picture>
+
+*Helicity modulus Υ(T) on the honeycomb lattice, L = 24/32/48 (Wang–Landau, PHY042), next to the
+BKT criterion Υ = 2T/π. Every point is read from the committed gate report
+`results/260707 PHY042 honeycomb wl-fss L24-32-48 gate report.json`. Faded segments lie outside
+the quotable domain. This is a pipeline result, **not** a new T_BKT best value (see *Mess-Stand*).
+Regenerate with `python docs/figures/make_readme_figure.py`.*
+
+**Was:** Phi-Hex misst die BKT-Uebergangstemperatur des 2D-XY-Modells auf
+Dreiecks-, Honeycomb- und Kagome-Gittern (Wolff, Wang-Landau, Finite-Size-Scaling).
+**Stand:** Forschungs-Pipeline mit Integritaets-Gates, keine publizierten Bestwerte.
+Die CI-Gates (ruff, compileall, `pytest -m "not slow"`) laufen gruen; nicht alle
+Mess-Gates: die Neu-Rechnungen PHY028/PHY039/PHY040 vom 2026-07-10 melden
+`OVERALL: FAIL` (1%-Validierungsanker, Dip ausserhalb des T-Fensters bzw.
+Finite-Size-Befund; siehe Audit-Hinweis unter *Mess-Stand*).
+Letztes Release: `v0.2.1` (2026-06-19); dieses README beschreibt den
+neueren Stand bis PHY043 (2026-08-08), der noch nicht als Release markiert ist.
+Zitieren: siehe [Zitieren](#zitieren).
+
 > **Status:** Forschungs-Repo (oeffentlich seit 2026-08-17) | XY/BKT-Physik auf Dreiecks-, Honeycomb- und Kagome-Gittern.  
 > **Lizenz:** Apache-2.0 | **Lineage/Provenance:** siehe `SOURCES.md`.  
 > **Aktueller Review-Stand:** Review-Nachtrag 2026-08-08 (`spec/260710 ... v01.md` §4): Messpipeline erneut gegen unabhaengige Orakel defektfrei; PHY040-M3-Guard, Lint-Baseline-Pin, O8/O9 inventarisiert. PHY043 (Audit O1): konventionsfreier Quercheck triangular — qualitativ konsistent mit der Referenz-Lage, keine 1%-Diskriminierung (siehe unten). Davor: Code-Audit 2026-07-10: P0-Geometrie-Fix im Quadratgitter (PHY028/039/040 neu gerechnet, V&V-Anker ehrlich auf ~1% herabgestuft), Pol-Guards in allen Paar-Schaetzern; PHY042/PR #20 als Pipeline-Finding, **kein neuer T_BKT-Bestwert** (Grenzen NR-PHY042-02/03).
@@ -175,6 +210,15 @@ SOURCES.md  Provenance / SHA-256
 5. O1 abschliessen: der MC-Quercheck-Teil ist mit PHY043 gelaufen (qualitativ konsistent mit Referenz-Lage, NR-PHY043-01: keine 1%-Diskriminierung); offen bleibt der Konventions-Nachweis je zitierter Referenz (per-Spin vs per-Flaeche) in SOURCES.md. Bis dahin kein per-Site-Code-Fix.
 6. Re-Run PHY030v02/PHY032/PHY033 mit Pol-Guard bei der naechsten Produktions-Runde (Audit-Punkt O4).
 7. Bei Neu-Produktion PHY040: L in den WL-Stream aufnehmen (O8) und PHY039 auf ungebuchte Stream-Basis 800+ heben (O3).
+
+## Zitieren
+
+Die Zitier-Metadaten stehen in [`CITATION.cff`](CITATION.cff). GitHub zeigt
+daraus rechts in der Seitenleiste den Eintrag **"Cite this repository"** mit
+APA- und BibTeX-Text. Bitte die verwendete Version bzw. den Commit-SHA mit
+angeben, weil sich der Mess-Stand zwischen Releases aendert. Wie oben gesagt:
+eine Zahl aus diesem README ist nur zusammen mit ihrer Spec in `spec/` und
+ihrem Lauf in `results/` zitierfaehig.
 
 ---
 *Coworker Research / Coworkerz | Repo-Anlage 2026-06-04 nach arbeitsschablone_forschungs-repo-anlage*
