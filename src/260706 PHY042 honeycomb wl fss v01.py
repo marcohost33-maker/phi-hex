@@ -191,7 +191,30 @@ def _w4_validate_walker_plan(walkers: dict[int, int],
             f"{min_walkers} Walker je L; unzureichend: {bad}")
 
 
-def _pair_reason(tb, dom_a, dom_b, leak_ok: bool, unc_ok: bool) -> str:
+def _bracket_in_common_domain(t_grid, y2_a, La, y2_b, Lb, tb,
+                              dom_a, dom_b) -> bool:
+    """W4-G2(4): the root finder may connect only adjacent VALID T points.
+
+    tbkt_pair_from_curves sees the unmasked curves and discards its bracket,
+    so the reported root is accepted only if the same root is found when the
+    search is restricted to the grid points inside BOTH domains (PR #51 Codex
+    2026-10-19: a domain ending between grid points must not quote a root
+    whose upper bracket point is uncovered).
+    """
+    if tb is None or dom_a is None or dom_b is None:
+        return False
+    lo = max(dom_a[0], dom_b[0])
+    hi = min(dom_a[1], dom_b[1])
+    idx = [k for k, T in enumerate(t_grid) if lo - 1e-12 <= float(T) <= hi + 1e-12]
+    if len(idx) < 2:
+        return False
+    s = slice(idx[0], idx[-1] + 1)  # t_grid ascends, so the slice is contiguous
+    sub = tbkt_pair_from_curves(t_grid[s], y2_a[s], La, y2_b[s], Lb)
+    return sub is not None and abs(sub - tb) <= 1e-12
+
+
+def _pair_reason(tb, dom_a, dom_b, leak_ok: bool, unc_ok: bool, *,
+                 bracket_valid: bool) -> str:
     """W4-G2 verdict for one crossing, with the specific failed gate.
 
     Coverage gates come first: a crossing inside both domains is still not
@@ -204,14 +227,16 @@ def _pair_reason(tb, dom_a, dom_b, leak_ok: bool, unc_ok: bool) -> str:
         return "COVERAGE_LEAK"
     if not unc_ok:
         return "COVERAGE_UNCOVERED"
-    if not _pair_inside_domains(tb, dom_a, dom_b):
+    if not (_pair_inside_domains(tb, dom_a, dom_b) and bracket_valid):
         return "OUTSIDE_DOMAIN"
     return "QUOTABLE"
 
 
-def _pair_quotable(tb, dom_a, dom_b, leak_ok: bool, unc_ok: bool) -> bool:
+def _pair_quotable(tb, dom_a, dom_b, leak_ok: bool, unc_ok: bool, *,
+                   bracket_valid: bool) -> bool:
     """Quotable only inside both domains AND with both coverage gates passed."""
-    return _pair_reason(tb, dom_a, dom_b, leak_ok, unc_ok) == "QUOTABLE"
+    return _pair_reason(tb, dom_a, dom_b, leak_ok, unc_ok,
+                        bracket_valid=bracket_valid) == "QUOTABLE"
 
 
 def _pair_inside_domains(
@@ -508,8 +533,13 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
         tb = tbkt_pair_from_curves(t_grid, main_curve[La]["y2"], La,
                                    main_curve[Lb]["y2"], Lb)
         pair_tbkt[(La, Lb)] = tb
-        reason = _pair_reason(tb, effective_domain_bounds.get(La),
-                              effective_domain_bounds.get(Lb), leak_ok, unc_ok)
+        dom_a = effective_domain_bounds.get(La)
+        dom_b = effective_domain_bounds.get(Lb)
+        bracket_ok = _bracket_in_common_domain(
+            t_grid, main_curve[La]["y2"], La, main_curve[Lb]["y2"], Lb, tb,
+            dom_a, dom_b)
+        reason = _pair_reason(tb, dom_a, dom_b, leak_ok, unc_ok,
+                              bracket_valid=bracket_ok)
         q = reason == "QUOTABLE"
         pair_quotable[(La, Lb)] = q
         pair_reason[(La, Lb)] = reason

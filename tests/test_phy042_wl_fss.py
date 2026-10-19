@@ -213,19 +213,19 @@ def test_contract_grid_matches_the_committed_phy032_report():
 
 def test_pair_quotable_requires_both_coverage_gates():
     a, b = (0.56, 0.59), (0.56, 0.59)
-    assert phy042._pair_quotable(0.575, a, b, True, True)
-    assert not phy042._pair_quotable(0.575, a, b, False, True)
-    assert not phy042._pair_quotable(0.575, a, b, True, False)
-    assert not phy042._pair_quotable(0.61, a, b, True, True)
+    assert phy042._pair_quotable(0.575, a, b, True, True, bracket_valid=True)
+    assert not phy042._pair_quotable(0.575, a, b, False, True, bracket_valid=True)
+    assert not phy042._pair_quotable(0.575, a, b, True, False, bracket_valid=True)
+    assert not phy042._pair_quotable(0.61, a, b, True, True, bracket_valid=True)
 
 
 def test_pair_reason_names_the_failed_gate():
     a, b = (0.56, 0.59), (0.56, 0.59)
-    assert phy042._pair_reason(None, a, b, True, True) == "NO_CROSSING"
-    assert phy042._pair_reason(0.575, a, b, False, True) == "COVERAGE_LEAK"
-    assert phy042._pair_reason(0.575, a, b, True, False) == "COVERAGE_UNCOVERED"
-    assert phy042._pair_reason(0.61, a, b, True, True) == "OUTSIDE_DOMAIN"
-    assert phy042._pair_reason(0.575, a, b, True, True) == "QUOTABLE"
+    assert phy042._pair_reason(None, a, b, True, True, bracket_valid=True) == "NO_CROSSING"
+    assert phy042._pair_reason(0.575, a, b, False, True, bracket_valid=True) == "COVERAGE_LEAK"
+    assert phy042._pair_reason(0.575, a, b, True, False, bracket_valid=True) == "COVERAGE_UNCOVERED"
+    assert phy042._pair_reason(0.61, a, b, True, True, bracket_valid=True) == "OUTSIDE_DOMAIN"
+    assert phy042._pair_reason(0.575, a, b, True, True, bracket_valid=True) == "QUOTABLE"
 
 
 
@@ -237,3 +237,30 @@ def test_w4_walker_preflight_rejects_non_integral_values():
     for thr in (nan, 3.5, True):
         with pytest.raises(ValueError):
             phy042._w4_validate_walker_plan({64: 1}, min_walkers=thr)
+
+
+def _crossing_curves(t_root, La=24, Lb=32):
+    """Synthetic y2 curves whose C-eliminated pair condition crosses at t_root."""
+    import numpy as np
+    t = phy042._T_GRID
+    target = -2.0 * math.log(Lb / La)
+    y2_b = 4.0 * t / math.pi                       # R_b = 1
+    inv_ra = (target + 1.0) + (t - t_root)         # 1/R_a - 1/R_b - target = t - t_root
+    y2_a = 2.0 * t * (1.0 + 1.0 / inv_ra) / math.pi
+    return t, np.asarray(y2_a), np.asarray(y2_b)
+
+
+def test_bracket_must_lie_in_the_common_domain():
+    """W4-G2(4): root at 0.647 interpolated from 0.645/0.650; a domain that ends
+    at 0.6475 leaves the upper bracket uncovered -> not quotable."""
+    t, ya, yb = _crossing_curves(0.647)
+    tb = phy042.tbkt_pair_from_curves(t, ya, 24, yb, 32)
+    assert tb is not None and abs(tb - 0.647) < 1e-9
+    dom = (0.56, 0.6475)
+    assert phy042._pair_inside_domains(tb, dom, dom)           # point check alone passes
+    assert not phy042._bracket_in_common_domain(t, ya, 24, yb, 32, tb, dom, dom)
+    assert phy042._pair_reason(tb, dom, dom, True, True, bracket_valid=False) == "OUTSIDE_DOMAIN"
+    # positive control: domain covering both bracket points
+    wide = (0.56, 0.65)
+    assert phy042._bracket_in_common_domain(t, ya, 24, yb, 32, tb, wide, wide)
+    assert not phy042._bracket_in_common_domain(t, ya, 24, yb, 32, tb, None, wide)
