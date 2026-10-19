@@ -242,3 +242,20 @@ def test_no_splay_nr_label_only_for_the_assessed_pilot_budget() -> None:
     production = phy043._no_splay_finding(8, [9, 13, 19, 25], 400, pilot_T, 300)
     assert "NR-PHY043" not in production and "UNBEWERTET" in production
 
+
+def test_nan_inputs_fail_closed_in_xi_splay_and_low_t_merge() -> None:
+    """NaN darf weder einen xi-Wert, noch einen Splay, noch einen Merge belegen."""
+    nan = float("nan")
+    assert phy043.xi_over_L_from_S(nan, 1.0) is None
+    assert phy043.xi_over_L_from_S(2.0, nan) is None
+    assert phy043.xi_over_L_from_S(2.0, 1.0) is not None          # Negativ-Kontrolle
+    T = [1.40, 1.42, 1.44]
+    sig = [0.01, 0.01, 0.01]
+    assert phy043.splay_temperature(T, [0.1, nan, 0.1], sig, 1.0) is None
+    assert phy043.splay_temperature(T, [nan, nan, nan], sig, 1.0) is None
+    assert phy043.splay_temperature(T, [0.1, 0.1, 0.1], [nan, nan, nan], 1.0) is None
+    assert phy043.splay_temperature(T, [0.1, 0.1, 0.1], sig, 1.0) == 1.40  # Negativ-Kontrolle
+    assert not phy043.low_t_pair_merges(nan, 0.01, 0.5, 0.01)
+    assert not phy043.low_t_pair_merges(0.5, nan, 0.5, 0.01)
+    assert phy043.low_t_pair_merges(0.50, 0.01, 0.51, 0.01)        # Negativ-Kontrolle
+    assert not phy043.low_t_pair_merges(0.50, 0.001, 0.70, 0.001)

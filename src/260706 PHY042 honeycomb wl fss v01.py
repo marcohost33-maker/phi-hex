@@ -162,7 +162,9 @@ def _validity_domain(spread: np.ndarray, thr: float) -> np.ndarray:
     zusammenhaengende Domaene ist die ehrliche Lesart)."""
     mask = np.zeros(len(spread), dtype=bool)
     for k, s in enumerate(spread):
-        if s >= thr:
+        # accept only on a TRUE comparison: NaN >= thr is False and used to
+        # count an unmeasured spread as valid (toleranz-und-nan-gate)
+        if not s < thr:
             break
         mask[k] = True
     return mask

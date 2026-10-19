@@ -359,3 +359,7 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | 29472732674F3D91 | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression Dublette/Umsortierung im PHY032-Gitter) |
 | 00334430A962BCCA | 2026-10-19 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (W4-G2(4): Crossing nur mit beiden Klammerpunkten in der gemeinsamen Domaene) |
 | 0DD1D7D122E4233A | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression Klammerpunkt ausserhalb der Domaene) |
+| A2D2D36A6E40B913 | 2026-10-19 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (NaN-Spread beendet die Validitaets-Domaene (fail-closed)) |
+| CFA0C034183E5C2B | 2026-10-19 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (NaN fail-closed in xi, Splay-Tail und Tief-T-Merge) |
+| 1DCB2EB4765C44CA | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression NaN-Spread) |
+| DA0DAB2E0AB1569A | 2026-10-19 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression NaN in xi/Splay/Merge) |

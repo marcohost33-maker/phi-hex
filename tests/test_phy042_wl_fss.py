@@ -264,3 +264,12 @@ def test_bracket_must_lie_in_the_common_domain():
     wide = (0.56, 0.65)
     assert phy042._bracket_in_common_domain(t, ya, 24, yb, 32, tb, wide, wide)
     assert not phy042._bracket_in_common_domain(t, ya, 24, yb, 32, tb, None, wide)
+
+
+def test_validity_domain_nan_spread_fails_closed():
+    """Ein NaN-Spread ist nicht gemessen und beendet die Domaene."""
+    import numpy as np
+    spread = np.array([0.01, float("nan"), 0.02])
+    assert phy042._validity_domain(spread, 0.04).tolist() == [True, False, False]
+    # Negativ-Kontrolle: endliche Werte unter der Schwelle bleiben gueltig
+    assert phy042._validity_domain(np.array([0.01, 0.02, 0.05]), 0.04).tolist() == [True, True, False]

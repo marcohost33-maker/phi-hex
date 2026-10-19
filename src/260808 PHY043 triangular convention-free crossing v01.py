@@ -123,7 +123,9 @@ def xi_over_L_from_S(s0: float, sk1: float) -> float | None:
     in der ungeordneten Phase moeglich; ein solcher Punkt ist kein valider
     xi-Schaetzer und wird NICHT auf 0 geclampt).
     """
-    if sk1 <= 1e-12 * max(s0, 1.0) or s0 < sk1:
+    # accept only on TRUE comparisons: a NaN S used to return sqrt(NaN)
+    # instead of None (toleranz-und-nan-gate, PR #51 2026-10-19)
+    if not (sk1 > 1e-12 * max(s0, 1.0) and s0 >= sk1):
         return None
     return math.sqrt(s0 / sk1 - 1.0) * XI_PREFACTOR
 
@@ -169,6 +171,20 @@ def adjacent_crossings(T_grid, d_vals, d_sigmas):
     return out
 
 
+def low_t_pair_merges(a_mean: float, a_sem: float | None,
+                      b_mean: float, b_sem: float | None) -> bool:
+    """Low-T merge of two xi/L means: within max(8 % relative, 3 sigma).
+
+    True only on a TRUE comparison, so NaN means/SEMs fail closed (before,
+    ``diff >= bound`` was False for NaN and the merge gate stayed PASS).
+    """
+    diff = abs(a_mean - b_mean)
+    sig3 = 3.0 * math.hypot(a_sem or 0.0, b_sem or 0.0)
+    rel8 = 0.08 * max(a_mean, b_mean)
+    bound = rel8 if rel8 >= sig3 else sig3
+    return bool(diff < bound) and math.isfinite(bound)
+
+
 def splay_temperature(T_grid, d_vals, d_sigmas, sign: float,
                       z: float = SPLAY_Z, min_points: int = 2):
     """Kleinstes Gitter-T, ab dem D persistent signifikant splayt.
@@ -185,7 +201,8 @@ def splay_temperature(T_grid, d_vals, d_sigmas, sign: float,
         ok = True
         for j in range(k, n):
             d = d_vals[j]
-            if d is None or sign * d <= z * d_sigmas[j]:
+            # a NaN difference or sigma must break persistence, not confirm it
+            if d is None or not (sign * d > z * d_sigmas[j]):
                 ok = False
                 break
         if ok:
@@ -417,11 +434,8 @@ def run_phy043(radii=(4, 6, 9, 12),
             if a.xi_ratio_mean is None or b.xi_ratio_mean is None:
                 low_t_merge = False
                 continue
-            diff = abs(a.xi_ratio_mean - b.xi_ratio_mean)
-            sig3 = 3.0 * math.hypot(a.xi_ratio_sem or 0.0,
-                                    b.xi_ratio_sem or 0.0)
-            rel8 = 0.08 * max(a.xi_ratio_mean, b.xi_ratio_mean)
-            if diff >= max(rel8, sig3):
+            if not low_t_pair_merges(a.xi_ratio_mean, a.xi_ratio_sem,
+                                     b.xi_ratio_mean, b.xi_ratio_sem):
                 low_t_merge = False
 
     largest_pair = f"({Ls[-2]},{Ls[-1]})"
