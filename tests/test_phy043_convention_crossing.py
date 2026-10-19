@@ -197,3 +197,71 @@ def test_run_phy043_smoke_structure(tmp_path) -> None:
     phy043.write_report(report, out)
     text = out.read_text(encoding="utf-8")
     assert "PASS-Gates" in text and "FINDING" in text
+    # Issue #45 / Review: Metadaten werden korrekt berichtet, aber aus
+    # beliebigen n_seeds/L wird KEINE 1%-Power-Aussage abgeleitet.
+    assert "n_seeds=2, L<=7: 1%-Power UNASSESSED" in text
+    assert "keine Power-Aussage allein aus Laufmetadaten" in text
+    assert "n_seeds=4, L<=19: keine 1%-Diskriminierung erwartet" not in text
+
+
+def test_power_limit_note_is_scoped_to_fixed_pilot_budget() -> None:
+    pilot_T = [1.36 + 0.02 * k for k in range(12)]
+    pilot = phy043._power_limit_note(4, [9, 13, 19], 400, pilot_T, 300)
+    assert "keine 1%-Diskriminierung erwartet" in pilot
+    cases = (
+        (8, [9, 13, 19, 25], 800, pilot_T),
+        (4, [9, 13, 19, 25], 400, pilot_T),
+        (8, [9, 13, 19], 400, pilot_T),
+        (2, [5, 7], 400, pilot_T),
+        # Codex 2026-10-16: radii=(2, 9), n_measure=1, n_seeds=4 hat max_L 19,
+        # ist aber nicht der Pilot.
+        (4, [5, 19], 1, pilot_T),
+        (4, [9, 13, 19], 1, pilot_T),
+        (4, [9, 13, 19], 400, pilot_T + [1.70]),
+    )
+    for n_seeds, lattices, n_measure, temps in cases:
+        note = phy043._power_limit_note(n_seeds, lattices, n_measure, temps, 300)
+        assert "UNASSESSED" in note
+        assert "allein aus Laufmetadaten" in note
+
+
+def test_no_splay_nr_label_only_for_the_assessed_pilot_budget() -> None:
+    pilot_T = [1.36 + 0.02 * k for k in range(12)]
+    pilot = phy043._no_splay_finding(4, [9, 13, 19], 400, pilot_T, 300)
+    assert pilot.startswith("NR-PHY043-01")
+    for short in ([1.58], pilot_T[:-1], [1.40 + 0.02 * k for k in range(10)]):
+        assert not phy043._is_pilot_budget(4, [9, 13, 19], 400, short, 300)
+    assert not phy043._is_pilot_budget(4, [9, 13, 19], 400, pilot_T, 0)  # burn-in differs
+    # lattices in another order: pairs would be built L1 > L2, so no NR label
+    assert not phy043._is_pilot_budget(4, [19, 13, 9], 400, pilot_T, 300)
+    assert not phy043._is_pilot_budget(4, [9, 19, 13], 400, pilot_T, 300)
+    # same set, wrong order: the crossing scans need ascending T, so no NR label
+    for reordered in (pilot_T[::-1], pilot_T[1:] + pilot_T[:1]):
+        assert not phy043._is_pilot_budget(4, [9, 13, 19], 400, reordered, 300)
+        assert "NR-PHY043" not in phy043._no_splay_finding(4, [9, 13, 19], 400, reordered, 300)
+    production = phy043._no_splay_finding(8, [9, 13, 19, 25], 400, pilot_T, 300)
+    assert "NR-PHY043" not in production and "UNBEWERTET" in production
+
+
+def test_nan_inputs_fail_closed_in_xi_splay_and_low_t_merge() -> None:
+    """NaN darf weder einen xi-Wert, noch einen Splay, noch einen Merge belegen."""
+    nan = float("nan")
+    assert phy043.xi_over_L_from_S(nan, 1.0) is None
+    assert phy043.xi_over_L_from_S(2.0, nan) is None
+    assert phy043.xi_over_L_from_S(2.0, 1.0) is not None          # Negativ-Kontrolle
+    T = [1.40, 1.42, 1.44]
+    sig = [0.01, 0.01, 0.01]
+    assert phy043.splay_temperature(T, [0.1, nan, 0.1], sig, 1.0) is None
+    assert phy043.splay_temperature(T, [nan, nan, nan], sig, 1.0) is None
+    assert phy043.splay_temperature(T, [0.1, 0.1, 0.1], [nan, nan, nan], 1.0) is None
+    assert phy043.splay_temperature(T, [0.1, 0.1, 0.1], sig, 1.0) == 1.40  # Negativ-Kontrolle
+    assert not phy043.low_t_pair_merges(nan, 0.01, 0.5, 0.01)
+    assert not phy043.low_t_pair_merges(0.5, nan, 0.5, 0.01)
+    assert phy043.low_t_pair_merges(0.50, 0.01, 0.51, 0.01)        # Negativ-Kontrolle
+    assert not phy043.low_t_pair_merges(0.50, 0.001, 0.70, 0.001)
+
+
+def test_low_t_merge_infinite_sem_fails_closed() -> None:
+    """SEM = inf macht die Schranke unendlich -> kein Merge (Audit A-3)."""
+    assert not phy043.low_t_pair_merges(0.50, float("inf"), 0.51, 0.01)
+    assert phy043.low_t_pair_merges(0.50, 0.01, 0.51, 0.01)           # Negativ-Kontrolle

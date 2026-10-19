@@ -230,3 +230,145 @@ bleiben unveraendert als Lineage stehen; letzte Zeile pro Pfad gewinnt.
 | 6C7CE0F4BC813EF4 | 2026-10-16 | docs/figures | repo-native: `docs/figures/make_readme_figure.py` (README-Figur: liest ausschliesslich den committeten PHY042-Gate-Report, kein Fit/Smoothing) |
 | 5367E12B4D6596A8 | 2026-10-16 | docs/figures | repo-native: `docs/figures/phy042_helicity_honeycomb_light.png` (erzeugt von make_readme_figure.py aus results/260707 PHY042 ... gate report.json (hell)) |
 | F8A6D3CEC1A11895 | 2026-10-16 | docs/figures | repo-native: `docs/figures/phy042_helicity_honeycomb_dark.png` (erzeugt von make_readme_figure.py aus results/260707 PHY042 ... gate report.json (dunkel)) |
+
+## W4 Evidence-Contract Hardening 2026-09-27 — append-only
+
+Issue #45: Quellenversions- und Validitaetssemantik gehaertet. Historische
+Zeilen bleiben unveraendert; die folgenden repo-native SHA-256-Praefixe sind
+die aktuellen Bytes auf dem W4-Haertungs-Branch.
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| 400E0775C1008893 | 2026-09-27 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (Issue #45: Ein-Walker-Spread/Domaene fail-closed `null`; getrennte effektive Evidenzbasis; aktueller versionierter Honeycomb-Ledger; W4-Walker-Preflight) |
+| 0A9BCB93A92C35E6 | 2026-09-27 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (Issue #45: Report-Limit-Metadaten aus echtem Lauf statt Hardcode) |
+| C7442E4CA5FBCD8B | 2026-09-27 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Issue #45: Referenzledger-, >=3-Walker- und fail-closed-Domaenen-Gates) |
+| D2C1E1DBEE31F24F | 2026-09-27 | tests | repo-native: `tests/test_honeycomb_reference_conventions.py` (Issue #45: aktuelle Quellenfassungen statt supersedierter beta/v1-Annahmen) |
+| 5C808981447254C8 | 2026-09-27 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Issue #45: dynamische Report-Metadaten gegen Drift getestet) |
+| FDF312FCABD7EF24 | 2026-09-27 | spec | repo-native: `spec/260703 PHI HEX honeycomb reference conventions audit v01.md` (Quellenversions-Audit 2026-09-27; aktuelle vs supersedierte Evidenz getrennt) |
+| A54242EEE218464C | 2026-09-27 | spec | repo-native: `spec/260927 PHI HEX w4 preregistration v01.md` (NEU: fail-closed W4-Praeregistrierung, Kalibrier-/Stop-/Modellwahl-Vertrag) |
+
+### W4 Kalibrierungs-Runner + 1/t-Instrumentierung 2026-09-27
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| 0F229401722FBAF9 | 2026-09-27 | src | repo-native: `src/260702 PHY041 honeycomb wang-landau entropic helicity v01.py` (Issue #45: reale B&P-1/t-Aktivierung und Umschalt-Sweep werden im geerbten WLResult persistiert; vorher Default-False/0 trotz aktivem 1/t) |
+| 6C41C8B52BFC3161 | 2026-09-27 | tests | repo-native: `tests/test_phy041_honeycomb_wl.py` (Regression fuer 1/t-Metadaten + Slow-Smoke bindet Aktivierung an echten Lauf) |
+| E2F5DEB4948F0A7E | 2026-09-27 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (NEU: vorregistrierter L64-Kalibrierungsrunner; 2 WL-Walker + Wolff-Quercheck; Kosten/Konvergenz/Coverage; kein T_BKT-Claim) |
+| 81332F7043BE1C20 | 2026-09-27 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (NEU: Stream-, Budget-, Input- und Stopregel-Gates fuer PHY044) |
+| FA91A37669C7A8ED | 2026-09-27 | spec | repo-native: `spec/260927 PHI HEX w4 preregistration v01.md` (Stand nach 1/t- und Sampler-Effizienz-Haertung; supersedet vorherige Zeile derselben Spec) |
+
+### W4 Review-Haertung nach PR-Review 2026-09-27
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| BA08B0AC7CACC701 | 2026-09-27 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (PR #51 Review: PHY032-Fallback bindet jetzt T_min UND T_max; W4-min_walkers kann nicht unter 3 abgesenkt werden) |
+| E4BF196D15705FDA | 2026-09-27 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression fuer untere Fallback-Domaenengrenze und unveraenderliches >=3-Walker-Produktionsgate) |
+| 3A40254686382E91 | 2026-09-27 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (PR #51 Review: 1%-Power-Aussage nur fuer fixierten 4-Seed/L19-Pilot; sonst UNASSESSED) |
+| A7328EB31C3E2707 | 2026-09-27 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression gegen Power-Claim-Generalisation) |
+| 0031239209534AF4 | 2026-09-27 | spec | repo-native: `spec/260808 PHI HEX phy043 triangular convention-free crossing method v01.md` (Power-Vertrag auf Pilotbudget begrenzt; andere Budgets brauchen eigene Analyse) |
+| 6F15FC77555D3A72 | 2026-10-08 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (Stand f1c3ced: Kalibrier-Skalensignal von Produktionsgueltigkeit getrennt; Zeile nachgetragen, CI-Befund PR #51) |
+| B40EBE94734FEA47 | 2026-10-08 | tests | repo-native: `tests/test_phy041_honeycomb_wl.py` (Slow-Smoke: 1/t-Metadaten muessen den Lauf beschreiben; bei lnf_final=2e-4 greift 1/t nicht, engaged=False ist korrekt -- vorher Regression nur im slow-Lauf) |
+
+### PR #51 Codex-Runde 2026-10-16 (Kopf 2b13306)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| D62FEC9729262601 | 2026-10-16 | src | repo-native: `src/260702 PHY041 honeycomb wang-landau entropic helicity v01.py` (PR #51 Codex 2026-10-16: one_over_t_engaged erst nach mindestens einem ausgefuehrten 1/t-Sweep) |
+| 4C2252A22F2D7CD1 | 2026-10-16 | tests | repo-native: `tests/test_phy041_honeycomb_wl.py` (Regression: Schleifenende am Umschalter ist kein Engagement; Smoke verlangt sweeps_at_1t < wl_sweeps) |
+| 191352A3084BB58C | 2026-10-16 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (PR #51 Codex 2026-10-16: L=24-Fallback nur bei vollstaendigem PHY032-Gitter (grid_ok)) |
+| EF693C4E7FD35AEE | 2026-10-16 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression: Teilgitter installiert keine Fallback-Domaene) |
+| 6ABB9D3DD09E0ED4 | 2026-10-16 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (PR #51 Codex 2026-10-16: Pilot-Power-Aussage nur bei vollem Spec-§4-Pilotbudget (L 9/13/19, T<=1.58, n_measure=400, n_seeds=4)) |
+| F246426E3F54BC46 | 2026-10-16 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression: radii=(2,9)/n_measure=1/n_seeds=4 ist nicht der Pilot) |
+| 955544E84575E048 | 2026-10-16 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (PR #51 Codex 2026-10-16: Spec-§7-Provenienz (Commit, Versionen, lnf_final, Stream-IDs) im Report; wolff_n_seeds>=2 vor dem Lauf) |
+| 3E49E1799F7EA082 | 2026-10-16 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression: 1 Wolff-Seed wird vor dem Lauf abgewiesen; Provenienz an Sampler-Konstanten gebunden) |
+
+### PR #51 NaN-Gate PHY044 2026-10-17 (007acc2 R7)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| A590AA9E3D2AFA0E | 2026-10-17 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (007acc2 R7: Kalibrier-Gate an wahre Vergleiche gebunden, NaN faellt geschlossen; np.max statt max()) |
+| B60BBAC5973AFE5A | 2026-10-17 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression: NaN in leak/uncovered/spread ergibt nie PASS) |
+
+### PR #51 Wolff-Budget-Gate PHY044 2026-10-17 (Codex)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| C5FA247C144F72CD | 2026-10-17 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (PR #51 Codex 2026-10-17: leeres/ungueltiges Wolff-Messbudget vor dem Lauf abgewiesen) |
+| FC4C9C28C1786D2A | 2026-10-17 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression: wolff_n_measure <= 0, nicht ganzzahlig, bool und wolff_n_burn < 0 abgewiesen) |
+
+### PR #51 Codex-Runde 2026-10-17 (Kopf add66c1)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| D6AEFDE557B1A262 | 2026-10-17 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (PR #51 Codex: Paar-Quotierbarkeit verlangt beide Coverage-Gates) |
+| 6DE898DB6E6C7F2A | 2026-10-17 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (PR #51 Codex: Seeds ganzzahlig >=2; Skalenfreigabe nur aus dem L=64-Vertragslauf) |
+| 9B7D11BD4FA5F7FE | 2026-10-17 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression _pair_quotable mit Leck-/Restmassen-Gate) |
+| 868E97A857818F99 | 2026-10-17 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression Seeds-Typpruefung und _scale_decision) |
+
+### PR #51 Codex-Runde 2026-10-17 (Kopf ddaaeb7)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| FF3A7798C8D29D75 | 2026-10-17 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (PR #51 Codex: _pair_reason nennt das verfehlte Gate, NR-PHY042-02 nur fuer Domaenen-Faelle) |
+| C50E233C69205D4E | 2026-10-17 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (PR #51 Codex: L und WL-Walker ganzzahlig vor dem Lauf) |
+| 2EEE7BC293C01B44 | 2026-10-17 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression _pair_reason) |
+| 61124CA1A06DDCEC | 2026-10-17 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression ganzzahlige L/Walker) |
+
+### PR #51 Codex-Runde 2026-10-17 (Kopf d83c61e)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| CC310B3F4C55C6E3 | 2026-10-17 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (PR #51 Codex: Skalenentscheid nach bestandener Kalibrierung UNBEWERTET bis Wolff-/Kostenpruefung) |
+| 955028056A596D2D | 2026-10-17 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression _scale_decision UNASSESSED) |
+
+### PR #51 Codex-Runde 2026-10-17 (Kopf f4169d2)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| C78F8BF0F6653FB9 | 2026-10-17 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (NR-PHY043-01 nur beim bewerteten Pilot-Budget, sonst UNBEWERTET) |
+| C5A754BCFED90232 | 2026-10-17 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression _no_splay_finding) |
+
+### PR #51 Codex-Runde 2026-10-17 (Kopf 9bb54da)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| 080458CC9AB9ABE9 | 2026-10-17 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (Pilot-Budget verlangt das vollstaendige vorregistrierte T-Gitter 1.36..1.58) |
+| DD6F4C85607F04C2 | 2026-10-17 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression verkuerzte Gitter sind kein Pilot) |
+
+### PR #51 Codex-Runde 2026-10-17 (Kopf 2407642)
+
+| SHA256 (16) | mtime | Ziel | Quelle |
+|---|---|---|---|
+| 0B33D08E2E4F8B28 | 2026-10-17 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (W4-Walker-Preflight nur ganzzahlig) |
+| F84E07F7EDCA026F | 2026-10-17 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (Pilot-Abgleich inkl. n_burn=300) |
+| 378728494242449F | 2026-10-17 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (Provenienz vor dem Lauf erfasst) |
+| 0716152C48C788F3 | 2026-10-17 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression nicht-ganzzahlige Walker) |
+| D56E2C85959D1197 | 2026-10-17 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression Burn-in im Pilot-Abgleich) |
+| 268A10C2FD8D573E | 2026-10-19 | docs/figures | repo-native: `docs/figures/make_readme_figure.py` (Einzel-Walker-L ohne Spread-Domaene (W4-Erratum), PR #51 Codex) |
+| 886346BCF51C92BE | 2026-10-19 | docs/figures | repo-native: `docs/figures/phy042_helicity_honeycomb_dark.png` (regeneriert: L24 vollstaendig blass, Spread nicht gemessen) |
+| 82664438A15F1C7A | 2026-10-19 | docs/figures | repo-native: `docs/figures/phy042_helicity_honeycomb_light.png` (regeneriert: L24 vollstaendig blass, Spread nicht gemessen) |
+| 00B48D680D7A3829 | 2026-10-19 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (Pilot-Gitter in aufsteigender Reihenfolge, nicht nur als Menge) |
+| 5DD99D1DD22E1503 | 2026-10-19 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression umsortierte Gitter sind kein Pilot) |
+| 6D33A11F543661D5 | 2026-10-19 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (PHY032-Fallback verlangt 8 behaltene L24-Zeilen nach Fensterfilter) |
+| EFB6AB880DA616DB | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression Teilgitter nach Fensterfilter) |
+| B3294753B9113B3A | 2026-10-19 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (Pilot-Gitterfolge L geordnet, nicht sortiert) |
+| 8866931066A78F1D | 2026-10-19 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (fehlende Git-Provenienz bricht vor dem Sampling ab (Spec 7)) |
+| A373297F696082B7 | 2026-10-19 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression umsortierte L-Folge ist kein Pilot) |
+| F58897296E68C5AF | 2026-10-19 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression Lauf ohne Git-Provenienz startet nicht) |
+| 16C5ED46EDFBB6B2 | 2026-10-19 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (PHY032-Fallback verlangt das exakte Vertragsgitter 0.56..0.6475) |
+| 29472732674F3D91 | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression Dublette/Umsortierung im PHY032-Gitter) |
+| 00334430A962BCCA | 2026-10-19 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (W4-G2(4): Crossing nur mit beiden Klammerpunkten in der gemeinsamen Domaene) |
+| 0DD1D7D122E4233A | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression Klammerpunkt ausserhalb der Domaene) |
+| A2D2D36A6E40B913 | 2026-10-19 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (NaN-Spread beendet die Validitaets-Domaene (fail-closed)) |
+| CFA0C034183E5C2B | 2026-10-19 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (NaN fail-closed in xi, Splay-Tail und Tief-T-Merge) |
+| 1DCB2EB4765C44CA | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression NaN-Spread) |
+| DA0DAB2E0AB1569A | 2026-10-19 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression NaN in xi/Splay/Merge) |
+| D02F79B00F7FCBE3 | 2026-10-19 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (unsauberer Arbeitsbaum startet keine Kalibrierung) |
+| 88169459761BB954 | 2026-10-19 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression unsauberer Baum) |
+| 58556F9474543B4E | 2026-10-19 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (Coverage je Paar ueber die gemeinsame Domaene) |
+| 2C29C843D5CD9F44 | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression Paar-Coverage) |
+| 93FF26B6E304A3CD | 2026-10-19 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (fehlende gemeinsame Domaene ist OUTSIDE_DOMAIN, nicht Coverage-Fehler) |
+| 99F61C1304807981 | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression None-Abdeckung) |
+| 106BAF09944E5CB9 | 2026-10-19 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (globale Gates NaN-fest (_max_fail_closed); Claim-Pfad als _assess_pair) |
+| 53554F0B0659B2ED | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression NaN-Max und Verdrahtung des Claim-Pfads) |
+| FB80B468ACC14B96 | 2026-10-19 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression SEM=inf im Tief-T-Merge) |

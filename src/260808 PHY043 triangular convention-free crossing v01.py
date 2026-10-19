@@ -123,7 +123,9 @@ def xi_over_L_from_S(s0: float, sk1: float) -> float | None:
     in der ungeordneten Phase moeglich; ein solcher Punkt ist kein valider
     xi-Schaetzer und wird NICHT auf 0 geclampt).
     """
-    if sk1 <= 1e-12 * max(s0, 1.0) or s0 < sk1:
+    # accept only on TRUE comparisons: a NaN S used to return sqrt(NaN)
+    # instead of None (toleranz-und-nan-gate, PR #51 2026-10-19)
+    if not (sk1 > 1e-12 * max(s0, 1.0) and s0 >= sk1):
         return None
     return math.sqrt(s0 / sk1 - 1.0) * XI_PREFACTOR
 
@@ -169,6 +171,20 @@ def adjacent_crossings(T_grid, d_vals, d_sigmas):
     return out
 
 
+def low_t_pair_merges(a_mean: float, a_sem: float | None,
+                      b_mean: float, b_sem: float | None) -> bool:
+    """Low-T merge of two xi/L means: within max(8 % relative, 3 sigma).
+
+    True only on a TRUE comparison, so NaN means/SEMs fail closed (before,
+    ``diff >= bound`` was False for NaN and the merge gate stayed PASS).
+    """
+    diff = abs(a_mean - b_mean)
+    sig3 = 3.0 * math.hypot(a_sem or 0.0, b_sem or 0.0)
+    rel8 = 0.08 * max(a_mean, b_mean)
+    bound = rel8 if rel8 >= sig3 else sig3
+    return bool(diff < bound) and math.isfinite(bound)
+
+
 def splay_temperature(T_grid, d_vals, d_sigmas, sign: float,
                       z: float = SPLAY_Z, min_points: int = 2):
     """Kleinstes Gitter-T, ab dem D persistent signifikant splayt.
@@ -185,7 +201,8 @@ def splay_temperature(T_grid, d_vals, d_sigmas, sign: float,
         ok = True
         for j in range(k, n):
             d = d_vals[j]
-            if d is None or sign * d <= z * d_sigmas[j]:
+            # a NaN difference or sigma must break persistence, not confirm it
+            if d is None or not (sign * d > z * d_sigmas[j]):
                 ok = False
                 break
         if ok:
@@ -417,11 +434,8 @@ def run_phy043(radii=(4, 6, 9, 12),
             if a.xi_ratio_mean is None or b.xi_ratio_mean is None:
                 low_t_merge = False
                 continue
-            diff = abs(a.xi_ratio_mean - b.xi_ratio_mean)
-            sig3 = 3.0 * math.hypot(a.xi_ratio_sem or 0.0,
-                                    b.xi_ratio_sem or 0.0)
-            rel8 = 0.08 * max(a.xi_ratio_mean, b.xi_ratio_mean)
-            if diff >= max(rel8, sig3):
+            if not low_t_pair_merges(a.xi_ratio_mean, a.xi_ratio_sem,
+                                     b.xi_ratio_mean, b.xi_ratio_sem):
                 low_t_merge = False
 
     largest_pair = f"({Ls[-2]},{Ls[-1]})"
@@ -447,8 +461,7 @@ def run_phy043(radii=(4, 6, 9, 12),
     ts_largest = analysis["xi_ratio"][largest_pair]["T_splay"]
     print("\nFINDING (kein Gate, kein Bestwert-Claim):")
     if ts_largest is None:
-        print("  Kein persistenter xi_2/L-Splay im Fenster — nicht "
-              "diskriminierend (NR-PHY043-01).")
+        print("  " + _no_splay_finding(n_seeds, Ls, n_measure, T_grid, n_burn))
     else:
         print(f"  xi_2/L-Splay {largest_pair} beginnt bei T={ts_largest:.2f}; "
               f"Einordnung relativ zu intern {INTERNAL_PER_SITE} und "
@@ -497,6 +510,72 @@ def _clean(o):
     if isinstance(o, np.integer):
         return int(o)
     return o
+
+
+PILOT_LATTICES_L = (9, 13, 19)
+PILOT_N_MEASURE = 400
+PILOT_N_SEEDS = 4
+PILOT_N_BURN = 300  # PHY030 v02 pilot budget (n_burn=300)
+# Spec §4: the pilot ran the production window minus its +0.12 extension,
+# i.e. 1.36..1.58 in steps of 0.02 (12 points).
+PILOT_TEMPS = tuple(round(1.36 + 0.02 * k, 2) for k in range(12))
+
+
+def _is_pilot_budget(n_seeds: int, lattices_L, n_measure: int, temperatures,
+                     n_burn: int) -> bool:
+    """True only for the documented pilot of Spec §4 (the one budget whose
+    1%-power limit is assessed)."""
+    return (
+        # ordered, like the grid below: pairs are built in the supplied order
+        # and pair_analysis reads each pair as L1 < L2 (PR #51 Codex 2026-10-19)
+        tuple(int(x) for x in lattices_L) == PILOT_LATTICES_L
+        and int(n_measure) == PILOT_N_MEASURE
+        and int(n_seeds) == PILOT_N_SEEDS
+        and int(n_burn) == PILOT_N_BURN
+        # the complete grid in its ascending order, not just its maximum or its
+        # set: run_phy043 keeps the supplied order and the crossing/tail scans
+        # assume ascending T (PR #51 Codex 2026-10-17, two rounds);
+        # 1e-9 absorbs float64 grid construction only
+        and len(temperatures) == len(PILOT_TEMPS)
+        and all(abs(float(t) - p) <= 1e-9 for t, p in zip(temperatures, PILOT_TEMPS))
+    )
+
+
+def _no_splay_finding(n_seeds: int, lattices_L, n_measure: int, temperatures,
+                      n_burn: int) -> str:
+    """Finding text when the largest pair shows no splay.
+
+    The NR-PHY043-01 label ("not discriminating") needs an assessed power
+    limit, which exists only for the pilot budget; any other budget reports
+    the missing splay with discrimination UNASSESSED (PR #51 Codex 2026-10-17).
+    """
+    if _is_pilot_budget(n_seeds, lattices_L, n_measure, temperatures, n_burn):
+        return ("NR-PHY043-01: kein persistenter xi_2/L-Splay im Fenster -- "
+                "bei diesem Pilot-Budget nicht diskriminierend; O1 bleibt offen.")
+    return ("Kein persistenter xi_2/L-Splay im Fenster; Diskriminierung bei "
+            "diesem Budget UNBEWERTET (keine Power-Analyse) -- kein NR-Schluss.")
+
+
+def _power_limit_note(n_seeds: int, lattices_L, n_measure: int,
+                      temperatures, n_burn: int) -> str:
+    """Do not infer discrimination power from arbitrary run metadata.
+
+    Spec §6's negative 1%-power statement belongs only to the documented
+    pilot of Spec §4: radii 4/6/9 (L 9/13/19), T <= 1.58, n_measure=400,
+    n_seeds=4. The full budget must match -- n_seeds and max L alone are
+    not the pilot (PR #51 Codex round 2026-10-16). Other budgets require an
+    explicit uncertainty or power analysis.
+    """
+    max_L = max(lattices_L)
+    if _is_pilot_budget(n_seeds, lattices_L, n_measure, temperatures, n_burn):
+        return (
+            "n_seeds=4, L<=19: keine 1%-Diskriminierung erwartet "
+            "(fixierter Pilot-Vertrag, Spec §6)."
+        )
+    return (
+        f"n_seeds={n_seeds}, L<={max_L}: 1%-Power UNASSESSED; "
+        "keine Power-Aussage allein aus Laufmetadaten (Spec §6)."
+    )
 
 
 def write_report(report: dict, path: Path) -> None:
@@ -563,11 +642,10 @@ def write_report(report: dict, path: Path) -> None:
     largest = f"({report['lattices_L'][-2]},{report['lattices_L'][-1]})"
     ts = report["pair_analysis"]["xi_ratio"][largest]["T_splay"]
     if ts is None:
-        lines.append("  NR-PHY043-01: kein persistenter xi_2/L-Splay im "
-                     "Fenster — bei diesem")
-        lines.append("  Budget nicht diskriminierend; O1 bleibt offen "
-                     "(naechster Pfad:")
-        lines.append("  Konventions-Nachweis je Referenz in SOURCES.md).")
+        lines.append("  " + _no_splay_finding(
+            int(w["n_seeds"]), report["lattices_L"],
+            int(w["n_measure"]), report["temperatures"], int(w["n_burn"])))
+        lines.append("  Naechster Pfad: Konventions-Nachweis je Referenz in SOURCES.md.")
     else:
         lines.append(f"  xi_2/L-Splay {largest} beginnt bei T={ts:.2f} "
                      f"(CI siehe oben).")
@@ -583,8 +661,10 @@ def write_report(report: dict, path: Path) -> None:
     lines.append("Grenzen (ehrlich):")
     lines.append("  - Kein T_BKT-Bestwert; Crossing-/Splay-Lagen driften "
                  "logarithmisch.")
-    lines.append("  - n_seeds=4, L<=19: keine 1%-Diskriminierung erwartbar "
-                 "(Spec §6).")
+    lines.append(
+        "  - " + _power_limit_note(
+            int(w["n_seeds"]), report["lattices_L"],
+            int(w["n_measure"]), report["temperatures"], int(w["n_burn"])))
     lines.append("  - Universeller (xi_2/L)*-Anker bewusst NICHT verwendet "
                  "(Rhombus-Torus,")
     lines.append("    tau=exp(i pi/3) — Hasenbusch-Wert gilt fuer tau=i).")

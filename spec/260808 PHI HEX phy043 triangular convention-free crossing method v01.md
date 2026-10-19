@@ -142,12 +142,16 @@ gegatet; Reality-Anchor: der Report in `results/` ist die Evidenz).
   Stuetzung fuer die Hypothese, das wahre T_BKT laege beim per-Site-Wert
   1.4007 oder darunter. Umgekehrt waere ein belastbarer Splay-Beginn
   deutlich UNTER 1.40 ein Signal gegen die Referenz-Lage.
-- Bei diesem Budget (4 Seeds, L <= 19, Log-Drift der Crossings) ist
-  KEINE Diskriminierung auf 1-%-Niveau zu erwarten. Ist das Ergebnis
-  nicht diskriminierend, wird das als Negativ-Result **NR-PHY043-01**
-  ausgewiesen (Buerger erster Klasse) und O1 bleibt offen — dann ist der
-  zweite O1-Pfad (Konventions-Nachweis je Referenz in SOURCES.md) der
-  naechste Schritt.
+- Die Aussage "keine Diskriminierung auf 1-%-Niveau zu erwarten" ist
+  **nur** fuer den dokumentierten Pilotvertrag mit 4 Seeds und L <= 19
+  vorregistriert. Sie darf nicht durch blosses Einsetzen anderer
+  Laufmetadaten generalisiert werden. Fuer Produktionsbudgets (z.B. 8 Seeds,
+  L bis 25) ist die 1-%-Power **UNASSESSED**, solange keine eigene
+  Unsicherheits-/Poweranalyse vorliegt.
+- Ist ein Lauf nach seiner dafuer gueltigen Poweranalyse nicht
+  diskriminierend, wird das als Negativ-Result **NR-PHY043-01** ausgewiesen
+  (Buerger erster Klasse) und O1 bleibt offen — dann ist der zweite O1-Pfad
+  (Konventions-Nachweis je Referenz in SOURCES.md) der naechste Schritt.
 - In JEDEM Fall gilt weiter: kein per-Site-Code-Fix ohne O1-Nachweis.
 
 ## 7. Evidenz

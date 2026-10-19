@@ -102,14 +102,27 @@ wolff_reference = _p41.wolff_reference
 aligned_upsilon_zero = _p41.aligned_upsilon_zero
 upsilon_curves = _p41.upsilon_curves
 tbkt_pair_from_curves = _p41.tbkt_pair_from_curves
-REF_BAND = {  # T-Form, aus spec/260703 (beta-Kanaele konvertiert)
-    "multi_lattice": 0.573,
-    "helicity_direct": (0.571, 0.008),
-    "nn_mc": (0.560, 0.009),
-    "upsilon_beta": (0.5928, 0.0011),
-    "upsilon4_beta": (0.6116, 0.0041),
-    "binder_beta": (0.5800, 0.0007),
+# Versionierter Evidenz-Ledger (Audit 2026-09-27, Issue #45).
+# WICHTIG: Das ist KEIN Min/Max-Akzeptanzband. Alte arXiv-v1/beta-Werte aus
+# 2406.14812/2406.12076 sind in der Spec als supersedierte Historie erhalten.
+# Fuer aktuelle Vergleiche gelten die publizierte PTEP-Fassung bzw.
+# arXiv:2406.12076v4.
+REF_BAND = {
+    "okabe_otsuka_2501_v1_rough": (0.573, None),
+    "jiang_ptep_nn": (0.572, 0.003),
+    "jiang_ptep_helicity": (0.576, 0.004),
+    "andrade_v4_helicity_sa": (0.575, 0.008),
+    "andrade_v4_helicity_wl": (0.576, 0.003),
+    "andrade_v4_upsilon4_sa": (0.551, 0.011),
+    "andrade_v4_upsilon4_wl": (0.568, 0.001),
 }
+REF_PRIMARY_KEYS = (
+    "okabe_otsuka_2501_v1_rough",
+    "jiang_ptep_nn",
+    "jiang_ptep_helicity",
+    "andrade_v4_helicity_sa",
+    "andrade_v4_helicity_wl",
+)
 
 # PHY041-Bruecke: committed Reportwerte (results/260702 PHY041 ... report.txt)
 PHY041_PAIRS = {(12, 16): 0.5951, (12, 24): 0.6029, (16, 24): 0.6087}
@@ -149,10 +162,166 @@ def _validity_domain(spread: np.ndarray, thr: float) -> np.ndarray:
     zusammenhaengende Domaene ist die ehrliche Lesart)."""
     mask = np.zeros(len(spread), dtype=bool)
     for k, s in enumerate(spread):
-        if s >= thr:
+        # accept only on a TRUE comparison: NaN >= thr is False and used to
+        # count an unmeasured spread as valid (toleranz-und-nan-gate)
+        if not s < thr:
             break
         mask[k] = True
     return mask
+
+
+def _w4_validate_walker_plan(walkers: dict[int, int],
+                             min_walkers: int = 3) -> None:
+    """Fail-closed W4-Preflight: jede verwendete L-Groesse braucht genug
+    unabhaengige Walker, damit ein Spread ueberhaupt als gemessene
+    Sampler-Systematik interpretiert werden darf.
+
+    Issue #45 trennt damit explizit eine Ein-Walker-Bruecke von einer
+    gemessenen Walker-Validitaetsdomaene.
+    """
+    # NaN/float thresholds or counts made every comparison False and let a
+    # one-walker run pass (PR #51 Codex 2026-10-17): integers only.
+    if isinstance(min_walkers, bool) or not isinstance(min_walkers, int) or min_walkers < 3:
+        raise ValueError(
+            "W4-Produktionspreflight darf min_walkers nicht unter 3 setzen "
+            "(ganze Zahl)")
+    bad = {L: n for L, n in walkers.items()
+           if isinstance(n, bool) or not isinstance(n, int) or n < min_walkers}
+    if bad:
+        raise ValueError(
+            "W4 braucht mindestens "
+            f"{min_walkers} Walker je L; unzureichend: {bad}")
+
+
+def _bracket_in_common_domain(t_grid, y2_a, La, y2_b, Lb, tb,
+                              dom_a, dom_b) -> bool:
+    """W4-G2(4): the root finder may connect only adjacent VALID T points.
+
+    tbkt_pair_from_curves sees the unmasked curves and discards its bracket,
+    so the reported root is accepted only if the same root is found when the
+    search is restricted to the grid points inside BOTH domains (PR #51 Codex
+    2026-10-19: a domain ending between grid points must not quote a root
+    whose upper bracket point is uncovered).
+    """
+    if tb is None or dom_a is None or dom_b is None:
+        return False
+    lo = max(dom_a[0], dom_b[0])
+    hi = min(dom_a[1], dom_b[1])
+    idx = [k for k, T in enumerate(t_grid) if lo - 1e-12 <= float(T) <= hi + 1e-12]
+    if len(idx) < 2:
+        return False
+    s = slice(idx[0], idx[-1] + 1)  # t_grid ascends, so the slice is contiguous
+    sub = tbkt_pair_from_curves(t_grid[s], y2_a[s], La, y2_b[s], Lb)
+    return sub is not None and abs(sub - tb) <= 1e-12
+
+
+def _max_fail_closed(acc: float, value) -> float:
+    """Running maximum for gate metrics: builtin max(0.0, nan) returns 0.0 and
+    silently drops a NaN metric, letting the gate PASS (audit 2026-10-19 A-1).
+    Any non-finite value makes the maximum inf, so the gate fails closed."""
+    v = float(value)
+    if not math.isfinite(v):
+        return math.inf
+    return acc if acc >= v else v
+
+
+def _assess_pair(t_grid, main_curve, results, La: int, Lb: int, bounds, *,
+                 leak_metric=None, unc_metric=None):
+    """Crossing and W4-G2 verdict for one pair -- the claim path of run_phy042
+    as a pure function, so its wiring (bracket, per-pair coverage, verdict) is
+    testable without a production run (audit 2026-10-19 A-2)."""
+    leak_metric = canonical_edge_leak if leak_metric is None else leak_metric
+    unc_metric = _uncovered_mass if unc_metric is None else unc_metric
+    tb = tbkt_pair_from_curves(t_grid, main_curve[La]["y2"], La,
+                               main_curve[Lb]["y2"], Lb)
+    dom_a, dom_b = bounds.get(La), bounds.get(Lb)
+    bracket_ok = _bracket_in_common_domain(
+        t_grid, main_curve[La]["y2"], La, main_curve[Lb]["y2"], Lb, tb,
+        dom_a, dom_b)
+    p_leak = _pair_coverage_max(results, La, Lb, t_grid, dom_a, dom_b, leak_metric)
+    p_unc = _pair_coverage_max(results, La, Lb, t_grid, dom_a, dom_b, unc_metric)
+    return tb, _pair_verdict(tb, dom_a, dom_b, p_leak, p_unc,
+                             bracket_valid=bracket_ok)
+
+
+def _pair_coverage_max(results, La: int, Lb: int, t_grid, dom_a, dom_b,
+                       metric) -> float | None:
+    """Coverage metric for ONE pair: max over the walkers of La and Lb, on the
+    grid points inside the pair's common effective domain only.
+
+    The global maxima scanned all T for lattices without a walker domain and
+    let an unrelated lattice veto every pair (PR #51 Codex 2026-10-19); they
+    stay as pipeline-wide diagnostics. None without a common domain; any
+    non-finite value returns inf (fail-closed).
+    """
+    if dom_a is None or dom_b is None:
+        return None
+    lo = max(dom_a[0], dom_b[0])
+    hi = min(dom_a[1], dom_b[1])
+    vals = [float(metric(res, float(T)))
+            for (L, _w), res in results.items() if L in (La, Lb)
+            for T in t_grid if lo - 1e-12 <= float(T) <= hi + 1e-12]
+    if not vals:
+        return None
+    if not all(math.isfinite(v) for v in vals):
+        return math.inf
+    return max(vals)
+
+
+def _pair_reason(tb, dom_a, dom_b, leak_ok: bool, unc_ok: bool, *,
+                 bracket_valid: bool) -> str:
+    """W4-G2 verdict for one crossing, with the specific failed gate.
+
+    Coverage gates come first: a crossing inside both domains is still not
+    evidence when the energy window leaks or leaves canonical mass uncovered,
+    and that failure needs a different repair than a domain miss (PR #51
+    Codex 2026-10-17)."""
+    if tb is None:
+        return "NO_CROSSING"
+    if not leak_ok:
+        return "COVERAGE_LEAK"
+    if not unc_ok:
+        return "COVERAGE_UNCOVERED"
+    if not (_pair_inside_domains(tb, dom_a, dom_b) and bracket_valid):
+        return "OUTSIDE_DOMAIN"
+    return "QUOTABLE"
+
+
+def _pair_verdict(tb, dom_a, dom_b, p_leak, p_unc, *, bracket_valid: bool) -> str:
+    """Pair verdict from the per-pair coverage maxima. ``None`` coverage means
+    there is no common domain -- that is OUTSIDE_DOMAIN, not a failed coverage
+    gate, so the report points at domain work, not an energy-window repair
+    (PR #51 Codex 2026-10-19)."""
+    if tb is None:
+        return "NO_CROSSING"
+    if p_leak is None or p_unc is None:
+        return "OUTSIDE_DOMAIN"
+    return _pair_reason(tb, dom_a, dom_b, p_leak < 1e-3, p_unc < 1e-3,
+                        bracket_valid=bracket_valid)
+
+
+def _pair_quotable(tb, dom_a, dom_b, leak_ok: bool, unc_ok: bool, *,
+                   bracket_valid: bool) -> bool:
+    """Quotable only inside both domains AND with both coverage gates passed."""
+    return _pair_reason(tb, dom_a, dom_b, leak_ok, unc_ok,
+                        bracket_valid=bracket_valid) == "QUOTABLE"
+
+
+def _pair_inside_domains(
+    tb: float | None,
+    bounds_a: tuple[float, float] | None,
+    bounds_b: tuple[float, float] | None,
+) -> bool:
+    """Quotierbarkeit nur innerhalb BEIDER belegter [T_min,T_max]-Domaenen.
+
+    Insbesondere darf ein PHY032-Fallback, dessen Evidenz erst bei T=0.56
+    beginnt, kein Crossing bei T<0.56 freigeben.
+    """
+    if tb is None or bounds_a is None or bounds_b is None:
+        return False
+    lo = max(bounds_a[0], bounds_b[0])
+    hi = min(bounds_a[1], bounds_b[1])
+    return bool(lo <= tb <= hi)
 
 
 def _uncovered_mass(res, T: float) -> float:
@@ -181,6 +350,31 @@ def _wl_job(args: tuple) -> tuple:
                               prod_sweeps=_prod_sweeps_for(nbins, L),
                               seed=master_seed, stream=stream, verbose=False)
     return (L, walker, res)
+
+
+PHY032_L24_ROWS = 8  # Parse-Vertrag: committeter PHY032-Report, L=24
+# Das exakte Vertragsgitter des committeten PHY032-Reports (L=24), in Parse-Reihenfolge.
+PHY032_L24_GRID = tuple(round(0.56 + 0.0125 * k, 4) for k in range(PHY032_L24_ROWS))
+
+
+def _phy032_fallback_bounds(grid_rows, grid_ok: bool):
+    """L=24-Fallback-Domaene aus dem PHY032-Drift-Guard, fail-closed.
+
+    Nur ein VOLLSTAENDIGES Gitter (grid_ok: alle acht L=24-Zeilen geparst und
+    validiert) traegt die Domaene; ein Teilgitter, dessen erhaltene Zeilen
+    passen, liefert None (PR #51 Codex-Runde 2026-10-16). Fallback-Evidenz
+    gilt nur auf dem validierten Gitter; BEIDE Grenzen sind bindend.
+    Verglichen wird das EXAKTE Vertragsgitter der behaltenen Zeilen nach dem
+    Fensterfilter, nicht nur ihre Anzahl: sonst tragen sieben Zeilen oder eine
+    Dublette anstelle eines fehlenden Punkts die Domaene (PR #51 Codex 2026-10-19).
+    """
+    temps = [float(r["T"]) for r in grid_rows]
+    exact = (len(temps) == len(PHY032_L24_GRID)
+             and all(abs(t - p) <= 1e-9 for t, p in zip(temps, PHY032_L24_GRID)))
+    if not grid_ok or not exact or not all(bool(r["ok"]) for r in grid_rows):
+        return None
+    return (min(float(r["T"]) for r in grid_rows),
+            max(float(r["T"]) for r in grid_rows))
 
 
 def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
@@ -263,7 +457,7 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
     leak_max = 0.0
     for key, res in results.items():
         for T in t_grid:
-            leak_max = max(leak_max, canonical_edge_leak(res, float(T)))
+            leak_max = _max_fail_closed(leak_max, canonical_edge_leak(res, float(T)))
     leak_ok = leak_max < 1e-3
     print(f"\n[LEAK] max. Randgewicht ueber alle (L, walker, T): "
           f"{leak_max:.2e} (Gate < 1e-3) -> {'PASS' if leak_ok else 'FAIL'}")
@@ -273,35 +467,44 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
     # Y2-Kurven sampler-limitiert sind. Schwelle 0.04 = VAL-A-Y2-Toleranz;
     # 0.02/0.01 werden als strengere Domaenen mit ausgewiesen.
     print("\n[DOMAIN] Validitaets-Domaenen aus Walker-Spread (L>=32):")
-    spreads: dict[int, np.ndarray] = {}
-    domains: dict[int, np.ndarray] = {}
-    domain_tmax: dict[int, float] = {}
+    spreads: dict[int, np.ndarray | None] = {}
+    domains: dict[int, np.ndarray | None] = {}
+    domain_tmax: dict[int, float | None] = {}
+    domain_basis: dict[int, str] = {}
     for L in Ls:
         if walkers[L] < 2:
-            spreads[L] = np.zeros(len(t_grid))
-            domains[L] = np.ones(len(t_grid), dtype=bool)
-            domain_tmax[L] = float(t_grid[-1])
+            # Ein Walker liefert KEINE Walker-Spread-Messung. Historisch wurde
+            # hier 0.0/all-valid serialisiert; Issue #45 korrigiert diese
+            # Daten-Semantik fail-closed auf unknown/null.
+            spreads[L] = None
+            domains[L] = None
+            domain_tmax[L] = None
+            domain_basis[L] = "unmeasured_single_walker"
             continue
         stack = np.stack([curves[(L, w)]["y2"] for w in range(walkers[L])])
         spreads[L] = stack.max(axis=0) - stack.min(axis=0)
         domains[L] = _validity_domain(spreads[L], 0.04)
         domain_tmax[L] = (float(t_grid[domains[L]].max())
-                          if domains[L].any() else float("nan"))
+                          if domains[L].any() else None)
+        domain_basis[L] = "walker_spread_lt_0.04"
         strict = {thr: (float(t_grid[_validity_domain(spreads[L], thr)].max())
                         if _validity_domain(spreads[L], thr).any() else None)
                   for thr in (0.01, 0.02)}
-        print(f"      L={L}: T<= {domain_tmax[L]:.4f} (Spread<0.04); "
+        tmax_txt = "None" if domain_tmax[L] is None else f"{domain_tmax[L]:.4f}"
+        print(f"      L={L}: T<= {tmax_txt} (Spread<0.04); "
               f"strenger: <0.02 -> T<={strict[0.02]}, <0.01 -> T<={strict[0.01]}; "
               f"max Spread {spreads[L].max():.4f}")
-    print("      L=24: Einzel-Walker (PHY041-Bruecke) - Domaene formal voll;"
-          " Sampler-Guard ist VAL-B (PHY032-Gitter bis T=0.6475).")
+    if 24 in Ls and walkers[24] < 2:
+        print("      L=24: Einzel-Walker (PHY041-Bruecke) - "
+              "Walker-Spread NICHT GEMESSEN; domain_tmax_spread004=None. "
+              "VAL-B bleibt ein separater Drift-Guard.")
 
     # --- Coverage-Massen-Gate (nur innerhalb der Domaene bindend) ----------
     unc_max = 0.0
     for (L, w), res in results.items():
         for k, T in enumerate(t_grid):
-            if domains[L][k]:
-                unc_max = max(unc_max, _uncovered_mass(res, float(T)))
+            if domains[L] is None or domains[L][k]:
+                unc_max = _max_fail_closed(unc_max, _uncovered_mass(res, float(T)))
     unc_ok = unc_max < 1e-3
     print(f"\n[COVER] max. kanonische Masse auf unbesetzten Bins "
           f"(in-Domaene): {unc_max:.2e} (Gate < 1e-3) "
@@ -315,7 +518,7 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
     for T in (0.55, 0.60, 0.65):
         c = main_curve[32]
         k = int(np.argmin(np.abs(c["T"] - T)))
-        in_dom = bool(domains[32][k])
+        in_dom = bool(domains[32] is not None and domains[32][k])
         Ewl = c["E"][k] / results[(32, 0)].n
         y2wl = c["y2"][k]
         ref = wolff_reference(32, T, master_seed=master_seed)
@@ -339,7 +542,7 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
     # Haertung 2026-07-10 (Code-Audit M1): der Drift-Guard darf nicht
     # vacuous passen, wenn der Parser nichts findet (Vertrag: 8 T-Punkte
     # fuer L=24 im committeten PHY032-Report).
-    grid_ok = len(grid032.get(24, [])) == 8
+    grid_ok = len(grid032.get(24, [])) == PHY032_L24_ROWS
     if not grid_ok:
         print("      PARSE-VERTRAG VERLETZT: erwarte 8 Gitterpunkte fuer "
               f"L=24, gefunden {len(grid032.get(24, []))}")
@@ -358,6 +561,26 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
               f"(d={abs(y2wl - u032):.4f}, tol={tol:.4f}) "
               f"{'ok' if ok else 'ABWEICHUNG'}")
 
+    # Effektive Quotierbarkeits-Domaene: Walker-Spread bleibt die primaere
+    # Messung. Fuer die historische L=24-Bruecke darf separat der unabhaengige
+    # PHY032-Drift-Guard verwendet werden, aber er wird NICHT als Walker-Spread
+    # umetikettiert. So bleibt domain_tmax_spread004 bei L=24 ehrlich None.
+    effective_domain_bounds: dict[int, tuple[float, float] | None] = {}
+    effective_domain_basis = dict(domain_basis)
+    for L in Ls:
+        if domains[L] is not None and domains[L].any():
+            valid_t = t_grid[domains[L]]
+            effective_domain_bounds[L] = (
+                float(valid_t.min()), float(valid_t.max()))
+        else:
+            effective_domain_bounds[L] = None
+
+    if 24 in Ls and effective_domain_bounds.get(24) is None:
+        fallback = _phy032_fallback_bounds(grid_rows, grid_ok)
+        if fallback is not None:
+            effective_domain_bounds[24] = fallback
+            effective_domain_basis[24] = "PHY032_drift_guard"
+
     # --- VAL-C: PHY041-Bruecke (bitgleiche L=24-Reproduktion) --------------
     c24 = main_curve[24]
     k24 = int(np.argmin(c24["y4_scaled"]))
@@ -373,19 +596,24 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
              if Ls[j] > Ls[i]]
     pair_tbkt = {}
     pair_quotable = {}
+    pair_reason = {}
     for La, Lb in pairs:
-        tb = tbkt_pair_from_curves(t_grid, main_curve[La]["y2"], La,
-                                   main_curve[Lb]["y2"], Lb)
+        tb, reason = _assess_pair(t_grid, main_curve, results, La, Lb,
+                                  effective_domain_bounds)
         pair_tbkt[(La, Lb)] = tb
-        q = (tb is not None
-             and tb <= min(domain_tmax[La], domain_tmax[Lb]))
+        q = reason == "QUOTABLE"
         pair_quotable[(La, Lb)] = q
+        pair_reason[(La, Lb)] = reason
         if tb is None:
             print(f"      T_BKT({La},{Lb}): kein Nulldurchgang im T-Fenster")
         else:
-            tag = ("QUOTIERBAR" if q else
-                   f"NR: Crossing ausserhalb Domaene "
-                   f"(min T_max={min(domain_tmax[La], domain_tmax[Lb]):.4f})")
+            tag = {
+                "QUOTABLE": "QUOTIERBAR",
+                "COVERAGE_LEAK": "NR: Coverage-Gate Kantenleck verfehlt",
+                "COVERAGE_UNCOVERED": "NR: Coverage-Gate Restmasse verfehlt",
+                "OUTSIDE_DOMAIN": "NR: Crossing ausserhalb oder ohne zwei "
+                                  "belegte Domaenen",
+            }[reason]
             print(f"      T_BKT({La},{Lb}) = {tb:.4f}  "
                   f"(vs Multi-Lattice 0.573: "
                   f"{(tb - 0.573) / 0.573 * 100:+.2f}%)  [{tag}]")
@@ -469,8 +697,9 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
         sy = walker_pairs.get((24, 32), {}).get("spread", float("nan"))
         print(f"    - QUOTIERBAR: T_BKT(24,32) = {tb2432:.4f} "
               f"+- {sy / 2:.4f} (Sampler-Systematik = halber Walker-Spread); "
-              f"Lage im Referenzband: nahe Upsilon-beta-Kanal 0.5928, "
-              f"unterhalb PHY041 (16,24)=0.6087.")
+              f"Einordnung gegen den aktuellen, versionierten "
+              f"Literatur-Ledger separat; unterhalb PHY041 "
+              f"(16,24)=0.6087.")
     # Haertung 2026-07-10 (Code-Audit L2): default schuetzt den
     # n_walkers=1-Pfad (leerer Generator -> ValueError VOR dem Report).
     max_spread = max((spreads[L].max() for L in Ls if walkers[L] > 1),
@@ -479,9 +708,14 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
           "sampler-limitiert (Walker-Spread bis "
           f"{max_spread:.2f}); "
           "Validitaets-Domaenen oben ausgewiesen.")
+    nr_cov = [f"({a},{b})" for (a, b) in pairs
+              if pair_reason.get((a, b)) in ("COVERAGE_LEAK", "COVERAGE_UNCOVERED")]
+    if nr_cov:
+        print(f"    - Coverage: Paare {', '.join(nr_cov)} scheitern am Leck-/"
+              "Restmassen-Gate -- Energiefenster/Produktionsabdeckung "
+              "reparieren, nicht die Domaenen.")
     nr02 = [f"({a},{b})" for (a, b) in pairs
-            if pair_tbkt.get((a, b)) is not None
-            and not pair_quotable.get((a, b))]
+            if pair_reason.get((a, b)) == "OUTSIDE_DOMAIN"]
     if nr02:
         print(f"    - NR-PHY042-02: Paare {', '.join(nr02)} crossen "
               "ausserhalb der Domaene - bei diesem Statistik-Budget "
@@ -517,8 +751,20 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
                     for (L, w) in results},
         "leak_max": leak_max,
         "uncovered_mass_max_in_domain": unc_max,
-        "walker_spread": {str(L): spreads[L].tolist() for L in Ls},
+        "walker_spread": {
+            str(L): (None if spreads[L] is None else spreads[L].tolist())
+            for L in Ls
+        },
         "domain_tmax_spread004": {str(L): domain_tmax[L] for L in Ls},
+        "domain_basis": {str(L): domain_basis[L] for L in Ls},
+        "effective_domain_bounds": {
+            str(L): (None if effective_domain_bounds.get(L) is None
+                     else list(effective_domain_bounds[L]))
+            for L in Ls
+        },
+        "effective_domain_basis": {
+            str(L): effective_domain_basis.get(L) for L in Ls
+        },
         "validation_vs_wolff_L32": val_rows,
         "validation_vs_phy032_grid": grid_rows,
         "phy041_bridge": {"y4_dip_L24": y4_dip_24,
@@ -527,6 +773,7 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
                                   for (a, b), v in pair_tbkt.items()},
         "pair_quotable": {f"{a}_{b}": bool(v)
                           for (a, b), v in pair_quotable.items()},
+        "pair_reason": {f"{a}_{b}": v for (a, b), v in pair_reason.items()},
         "walker_pair_tbkt": {f"{a}_{b}": v
                              for (a, b), v in walker_pairs.items()},
         "phy041_pairs": {f"{a}_{b}": v for (a, b), v in PHY041_PAIRS.items()},

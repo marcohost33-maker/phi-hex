@@ -28,73 +28,56 @@ def _beta_to_t(beta: float, sigma_beta: float) -> tuple[float, float]:
     return 1.0 / beta, sigma_beta / (beta * beta)
 
 
-def test_production_ref_band_uses_converted_beta_channels():
-    """phy042.REF_BAND fuehrt die beta-Kanaele in korrekt konvertierter
-    T-Form (kein stiller beta/T-Mix im Produktionscode)."""
+def test_current_reference_ledger_is_versioned_and_direct_T():
+    """Issue #45: aktuelle Produktionsreferenzen stammen aus den derzeitigen
+    Quellenfassungen; supersedierte beta-v1-Werte sind keine Live-Anker.
+    """
     band = phy042.REF_BAND
-    for key, (beta, sig_beta) in (("upsilon_beta", (1.687, 0.003)),
-                                  ("upsilon4_beta", (1.635, 0.011)),
-                                  ("binder_beta", (1.724, 0.002))):
-        t, sig_t = _beta_to_t(beta, sig_beta)
-        val, sig = band[key]
-        assert math.isclose(val, t, abs_tol=5e-4), key
-        assert math.isclose(sig, sig_t, abs_tol=2e-4), key
+    assert band["okabe_otsuka_2501_v1_rough"] == (0.573, None)
+    assert band["jiang_ptep_nn"] == (0.572, 0.003)
+    assert band["jiang_ptep_helicity"] == (0.576, 0.004)
+    assert band["andrade_v4_helicity_sa"] == (0.575, 0.008)
+    assert band["andrade_v4_helicity_wl"] == (0.576, 0.003)
+    assert band["andrade_v4_upsilon4_sa"] == (0.551, 0.011)
+    assert band["andrade_v4_upsilon4_wl"] == (0.568, 0.001)
 
 
-def test_production_refs_keep_legacy_0576_out_of_band_channels():
-    """Kein REF_BAND-Kanal darf der Legacy-Direktlesart 0.576 entsprechen;
-    PHY041 fuehrt 0.576 nur als explizit benannten 'dedicated'-Anker."""
-    for key, v in phy042.REF_BAND.items():
-        val = v[0] if isinstance(v, tuple) else v
-        if key == "multi_lattice":
-            continue
-        assert not math.isclose(val, 0.576, abs_tol=1e-9), key
+def test_superseded_beta_values_are_not_live_reference_keys():
+    """Die alte v1-Konversion bleibt reproduzierbare Historie, darf aber nicht
+    mehr im aktuellen REF_BAND als beta-Kanal erscheinen.
+    """
+    old = {
+        "upsilon_beta": _beta_to_t(1.687, 0.003),
+        "upsilon4_beta": _beta_to_t(1.635, 0.011),
+        "binder_beta": _beta_to_t(1.724, 0.002),
+    }
+    assert math.isclose(old["upsilon_beta"][0], 0.5928, abs_tol=5e-4)
+    assert math.isclose(old["upsilon4_beta"][0], 0.6116, abs_tol=5e-4)
+    assert math.isclose(old["binder_beta"][0], 0.5800, abs_tol=5e-4)
+    for key in old:
+        assert key not in phy042.REF_BAND
+
+
+def test_primary_w4_reference_set_excludes_upsilon4_diagnostic():
+    """Y4 bleibt Diagnostik: die aktuelle Quelle selbst warnt vor der
+    FSS-/Minimum-Systematik. W4-Primärvergleich nutzt direkte T_BKT-
+    Schätzungen aus Korrelations-/NN- und Y2-Helicity-Kanaelen.
+    """
+    assert set(phy042.REF_PRIMARY_KEYS) == {
+        "okabe_otsuka_2501_v1_rough",
+        "jiang_ptep_nn",
+        "jiang_ptep_helicity",
+        "andrade_v4_helicity_sa",
+        "andrade_v4_helicity_wl",
+    }
+    assert all("upsilon4" not in k for k in phy042.REF_PRIMARY_KEYS)
+
+
+def test_historical_phy041_anchor_remains_lineage_only():
+    """PHY041 ist ein datierter historischer Lauf; sein 0.576-Anker bleibt
+    fuer Reproduktion erhalten, wird aber nicht mit dem neuen Ledger verwechselt.
+    """
     assert phy041.REF_MULTI == 0.573
     assert phy041.REF_DEDIC == 0.576
+    assert phy042.REF_BAND["andrade_v4_helicity_wl"] == (0.576, 0.003)
 
-
-def test_arxiv_2406_12076_beta_values_are_not_legacy_0576() -> None:
-    """de Andrade/Jorge/DaSilva berichten beta_BKT, nicht direkt T=0.576.
-
-    Die umgerechneten T-Werte liegen bei ca. 0.593, 0.612 und 0.580. Damit darf
-    `0.576(3)` nicht als direkter Y2/Y4-Wert dieser Quelle gefuehrt werden.
-    """
-    y2_t, y2_sigma = _beta_to_t(1.687, 0.003)
-    y4_t, y4_sigma = _beta_to_t(1.635, 0.011)
-    binder_t, binder_sigma = _beta_to_t(1.724, 0.002)
-
-    assert math.isclose(y2_t, 0.5928, abs_tol=5e-4)
-    assert math.isclose(y2_sigma, 0.0011, abs_tol=2e-4)
-    assert math.isclose(y4_t, 0.6116, abs_tol=5e-4)
-    assert math.isclose(y4_sigma, 0.0041, abs_tol=5e-4)
-    assert math.isclose(binder_t, 0.5800, abs_tol=5e-4)
-    assert math.isclose(binder_sigma, 0.0007, abs_tol=2e-4)
-
-    for value in (y2_t, y4_t, binder_t):
-        assert abs(value - 0.576) > 0.003
-
-
-def test_honeycomb_reference_band_keeps_sources_separate() -> None:
-    """Die Repo-Vergleiche behalten Multi-Lattice, Jiang und beta-Werte getrennt."""
-    refs = {
-        "okabe_otsuka_multi_lattice": 0.573,
-        "jiang_helicity_direct_T": 0.571,
-        "jiang_nn_direct_T": 0.560,
-        "andrade_jorge_dasilva_y2_beta_as_T": _beta_to_t(1.687, 0.003)[0],
-        "andrade_jorge_dasilva_y4_beta_as_T": _beta_to_t(1.635, 0.011)[0],
-        "andrade_jorge_dasilva_binder_beta_as_T": _beta_to_t(1.724, 0.002)[0],
-        "legacy_dedicated_anchor_unattributed": 0.576,
-    }
-
-    assert refs["jiang_helicity_direct_T"] < refs["andrade_jorge_dasilva_y2_beta_as_T"]
-    assert refs["okabe_otsuka_multi_lattice"] < refs["andrade_jorge_dasilva_y2_beta_as_T"]
-    assert not math.isclose(
-        refs["legacy_dedicated_anchor_unattributed"],
-        refs["andrade_jorge_dasilva_y2_beta_as_T"],
-        abs_tol=0.003,
-    )
-    assert not math.isclose(
-        refs["legacy_dedicated_anchor_unattributed"],
-        refs["andrade_jorge_dasilva_y4_beta_as_T"],
-        abs_tol=0.003,
-    )

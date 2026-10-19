@@ -4,6 +4,9 @@ Every plotted number is read from
 ``results/260707 PHY042 honeycomb wl-fss L24-32-48 gate report.json``; nothing
 is fitted or smoothed here. Curves are drawn solid inside each L's quotable
 domain (``domain_tmax_spread004``: walker spread <= 0.04) and faded beyond it.
+An L run with a single walker has no measured spread, so its historical
+``domain_tmax_spread004`` entry (the W4 data-semantics erratum, Issue #45) is
+ignored and the whole curve stays faded.
 
     python docs/figures/make_readme_figure.py
 
@@ -48,6 +51,7 @@ def draw(report: dict, sha16: str, theme: str) -> Path:
     ax.set_facecolor(c["surface"])
     curves = report["main_curves"]
     domains = report["domain_tmax_spread004"]
+    walkers = report["n_walkers"]
     t_all = curves[next(iter(curves))]["T"]
     ax.plot(t_all, [2.0 * t / math.pi for t in t_all], color=c["muted"],
             lw=1.2, ls=(0, (1, 2)), zorder=1)
@@ -60,7 +64,8 @@ def draw(report: dict, sha16: str, theme: str) -> Path:
                 xytext=(4, -12), textcoords="offset points", color=c["muted"], fontsize=8.5)
     for i, L in enumerate(sorted(curves, key=int)):
         T, y = curves[L]["T"], curves[L]["y2"]
-        tmax = domains.get(L)
+        # one walker -> spread unmeasured, not 0 (W4 erratum, PR #51 Codex)
+        tmax = domains.get(L) if walkers.get(L, 0) >= 2 else None
         color, ls = c["series"][i], LINESTYLES[i]
         inside = [k for k, t in enumerate(T) if tmax is not None and t <= tmax + 1e-12]
         ax.plot(T, y, color=color, lw=2, ls=ls, alpha=0.28, zorder=2)
@@ -68,13 +73,16 @@ def draw(report: dict, sha16: str, theme: str) -> Path:
             Ti = [T[k] for k in inside]
             yi = [y[k] for k in inside]
             ax.plot(Ti, yi, color=color, lw=2, ls=ls, zorder=3, solid_capstyle="round")
-            # label at the end of the quotable segment, where the curves separate
-            at_edge = Ti[-1] >= t_all[-1] - 1e-9
-            ax.annotate(f"L = {L}", xy=(Ti[-1], yi[-1]),
-                        xytext=(-4, 9) if at_edge else (7, 2),
-                        textcoords="offset points", ha="right" if at_edge else "left",
-                        va="center", color=c["ink"], fontsize=9,
-                        bbox={"boxstyle": "round,pad=0.15", "fc": c["surface"], "ec": "none"})
+        else:
+            Ti, yi = T, y
+        # label at the end of the quotable segment, where the curves separate
+        at_edge = Ti[-1] >= t_all[-1] - 1e-9
+        label = f"L = {L}" if inside else f"L = {L} (1 walker, spread unmeasured)"
+        ax.annotate(label, xy=(Ti[-1], yi[-1]),
+                    xytext=(-4, 9) if at_edge else (7, 2),
+                    textcoords="offset points", ha="right" if at_edge else "left",
+                    va="center", color=c["ink"], fontsize=9,
+                    bbox={"boxstyle": "round,pad=0.15", "fc": c["surface"], "ec": "none"})
     ax.set_xlabel("temperature T", color=c["ink"])
     ax.set_ylabel("helicity modulus Υ", color=c["ink"])
     ax.set_title("Phi-Hex · XY model on the honeycomb lattice (Wang–Landau, PHY042)",
@@ -87,7 +95,7 @@ def draw(report: dict, sha16: str, theme: str) -> Path:
     ax.set_xlim(t_all[0] - 0.012, t_all[-1] + 0.002)
     fig.text(0.01, 0.01,
              f"Data: results/260707 PHY042 … gate report.json (SHA-256 {sha16}…). "
-             "Faded: outside the quotable domain (walker spread > 0.04).",
+             "Faded: walker spread > 0.04 or unmeasured (1 walker).",
              color=c["muted"], fontsize=7)
     fig.tight_layout(rect=(0, 0.04, 1, 1))
     out = OUT / f"phy042_helicity_honeycomb_{theme}.png"
