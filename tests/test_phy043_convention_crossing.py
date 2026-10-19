@@ -259,3 +259,9 @@ def test_nan_inputs_fail_closed_in_xi_splay_and_low_t_merge() -> None:
     assert not phy043.low_t_pair_merges(0.5, nan, 0.5, 0.01)
     assert phy043.low_t_pair_merges(0.50, 0.01, 0.51, 0.01)        # Negativ-Kontrolle
     assert not phy043.low_t_pair_merges(0.50, 0.001, 0.70, 0.001)
+
+
+def test_low_t_merge_infinite_sem_fails_closed() -> None:
+    """SEM = inf macht die Schranke unendlich -> kein Merge (Audit A-3)."""
+    assert not phy043.low_t_pair_merges(0.50, float("inf"), 0.51, 0.01)
+    assert phy043.low_t_pair_merges(0.50, 0.01, 0.51, 0.01)           # Negativ-Kontrolle

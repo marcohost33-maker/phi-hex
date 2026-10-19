@@ -306,3 +306,35 @@ def test_missing_common_domain_is_outside_domain_not_a_coverage_failure():
     assert phy042._pair_verdict(0.575, a, a, 0.0, 0.0, bracket_valid=True) == "QUOTABLE"
     # NaN/inf-Abdeckung bleibt fail-closed
     assert phy042._pair_verdict(0.575, a, a, float("inf"), 0.0, bracket_valid=True) == "COVERAGE_LEAK"
+
+
+def test_global_gate_max_keeps_nan_and_inf():
+    """builtin max(0.0, nan) == 0.0 liess eine NaN-Metrik verschwinden (Audit A-1)."""
+    assert max(0.0, float("nan")) == 0.0  # dokumentierte Falle
+    assert phy042._max_fail_closed(0.0, float("nan")) == math.inf
+    assert phy042._max_fail_closed(0.0, float("inf")) == math.inf
+    assert phy042._max_fail_closed(1e-4, 5e-5) == 1e-4          # Negativ-Kontrolle
+    assert phy042._max_fail_closed(1e-4, 2e-4) == 2e-4
+
+
+def test_assess_pair_wires_bracket_coverage_and_verdict():
+    """Claim-Pfad als Ganzes (Audit A-2): Klammer, Paar-Coverage und Verdikt."""
+    t, ya, yb = _crossing_curves(0.647)
+    curves = {24: {"y2": ya}, 32: {"y2": yb}}
+    results = {(24, 0): "a", (32, 0): "b", (48, 0): "c"}
+    clean = lambda res, T: 0.0  # noqa: E731
+    wide = {24: (0.56, 0.65), 32: (0.52, 0.67)}
+    tb, reason = phy042._assess_pair(t, curves, results, 24, 32, wide,
+                                     leak_metric=clean, unc_metric=clean)
+    assert abs(tb - 0.647) < 1e-9 and reason == "QUOTABLE"          # Positiv-Kontrolle
+    narrow = {24: (0.56, 0.6475), 32: (0.52, 0.67)}                 # Klammer 0.650 ungedeckt
+    assert phy042._assess_pair(t, curves, results, 24, 32, narrow,
+                               leak_metric=clean, unc_metric=clean)[1] == "OUTSIDE_DOMAIN"
+    leaky = lambda res, T: 0.5 if res == "b" and abs(T - 0.60) < 1e-9 else 0.0  # noqa: E731
+    assert phy042._assess_pair(t, curves, results, 24, 32, wide,
+                               leak_metric=leaky, unc_metric=clean)[1] == "COVERAGE_LEAK"
+    foreign = lambda res, T: 0.5 if res == "c" else 0.0  # noqa: E731  (fremdes L=48)
+    assert phy042._assess_pair(t, curves, results, 24, 32, wide,
+                               leak_metric=foreign, unc_metric=foreign)[1] == "QUOTABLE"
+    assert phy042._assess_pair(t, curves, results, 24, 32, {32: (0.52, 0.67)},
+                               leak_metric=clean, unc_metric=clean)[1] == "OUTSIDE_DOMAIN"

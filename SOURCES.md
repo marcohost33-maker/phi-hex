@@ -369,3 +369,6 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | 2C29C843D5CD9F44 | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression Paar-Coverage) |
 | 93FF26B6E304A3CD | 2026-10-19 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (fehlende gemeinsame Domaene ist OUTSIDE_DOMAIN, nicht Coverage-Fehler) |
 | 99F61C1304807981 | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression None-Abdeckung) |
+| 106BAF09944E5CB9 | 2026-10-19 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (globale Gates NaN-fest (_max_fail_closed); Claim-Pfad als _assess_pair) |
+| 53554F0B0659B2ED | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression NaN-Max und Verdrahtung des Claim-Pfads) |
+| FB80B468ACC14B96 | 2026-10-19 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression SEM=inf im Tief-T-Merge) |

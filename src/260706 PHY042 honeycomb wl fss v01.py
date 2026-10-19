@@ -215,6 +215,35 @@ def _bracket_in_common_domain(t_grid, y2_a, La, y2_b, Lb, tb,
     return sub is not None and abs(sub - tb) <= 1e-12
 
 
+def _max_fail_closed(acc: float, value) -> float:
+    """Running maximum for gate metrics: builtin max(0.0, nan) returns 0.0 and
+    silently drops a NaN metric, letting the gate PASS (audit 2026-10-19 A-1).
+    Any non-finite value makes the maximum inf, so the gate fails closed."""
+    v = float(value)
+    if not math.isfinite(v):
+        return math.inf
+    return acc if acc >= v else v
+
+
+def _assess_pair(t_grid, main_curve, results, La: int, Lb: int, bounds, *,
+                 leak_metric=None, unc_metric=None):
+    """Crossing and W4-G2 verdict for one pair -- the claim path of run_phy042
+    as a pure function, so its wiring (bracket, per-pair coverage, verdict) is
+    testable without a production run (audit 2026-10-19 A-2)."""
+    leak_metric = canonical_edge_leak if leak_metric is None else leak_metric
+    unc_metric = _uncovered_mass if unc_metric is None else unc_metric
+    tb = tbkt_pair_from_curves(t_grid, main_curve[La]["y2"], La,
+                               main_curve[Lb]["y2"], Lb)
+    dom_a, dom_b = bounds.get(La), bounds.get(Lb)
+    bracket_ok = _bracket_in_common_domain(
+        t_grid, main_curve[La]["y2"], La, main_curve[Lb]["y2"], Lb, tb,
+        dom_a, dom_b)
+    p_leak = _pair_coverage_max(results, La, Lb, t_grid, dom_a, dom_b, leak_metric)
+    p_unc = _pair_coverage_max(results, La, Lb, t_grid, dom_a, dom_b, unc_metric)
+    return tb, _pair_verdict(tb, dom_a, dom_b, p_leak, p_unc,
+                             bracket_valid=bracket_ok)
+
+
 def _pair_coverage_max(results, La: int, Lb: int, t_grid, dom_a, dom_b,
                        metric) -> float | None:
     """Coverage metric for ONE pair: max over the walkers of La and Lb, on the
@@ -428,7 +457,7 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
     leak_max = 0.0
     for key, res in results.items():
         for T in t_grid:
-            leak_max = max(leak_max, canonical_edge_leak(res, float(T)))
+            leak_max = _max_fail_closed(leak_max, canonical_edge_leak(res, float(T)))
     leak_ok = leak_max < 1e-3
     print(f"\n[LEAK] max. Randgewicht ueber alle (L, walker, T): "
           f"{leak_max:.2e} (Gate < 1e-3) -> {'PASS' if leak_ok else 'FAIL'}")
@@ -475,7 +504,7 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
     for (L, w), res in results.items():
         for k, T in enumerate(t_grid):
             if domains[L] is None or domains[L][k]:
-                unc_max = max(unc_max, _uncovered_mass(res, float(T)))
+                unc_max = _max_fail_closed(unc_max, _uncovered_mass(res, float(T)))
     unc_ok = unc_max < 1e-3
     print(f"\n[COVER] max. kanonische Masse auf unbesetzten Bins "
           f"(in-Domaene): {unc_max:.2e} (Gate < 1e-3) "
@@ -569,20 +598,9 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
     pair_quotable = {}
     pair_reason = {}
     for La, Lb in pairs:
-        tb = tbkt_pair_from_curves(t_grid, main_curve[La]["y2"], La,
-                                   main_curve[Lb]["y2"], Lb)
+        tb, reason = _assess_pair(t_grid, main_curve, results, La, Lb,
+                                  effective_domain_bounds)
         pair_tbkt[(La, Lb)] = tb
-        dom_a = effective_domain_bounds.get(La)
-        dom_b = effective_domain_bounds.get(Lb)
-        bracket_ok = _bracket_in_common_domain(
-            t_grid, main_curve[La]["y2"], La, main_curve[Lb]["y2"], Lb, tb,
-            dom_a, dom_b)
-        p_leak = _pair_coverage_max(results, La, Lb, t_grid, dom_a, dom_b,
-                                    canonical_edge_leak)
-        p_unc = _pair_coverage_max(results, La, Lb, t_grid, dom_a, dom_b,
-                                   _uncovered_mass)
-        reason = _pair_verdict(tb, dom_a, dom_b, p_leak, p_unc,
-                               bracket_valid=bracket_ok)
         q = reason == "QUOTABLE"
         pair_quotable[(La, Lb)] = q
         pair_reason[(La, Lb)] = reason
