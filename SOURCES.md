@@ -349,3 +349,5 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | 82664438A15F1C7A | 2026-10-19 | docs/figures | repo-native: `docs/figures/phy042_helicity_honeycomb_light.png` (regeneriert: L24 vollstaendig blass, Spread nicht gemessen) |
 | 00B48D680D7A3829 | 2026-10-19 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (Pilot-Gitter in aufsteigender Reihenfolge, nicht nur als Menge) |
 | 5DD99D1DD22E1503 | 2026-10-19 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression umsortierte Gitter sind kein Pilot) |
+| 6D33A11F543661D5 | 2026-10-19 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (PHY032-Fallback verlangt 8 behaltene L24-Zeilen nach Fensterfilter) |
+| EFB6AB880DA616DB | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression Teilgitter nach Fensterfilter) |

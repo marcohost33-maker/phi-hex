@@ -259,6 +259,9 @@ def _wl_job(args: tuple) -> tuple:
     return (L, walker, res)
 
 
+PHY032_L24_ROWS = 8  # Parse-Vertrag: committeter PHY032-Report, L=24
+
+
 def _phy032_fallback_bounds(grid_rows, grid_ok: bool):
     """L=24-Fallback-Domaene aus dem PHY032-Drift-Guard, fail-closed.
 
@@ -266,8 +269,12 @@ def _phy032_fallback_bounds(grid_rows, grid_ok: bool):
     validiert) traegt die Domaene; ein Teilgitter, dessen erhaltene Zeilen
     passen, liefert None (PR #51 Codex-Runde 2026-10-16). Fallback-Evidenz
     gilt nur auf dem validierten Gitter; BEIDE Grenzen sind bindend.
+    Gezaehlt werden die BEHALTENEN Zeilen nach dem Fensterfilter, nicht die
+    rohe Parse-Zahl: eine Zeile ausserhalb _T_GRID faellt sonst still weg
+    und sieben Zeilen tragen die Domaene (PR #51 Codex 2026-10-19).
     """
-    if not grid_ok or not grid_rows or not all(bool(r["ok"]) for r in grid_rows):
+    if (not grid_ok or len(grid_rows) != PHY032_L24_ROWS
+            or not all(bool(r["ok"]) for r in grid_rows)):
         return None
     return (min(float(r["T"]) for r in grid_rows),
             max(float(r["T"]) for r in grid_rows))
@@ -438,7 +445,7 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
     # Haertung 2026-07-10 (Code-Audit M1): der Drift-Guard darf nicht
     # vacuous passen, wenn der Parser nichts findet (Vertrag: 8 T-Punkte
     # fuer L=24 im committeten PHY032-Report).
-    grid_ok = len(grid032.get(24, [])) == 8
+    grid_ok = len(grid032.get(24, [])) == PHY032_L24_ROWS
     if not grid_ok:
         print("      PARSE-VERTRAG VERLETZT: erwarte 8 Gitterpunkte fuer "
               f"L=24, gefunden {len(grid032.get(24, []))}")

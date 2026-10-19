@@ -181,11 +181,19 @@ def test_wl_job_smoke_small_lattice():
 
 def test_partial_phy032_grid_never_installs_the_fallback_domain():
     """Teilgitter mit passenden Zeilen: grid_ok=False -> kein Fallback."""
-    rows = [{"T": 0.57, "ok": True}, {"T": 0.61, "ok": True}]
+    rows = [{"T": round(0.57 + 0.005 * k, 3), "ok": True} for k in range(8)]
     assert phy042._phy032_fallback_bounds(rows, False) is None
-    assert phy042._phy032_fallback_bounds(rows, True) == (0.57, 0.61)
-    assert phy042._phy032_fallback_bounds(rows + [{"T": 0.65, "ok": False}], True) is None
+    assert phy042._phy032_fallback_bounds(rows, True) == (0.57, 0.605)
+    assert phy042._phy032_fallback_bounds(rows[:-1] + [{"T": 0.65, "ok": False}], True) is None
     assert phy042._phy032_fallback_bounds([], True) is None
+
+
+def test_fallback_needs_all_eight_rows_retained_after_the_window_filter():
+    """grid_ok kam aus der rohen Parse-Zahl; faellt eine Zeile aus dem
+    T-Fenster, duerfen sieben passende Zeilen keine Domaene tragen."""
+    rows = [{"T": round(0.57 + 0.005 * k, 3), "ok": True} for k in range(8)]
+    assert phy042._phy032_fallback_bounds(rows[:7], True) is None
+    assert phy042._phy032_fallback_bounds(rows[1:], True) is None
 
 
 def test_pair_quotable_requires_both_coverage_gates():
