@@ -516,10 +516,12 @@ def _is_pilot_budget(n_seeds: int, lattices_L, n_measure: int, temperatures,
         and int(n_measure) == PILOT_N_MEASURE
         and int(n_seeds) == PILOT_N_SEEDS
         and int(n_burn) == PILOT_N_BURN
-        # the complete grid, not just its maximum (PR #51 Codex 2026-10-17);
+        # the complete grid in its ascending order, not just its maximum or its
+        # set: run_phy043 keeps the supplied order and the crossing/tail scans
+        # assume ascending T (PR #51 Codex 2026-10-17, two rounds);
         # 1e-9 absorbs float64 grid construction only
         and len(temperatures) == len(PILOT_TEMPS)
-        and all(abs(float(t) - p) <= 1e-9 for t, p in zip(sorted(temperatures), PILOT_TEMPS))
+        and all(abs(float(t) - p) <= 1e-9 for t, p in zip(temperatures, PILOT_TEMPS))
     )
 
 

@@ -232,6 +232,10 @@ def test_no_splay_nr_label_only_for_the_assessed_pilot_budget() -> None:
     for short in ([1.58], pilot_T[:-1], [1.40 + 0.02 * k for k in range(10)]):
         assert not phy043._is_pilot_budget(4, [9, 13, 19], 400, short, 300)
     assert not phy043._is_pilot_budget(4, [9, 13, 19], 400, pilot_T, 0)  # burn-in differs
+    # same set, wrong order: the crossing scans need ascending T, so no NR label
+    for reordered in (pilot_T[::-1], pilot_T[1:] + pilot_T[:1]):
+        assert not phy043._is_pilot_budget(4, [9, 13, 19], 400, reordered, 300)
+        assert "NR-PHY043" not in phy043._no_splay_finding(4, [9, 13, 19], 400, reordered, 300)
     production = phy043._no_splay_finding(8, [9, 13, 19, 25], 400, pilot_T, 300)
     assert "NR-PHY043" not in production and "UNBEWERTET" in production
 

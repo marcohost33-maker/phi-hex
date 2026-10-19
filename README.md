@@ -21,7 +21,8 @@ values. The documentation is in German.
 *Helicity modulus Υ(T) on the honeycomb lattice, L = 24/32/48 (Wang–Landau, PHY042), next to the
 BKT criterion Υ = 2T/π. Every point is read from the committed gate report
 `results/260707 PHY042 honeycomb wl-fss L24-32-48 gate report.json`. Faded segments lie outside
-the quotable domain. This is a pipeline result, **not** a new T_BKT best value (see *Mess-Stand*).
+the quotable domain; L = 24 ran with a single walker, so its spread is unmeasured and the whole
+curve stays faded (W4 erratum, Issue #45). This is a pipeline result, **not** a new T_BKT best value (see *Mess-Stand*).
 Regenerate with `python docs/figures/make_readme_figure.py`.*
 
 **Was:** Phi-Hex misst die BKT-Uebergangstemperatur des 2D-XY-Modells auf
@@ -123,20 +124,20 @@ PHY042 fuehrt den PHY041-Kernel auf L=24/32/48 mit getrennten Upsilon_2-/Upsilon
 | A: aligned `Upsilon_2(0) = 3/4 J` exakt | PASS |
 | max. kanonisches Rand-Leak | 1.6e-10 |
 | max. unbesetzte kanonische Masse in-Domaene | 1.9e-10 |
-| Validitaets-Domaene `T_max` (Walker-Spread < 0.04) | L24: 0.67, L32: 0.60, L48: 0.585 |
+| Validitaets-Domaene `T_max` (Walker-Spread < 0.04) | L24: **nicht gemessen** (1 Walker; der JSON-Wert 0.67 ist das W4-Erratum, siehe unten), L32: 0.60, L48: 0.585 |
 
 Upsilon_2-Paar-Schaetzer (C-eliminiert, Mittel-Kurven), Einordnung **nur relativ zum Referenzband**:
 
 | Paar | T_BKT | belastbar? |
 |---|---:|---|
-| (24,32) | 0.5875 | ja — Crossing in beiden Validitaets-Domaenen |
+| (24,32) | 0.5875 | **bedingt** — in der L32-Domaene; fuer L24 ist keine Spread-Domaene gemessen (1 Walker, W4-Erratum). Der Paar-Spread 0.013 erfasst nur die L32-Walker |
 | (24,48) | 0.5898 | **nein** — NR-PHY042-02 |
 | (32,48) | 0.5916 | **nein** — NR-PHY042-02 |
 
 Ehrliche Grenzen:
 
 - **Kein neuer Bestwert / kein finaler T_BKT-Claim.** L=48 bleibt endlich; die Walker-Systematik misst nur den Sampler (g(E)-Bias), nicht den finite-size-Bias. Ein neuer Bestwert braucht Cross-Family-Review.
-- **NR-PHY042-02:** Die Paare (24,48) und (32,48) crossen ausserhalb der gemeinsamen Validitaets-Domaene und sind bei diesem Statistik-Budget nicht belastbar (Walker-Spread 0.033 bzw. 0.039 in T_BKT vs. 0.013 fuer das quotable Paar (24,32)).
+- **NR-PHY042-02:** Die Paare (24,48) und (32,48) crossen ausserhalb der gemeinsamen Validitaets-Domaene und sind bei diesem Statistik-Budget nicht belastbar (Walker-Spread 0.033 bzw. 0.039 in T_BKT vs. 0.013 fuer das Paar (24,32), dessen Spread nur die L32-Walker erfasst).
 - **NR-PHY042-03:** Der Upsilon_4-Dip ist bei L in {32,48} nicht walker-robust (L=24 robust bei T=0.65; L=32/48 walker-abhaengig). Upsilon_4-FSS oberhalb L=24 braucht mehr Produktion.
 
 ## PHY043 — Konventionsfreier Quercheck triangular (Audit O1; Finding, kein Bestwert)
