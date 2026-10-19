@@ -367,3 +367,5 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | 88169459761BB954 | 2026-10-19 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression unsauberer Baum) |
 | 58556F9474543B4E | 2026-10-19 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (Coverage je Paar ueber die gemeinsame Domaene) |
 | 2C29C843D5CD9F44 | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression Paar-Coverage) |
+| 93FF26B6E304A3CD | 2026-10-19 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (fehlende gemeinsame Domaene ist OUTSIDE_DOMAIN, nicht Coverage-Fehler) |
+| 99F61C1304807981 | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression None-Abdeckung) |

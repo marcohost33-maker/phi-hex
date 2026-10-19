@@ -294,3 +294,15 @@ def test_pair_coverage_is_scoped_to_the_pair_and_its_common_domain():
     assert phy042._pair_coverage_max(results, 24, 32, t, None, dom32, metric) is None
     nan_metric = lambda res, T: float("nan")  # noqa: E731
     assert phy042._pair_coverage_max(results, 24, 32, t, dom24, dom32, nan_metric) == math.inf
+
+
+def test_missing_common_domain_is_outside_domain_not_a_coverage_failure():
+    """None-Abdeckung = keine gemeinsame Domaene -> OUTSIDE_DOMAIN, nicht COVERAGE_LEAK."""
+    a = (0.56, 0.59)
+    assert phy042._pair_verdict(0.575, None, a, None, None, bracket_valid=False) == "OUTSIDE_DOMAIN"
+    assert phy042._pair_verdict(None, None, a, None, None, bracket_valid=False) == "NO_CROSSING"
+    # Positiv-Kontrolle: echte Abdeckungsverletzung bleibt COVERAGE_LEAK
+    assert phy042._pair_verdict(0.575, a, a, 0.5, 0.0, bracket_valid=True) == "COVERAGE_LEAK"
+    assert phy042._pair_verdict(0.575, a, a, 0.0, 0.0, bracket_valid=True) == "QUOTABLE"
+    # NaN/inf-Abdeckung bleibt fail-closed
+    assert phy042._pair_verdict(0.575, a, a, float("inf"), 0.0, bracket_valid=True) == "COVERAGE_LEAK"

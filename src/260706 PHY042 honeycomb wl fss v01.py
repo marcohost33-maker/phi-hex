@@ -258,6 +258,19 @@ def _pair_reason(tb, dom_a, dom_b, leak_ok: bool, unc_ok: bool, *,
     return "QUOTABLE"
 
 
+def _pair_verdict(tb, dom_a, dom_b, p_leak, p_unc, *, bracket_valid: bool) -> str:
+    """Pair verdict from the per-pair coverage maxima. ``None`` coverage means
+    there is no common domain -- that is OUTSIDE_DOMAIN, not a failed coverage
+    gate, so the report points at domain work, not an energy-window repair
+    (PR #51 Codex 2026-10-19)."""
+    if tb is None:
+        return "NO_CROSSING"
+    if p_leak is None or p_unc is None:
+        return "OUTSIDE_DOMAIN"
+    return _pair_reason(tb, dom_a, dom_b, p_leak < 1e-3, p_unc < 1e-3,
+                        bracket_valid=bracket_valid)
+
+
 def _pair_quotable(tb, dom_a, dom_b, leak_ok: bool, unc_ok: bool, *,
                    bracket_valid: bool) -> bool:
     """Quotable only inside both domains AND with both coverage gates passed."""
@@ -568,10 +581,8 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
                                     canonical_edge_leak)
         p_unc = _pair_coverage_max(results, La, Lb, t_grid, dom_a, dom_b,
                                    _uncovered_mass)
-        reason = _pair_reason(tb, dom_a, dom_b,
-                              p_leak is not None and p_leak < 1e-3,
-                              p_unc is not None and p_unc < 1e-3,
-                              bracket_valid=bracket_ok)
+        reason = _pair_verdict(tb, dom_a, dom_b, p_leak, p_unc,
+                               bracket_valid=bracket_ok)
         q = reason == "QUOTABLE"
         pair_quotable[(La, Lb)] = q
         pair_reason[(La, Lb)] = reason
