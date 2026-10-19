@@ -260,6 +260,8 @@ def _wl_job(args: tuple) -> tuple:
 
 
 PHY032_L24_ROWS = 8  # Parse-Vertrag: committeter PHY032-Report, L=24
+# Das exakte Vertragsgitter des committeten PHY032-Reports (L=24), in Parse-Reihenfolge.
+PHY032_L24_GRID = tuple(round(0.56 + 0.0125 * k, 4) for k in range(PHY032_L24_ROWS))
 
 
 def _phy032_fallback_bounds(grid_rows, grid_ok: bool):
@@ -269,12 +271,14 @@ def _phy032_fallback_bounds(grid_rows, grid_ok: bool):
     validiert) traegt die Domaene; ein Teilgitter, dessen erhaltene Zeilen
     passen, liefert None (PR #51 Codex-Runde 2026-10-16). Fallback-Evidenz
     gilt nur auf dem validierten Gitter; BEIDE Grenzen sind bindend.
-    Gezaehlt werden die BEHALTENEN Zeilen nach dem Fensterfilter, nicht die
-    rohe Parse-Zahl: eine Zeile ausserhalb _T_GRID faellt sonst still weg
-    und sieben Zeilen tragen die Domaene (PR #51 Codex 2026-10-19).
+    Verglichen wird das EXAKTE Vertragsgitter der behaltenen Zeilen nach dem
+    Fensterfilter, nicht nur ihre Anzahl: sonst tragen sieben Zeilen oder eine
+    Dublette anstelle eines fehlenden Punkts die Domaene (PR #51 Codex 2026-10-19).
     """
-    if (not grid_ok or len(grid_rows) != PHY032_L24_ROWS
-            or not all(bool(r["ok"]) for r in grid_rows)):
+    temps = [float(r["T"]) for r in grid_rows]
+    exact = (len(temps) == len(PHY032_L24_GRID)
+             and all(abs(t - p) <= 1e-9 for t, p in zip(temps, PHY032_L24_GRID)))
+    if not grid_ok or not exact or not all(bool(r["ok"]) for r in grid_rows):
         return None
     return (min(float(r["T"]) for r in grid_rows),
             max(float(r["T"]) for r in grid_rows))

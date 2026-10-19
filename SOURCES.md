@@ -355,3 +355,5 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | 8866931066A78F1D | 2026-10-19 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (fehlende Git-Provenienz bricht vor dem Sampling ab (Spec 7)) |
 | A373297F696082B7 | 2026-10-19 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression umsortierte L-Folge ist kein Pilot) |
 | F58897296E68C5AF | 2026-10-19 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression Lauf ohne Git-Provenienz startet nicht) |
+| 16C5ED46EDFBB6B2 | 2026-10-19 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (PHY032-Fallback verlangt das exakte Vertragsgitter 0.56..0.6475) |
+| 29472732674F3D91 | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression Dublette/Umsortierung im PHY032-Gitter) |

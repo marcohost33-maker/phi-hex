@@ -181,9 +181,9 @@ def test_wl_job_smoke_small_lattice():
 
 def test_partial_phy032_grid_never_installs_the_fallback_domain():
     """Teilgitter mit passenden Zeilen: grid_ok=False -> kein Fallback."""
-    rows = [{"T": round(0.57 + 0.005 * k, 3), "ok": True} for k in range(8)]
+    rows = [{"T": t, "ok": True} for t in phy042.PHY032_L24_GRID]
     assert phy042._phy032_fallback_bounds(rows, False) is None
-    assert phy042._phy032_fallback_bounds(rows, True) == (0.57, 0.605)
+    assert phy042._phy032_fallback_bounds(rows, True) == (0.56, 0.6475)
     assert phy042._phy032_fallback_bounds(rows[:-1] + [{"T": 0.65, "ok": False}], True) is None
     assert phy042._phy032_fallback_bounds([], True) is None
 
@@ -191,9 +191,24 @@ def test_partial_phy032_grid_never_installs_the_fallback_domain():
 def test_fallback_needs_all_eight_rows_retained_after_the_window_filter():
     """grid_ok kam aus der rohen Parse-Zahl; faellt eine Zeile aus dem
     T-Fenster, duerfen sieben passende Zeilen keine Domaene tragen."""
-    rows = [{"T": round(0.57 + 0.005 * k, 3), "ok": True} for k in range(8)]
+    rows = [{"T": t, "ok": True} for t in phy042.PHY032_L24_GRID]
     assert phy042._phy032_fallback_bounds(rows[:7], True) is None
     assert phy042._phy032_fallback_bounds(rows[1:], True) is None
+
+
+def test_fallback_needs_the_exact_contract_grid_not_just_eight_rows():
+    """Eine Dublette anstelle eines fehlenden Punkts (Report-Drift) hat acht
+    Zeilen mit denselben Grenzen -- traegt die Domaene trotzdem nicht."""
+    rows = [{"T": t, "ok": True} for t in phy042.PHY032_L24_GRID]
+    dup = rows[:3] + [rows[2]] + rows[4:]
+    assert len(dup) == 8
+    assert phy042._phy032_fallback_bounds(dup, True) is None
+    assert phy042._phy032_fallback_bounds(rows[::-1], True) is None
+
+
+def test_contract_grid_matches_the_committed_phy032_report():
+    got = [round(r[0], 4) for r in phy042.parse_phy032_grid()[24]]
+    assert tuple(got) == phy042.PHY032_L24_GRID
 
 
 def test_pair_quotable_requires_both_coverage_gates():
