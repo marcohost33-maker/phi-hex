@@ -512,7 +512,9 @@ def _is_pilot_budget(n_seeds: int, lattices_L, n_measure: int, temperatures,
     """True only for the documented pilot of Spec §4 (the one budget whose
     1%-power limit is assessed)."""
     return (
-        tuple(sorted(int(x) for x in lattices_L)) == PILOT_LATTICES_L
+        # ordered, like the grid below: pairs are built in the supplied order
+        # and pair_analysis reads each pair as L1 < L2 (PR #51 Codex 2026-10-19)
+        tuple(int(x) for x in lattices_L) == PILOT_LATTICES_L
         and int(n_measure) == PILOT_N_MEASURE
         and int(n_seeds) == PILOT_N_SEEDS
         and int(n_burn) == PILOT_N_BURN

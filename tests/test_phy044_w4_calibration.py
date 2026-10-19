@@ -1,6 +1,8 @@
 """Fast gates for PHY044 W4 honeycomb calibration."""
 from __future__ import annotations
 
+import inspect
+
 import pytest
 
 import conftest
@@ -121,3 +123,21 @@ def test_non_integral_walkers_or_lattice_are_refused(L, walkers):
     with pytest.raises(ValueError):
         phy044._validate_inputs(L, walkers, (0.565, 0.575))
 
+
+def test_missing_git_provenance_refuses_before_sampling(monkeypatch) -> None:
+    """Exportierter Baum / kein git: kein Lauf, kein PASS ohne Commit."""
+    monkeypatch.setattr(phy044, "_git_state", lambda: (None, None))
+    # _provenance liest den n_seeds-Default per inspect.signature: Stub mit Original-Default
+    real_seeds = inspect.signature(phy044._p41.wolff_anchor).parameters["n_seeds"].default
+
+    def no_sampling(*a, n_seeds=real_seeds, **k):
+        raise AssertionError("Sampling darf ohne Provenienz nicht starten")
+
+    monkeypatch.setattr(phy044._p41, "wolff_anchor", no_sampling)
+    # ohne Gate wirft der Sampling-Stub AssertionError -> Testurteil, kein Absturz
+    with pytest.raises(RuntimeError, match="Provenienz"):
+        phy044.run_phy044_calibration(L=16, n_wl_walkers=2, wolff_n_seeds=2)
+
+
+def test_known_git_provenance_passes_the_gate() -> None:
+    phy044._require_git_provenance({"git_commit": "abc1234", "git_dirty": False})

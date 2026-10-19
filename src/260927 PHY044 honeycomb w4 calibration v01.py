@@ -97,6 +97,15 @@ def _git_state() -> tuple[str | None, bool | None]:
     return head, bool(status.strip())
 
 
+def _require_git_provenance(provenance: dict) -> None:
+    """Spec §7: every run records its producing commit. Without it the
+    expensive calibration must not start (PR #51 Codex 2026-10-19)."""
+    if not provenance.get("git_commit") or provenance.get("git_dirty") is None:
+        raise RuntimeError(
+            "Git-Provenienz fehlt (kein .git oder kein git): Spec §7 verlangt den "
+            "erzeugenden Commit -- Kalibrierung nicht gestartet")
+
+
 def _provenance(L: int, n_wl_walkers: int, wolff_n_seeds: int) -> dict:
     """Spec §7 reproducibility record: code, environment, lnf_final, streams.
 
@@ -250,6 +259,7 @@ def run_phy044_calibration(
     # long run: a checkout or edit during sampling must not be recorded
     # instead (PR #51 Codex 2026-10-17).
     provenance = _provenance(L, n_wl_walkers, wolff_n_seeds)
+    _require_git_provenance(provenance)
     total_t0 = time.perf_counter()
 
     # Shared anchor/window: same binning for every walker.

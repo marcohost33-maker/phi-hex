@@ -351,3 +351,7 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | 5DD99D1DD22E1503 | 2026-10-19 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression umsortierte Gitter sind kein Pilot) |
 | 6D33A11F543661D5 | 2026-10-19 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (PHY032-Fallback verlangt 8 behaltene L24-Zeilen nach Fensterfilter) |
 | EFB6AB880DA616DB | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression Teilgitter nach Fensterfilter) |
+| B3294753B9113B3A | 2026-10-19 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (Pilot-Gitterfolge L geordnet, nicht sortiert) |
+| 8866931066A78F1D | 2026-10-19 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (fehlende Git-Provenienz bricht vor dem Sampling ab (Spec 7)) |
+| A373297F696082B7 | 2026-10-19 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression umsortierte L-Folge ist kein Pilot) |
+| F58897296E68C5AF | 2026-10-19 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression Lauf ohne Git-Provenienz startet nicht) |

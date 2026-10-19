@@ -232,6 +232,9 @@ def test_no_splay_nr_label_only_for_the_assessed_pilot_budget() -> None:
     for short in ([1.58], pilot_T[:-1], [1.40 + 0.02 * k for k in range(10)]):
         assert not phy043._is_pilot_budget(4, [9, 13, 19], 400, short, 300)
     assert not phy043._is_pilot_budget(4, [9, 13, 19], 400, pilot_T, 0)  # burn-in differs
+    # lattices in another order: pairs would be built L1 > L2, so no NR label
+    assert not phy043._is_pilot_budget(4, [19, 13, 9], 400, pilot_T, 300)
+    assert not phy043._is_pilot_budget(4, [9, 19, 13], 400, pilot_T, 300)
     # same set, wrong order: the crossing scans need ascending T, so no NR label
     for reordered in (pilot_T[::-1], pilot_T[1:] + pilot_T[:1]):
         assert not phy043._is_pilot_budget(4, [9, 13, 19], 400, reordered, 300)
