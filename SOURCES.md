@@ -363,3 +363,7 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | CFA0C034183E5C2B | 2026-10-19 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (NaN fail-closed in xi, Splay-Tail und Tief-T-Merge) |
 | 1DCB2EB4765C44CA | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression NaN-Spread) |
 | DA0DAB2E0AB1569A | 2026-10-19 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression NaN in xi/Splay/Merge) |
+| D02F79B00F7FCBE3 | 2026-10-19 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (unsauberer Arbeitsbaum startet keine Kalibrierung) |
+| 88169459761BB954 | 2026-10-19 | tests | repo-native: `tests/test_phy044_w4_calibration.py` (Regression unsauberer Baum) |
+| 58556F9474543B4E | 2026-10-19 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (Coverage je Paar ueber die gemeinsame Domaene) |
+| 2C29C843D5CD9F44 | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression Paar-Coverage) |

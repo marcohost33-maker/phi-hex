@@ -273,3 +273,24 @@ def test_validity_domain_nan_spread_fails_closed():
     assert phy042._validity_domain(spread, 0.04).tolist() == [True, False, False]
     # Negativ-Kontrolle: endliche Werte unter der Schwelle bleiben gueltig
     assert phy042._validity_domain(np.array([0.01, 0.02, 0.05]), 0.04).tolist() == [True, True, False]
+
+
+def test_pair_coverage_is_scoped_to_the_pair_and_its_common_domain():
+    """Ein fremdes L oder ein Punkt ausserhalb der Paar-Domaene darf das Paar
+    nicht kippen; innerhalb zaehlt jeder Walker beider L."""
+    t = [0.55, 0.56, 0.60, 0.65, 0.66]
+    bad_at = {(48, 0): {0.60}, (24, 0): {0.55, 0.66}, (32, 1): set()}
+    results = {k: k for k in [(24, 0), (32, 0), (32, 1), (48, 0)]}
+
+    def metric(res, T):
+        return 0.5 if T in bad_at.get(res, set()) else 0.0
+
+    dom24, dom32 = (0.56, 0.6475), (0.52, 0.67)
+    # L=48 ist fremd, L=24-Ausreisser liegen ausserhalb [0.56, 0.6475]
+    assert phy042._pair_coverage_max(results, 24, 32, t, dom24, dom32, metric) == 0.0
+    # Positiv-Kontrolle: Ausreisser innerhalb der gemeinsamen Domaene zaehlt
+    bad_at[(32, 1)] = {0.60}
+    assert phy042._pair_coverage_max(results, 24, 32, t, dom24, dom32, metric) == 0.5
+    assert phy042._pair_coverage_max(results, 24, 32, t, None, dom32, metric) is None
+    nan_metric = lambda res, T: float("nan")  # noqa: E731
+    assert phy042._pair_coverage_max(results, 24, 32, t, dom24, dom32, nan_metric) == math.inf

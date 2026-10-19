@@ -104,6 +104,12 @@ def _require_git_provenance(provenance: dict) -> None:
         raise RuntimeError(
             "Git-Provenienz fehlt (kein .git oder kein git): Spec §7 verlangt den "
             "erzeugenden Commit -- Kalibrierung nicht gestartet")
+    # HEAD alone does not reconstruct uncommitted source bytes (PR #51 Codex
+    # 2026-10-19): the producing tree must be clean.
+    if provenance.get("git_dirty") is not False:
+        raise RuntimeError(
+            "Git-Provenienz: Arbeitsbaum nicht sauber -- erst committen, "
+            "Spec §7 verlangt rekonstruierbare Quellbytes")
 
 
 def _provenance(L: int, n_wl_walkers: int, wolff_n_seeds: int) -> dict:

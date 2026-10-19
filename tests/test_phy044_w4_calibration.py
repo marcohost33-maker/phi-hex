@@ -141,3 +141,9 @@ def test_missing_git_provenance_refuses_before_sampling(monkeypatch) -> None:
 
 def test_known_git_provenance_passes_the_gate() -> None:
     phy044._require_git_provenance({"git_commit": "abc1234", "git_dirty": False})
+
+
+def test_dirty_tree_refuses_before_sampling() -> None:
+    """Uncommittete Quellbytes sind aus HEAD nicht rekonstruierbar."""
+    with pytest.raises(RuntimeError, match="nicht sauber"):
+        phy044._require_git_provenance({"git_commit": "abc1234", "git_dirty": True})

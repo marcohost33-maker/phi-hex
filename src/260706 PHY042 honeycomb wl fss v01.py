@@ -215,6 +215,30 @@ def _bracket_in_common_domain(t_grid, y2_a, La, y2_b, Lb, tb,
     return sub is not None and abs(sub - tb) <= 1e-12
 
 
+def _pair_coverage_max(results, La: int, Lb: int, t_grid, dom_a, dom_b,
+                       metric) -> float | None:
+    """Coverage metric for ONE pair: max over the walkers of La and Lb, on the
+    grid points inside the pair's common effective domain only.
+
+    The global maxima scanned all T for lattices without a walker domain and
+    let an unrelated lattice veto every pair (PR #51 Codex 2026-10-19); they
+    stay as pipeline-wide diagnostics. None without a common domain; any
+    non-finite value returns inf (fail-closed).
+    """
+    if dom_a is None or dom_b is None:
+        return None
+    lo = max(dom_a[0], dom_b[0])
+    hi = min(dom_a[1], dom_b[1])
+    vals = [float(metric(res, float(T)))
+            for (L, _w), res in results.items() if L in (La, Lb)
+            for T in t_grid if lo - 1e-12 <= float(T) <= hi + 1e-12]
+    if not vals:
+        return None
+    if not all(math.isfinite(v) for v in vals):
+        return math.inf
+    return max(vals)
+
+
 def _pair_reason(tb, dom_a, dom_b, leak_ok: bool, unc_ok: bool, *,
                  bracket_valid: bool) -> str:
     """W4-G2 verdict for one crossing, with the specific failed gate.
@@ -540,7 +564,13 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
         bracket_ok = _bracket_in_common_domain(
             t_grid, main_curve[La]["y2"], La, main_curve[Lb]["y2"], Lb, tb,
             dom_a, dom_b)
-        reason = _pair_reason(tb, dom_a, dom_b, leak_ok, unc_ok,
+        p_leak = _pair_coverage_max(results, La, Lb, t_grid, dom_a, dom_b,
+                                    canonical_edge_leak)
+        p_unc = _pair_coverage_max(results, La, Lb, t_grid, dom_a, dom_b,
+                                   _uncovered_mass)
+        reason = _pair_reason(tb, dom_a, dom_b,
+                              p_leak is not None and p_leak < 1e-3,
+                              p_unc is not None and p_unc < 1e-3,
                               bracket_valid=bracket_ok)
         q = reason == "QUOTABLE"
         pair_quotable[(La, Lb)] = q
