@@ -344,3 +344,8 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | 378728494242449F | 2026-10-17 | src | repo-native: `src/260927 PHY044 honeycomb w4 calibration v01.py` (Provenienz vor dem Lauf erfasst) |
 | 0716152C48C788F3 | 2026-10-17 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression nicht-ganzzahlige Walker) |
 | D56E2C85959D1197 | 2026-10-17 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression Burn-in im Pilot-Abgleich) |
+| 268A10C2FD8D573E | 2026-10-19 | docs/figures | repo-native: `docs/figures/make_readme_figure.py` (Einzel-Walker-L ohne Spread-Domaene (W4-Erratum), PR #51 Codex) |
+| 886346BCF51C92BE | 2026-10-19 | docs/figures | repo-native: `docs/figures/phy042_helicity_honeycomb_dark.png` (regeneriert: L24 vollstaendig blass, Spread nicht gemessen) |
+| 82664438A15F1C7A | 2026-10-19 | docs/figures | repo-native: `docs/figures/phy042_helicity_honeycomb_light.png` (regeneriert: L24 vollstaendig blass, Spread nicht gemessen) |
+| 00B48D680D7A3829 | 2026-10-19 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (Pilot-Gitter in aufsteigender Reihenfolge, nicht nur als Menge) |
+| 5DD99D1DD22E1503 | 2026-10-19 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression umsortierte Gitter sind kein Pilot) |
