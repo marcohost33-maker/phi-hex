@@ -190,3 +190,105 @@ def test_wl_honeycomb_smoke_energy_matches_wolff():
     else:
         assert 1.0 / res.wl_sweeps < 2e-4
     assert meta["window_ps"][0] >= phy041.E0_PER_SITE
+
+
+# --- Issue #62: NaN-feste Aggregation der globalen Gates --------------------
+# builtin max(0.0, nan) == 0.0: eine NaN-Metrik verschwand aus dem laufenden
+# Maximum und Leak-/Coverage-Gate konnten PASS melden.
+
+_NAN = float("nan")
+
+
+class _Res:
+    """Stand-in fuer WLResult: die Gate-Metrik wird injiziert."""
+
+    def __init__(self, L):
+        self.L = L
+
+
+def _metric(table):
+    return lambda res, T: table[(res.L, T)]
+
+
+def _gate_inputs(values):
+    Ls = (12, 16)
+    t_grid = np.array([0.55, 0.60])
+    results = {L: _Res(L) for L in Ls}
+    keys = [(L, float(T)) for L in Ls for T in t_grid]
+    return results, Ls, t_grid, dict(zip(keys, values))
+
+
+@pytest.mark.parametrize("name", ["canonical_edge_leak",
+                                  "uncovered_canonical_mass"])
+@pytest.mark.parametrize("pos", [0, 1, 3])
+def test_coverage_gate_nan_metric_fails(name, pos):
+    """NaN an JEDER Position (auch nicht-erster) -> max=inf, Gate FAIL."""
+    vals = [1e-6, 2e-6, 3e-6, 4e-6]
+    vals[pos] = _NAN
+    results, Ls, t_grid, table = _gate_inputs(vals)
+    m, ok = phy041._coverage_gate(results, Ls, t_grid, _metric(table), 1e-3)
+    assert m == math.inf, name
+    assert ok is False, name
+
+
+def test_coverage_gate_inf_metric_fails():
+    results, Ls, t_grid, table = _gate_inputs([1e-6, math.inf, 3e-6, 4e-6])
+    m, ok = phy041._coverage_gate(results, Ls, t_grid, _metric(table), 1e-3)
+    assert m == math.inf and ok is False
+
+
+def test_coverage_gate_finite_values_unchanged():
+    """Negativ-Kontrolle: endliche Werte -> exakt das alte builtin-max-Ergebnis."""
+    vals = [1e-6, 7e-5, 3e-6, 4e-6]
+    results, Ls, t_grid, table = _gate_inputs(vals)
+    m, ok = phy041._coverage_gate(results, Ls, t_grid, _metric(table), 1e-3)
+    old = 0.0
+    for v in vals:
+        old = max(old, v)
+    assert m == old == 7e-5
+    assert ok is True
+
+
+def test_coverage_gate_threshold_is_strict():
+    """Grenzwert: max == tol ist FAIL (Gate ist 'max < tol'), knapp darunter PASS."""
+    results, Ls, t_grid, table = _gate_inputs([1e-3, 0.0, 0.0, 0.0])
+    assert phy041._coverage_gate(results, Ls, t_grid, _metric(table),
+                                 1e-3) == (1e-3, False)
+    results, Ls, t_grid, table = _gate_inputs([9.99e-4, 0.0, 0.0, 0.0])
+    assert phy041._coverage_gate(results, Ls, t_grid, _metric(table),
+                                 1e-3) == (9.99e-4, True)
+    results, Ls, t_grid, table = _gate_inputs([2e-3, 0.0, 0.0, 0.0])
+    assert phy041._coverage_gate(results, Ls, t_grid, _metric(table),
+                                 1e-3)[1] is False
+
+
+def test_max_fail_closed_helper_and_single_source():
+    assert phy041._max_fail_closed(0.0, _NAN) == math.inf
+    assert phy041._max_fail_closed(0.0, -math.inf) == math.inf
+    assert phy041._max_fail_closed(1e-4, 5e-5) == 1e-4          # Negativ-Kontrolle
+    assert phy041._max_fail_closed(1e-4, 2e-4) == 2e-4
+    phy042 = conftest._load("phy042_honeycomb_wl_fss",
+                            "260706 PHY042 honeycomb wl fss v01.py")
+    assert phy042._max_fail_closed is phy041._max_fail_closed  # kein Duplikat
+
+
+def test_wl_drift_nan_energy_resync_fails_closed(monkeypatch):
+    """Drift-Stellen (Issue #62, Zeilen 309/354): max_drift ist reine
+    Konsolen-Diagnostik, kein Gate. Eine NaN-Resync-Energie bricht den Lauf
+    laut ab (int(nan) im Bin-Index), statt still weiterzulaufen. Dieser Test
+    belegt diese Eigenschaft; er diskriminiert den Helfer an diesen Stellen
+    NICHT (aequivalente Mutante, siehe PR)."""
+    _, nbr_list, ei, ej, ax, ay, n = phy041.honeycomb_arrays(2)
+    real = phy041._full_energy
+    calls = {"k": 0}
+
+    def fake(th, a, b):
+        calls["k"] += 1
+        return real(th, a, b) if calls["k"] == 1 else _NAN
+
+    monkeypatch.setattr(phy041, "_full_energy", fake)
+    with pytest.raises(ValueError):
+        phy041.wl_entropic_lattice(nbr_list, ei, ej, ax, ay, n, 2,
+                                   -1.6, 1.6, lnf_final=0.9, prod_sweeps=1,
+                                   resync_every=1, verbose=False)
+    assert calls["k"] >= 2
