@@ -160,6 +160,15 @@ def test_phy029_brackets_boundary_inclusive():
     assert phy029._brackets_reference([above, 1.43], REF) is False
 
 
+def test_phy029_within_2pct_not_vacuous(monkeypatch):
+    """Kein Paar konvergiert: all() ueber [] waere True = PASS ohne einen
+    einzigen Vergleich. Ein konvergiertes Paar innerhalb 2 % bleibt PASS."""
+    out = _run_phy029_with_pairs(monkeypatch, (None, None))
+    assert out["pass_gates"]["PASS_ALL_WITHIN_2PCT"] is False
+    one = _run_phy029_with_pairs(monkeypatch, (1.42, None))
+    assert one["pass_gates"]["PASS_ALL_WITHIN_2PCT"] is True
+
+
 def test_phy029_brackets_needs_two_values():
     assert phy029._brackets_reference([], REF) is False
     assert phy029._brackets_reference([REF], REF) is False

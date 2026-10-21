@@ -128,7 +128,9 @@ def run_phy029() -> dict[str, Any]:
     valid = [v for v in results.values() if v is not None]
     pass_gates = {
         "PASS_BOTH_PAIRS_CONVERGE": len(valid) == len(pairs),
-        "PASS_ALL_WITHIN_2PCT": all(abs(v - ref) / ref < 0.02 for v in valid),
+        # Leeres valid: all() waere vakuum-wahr = PASS ohne Vergleich (#62).
+        "PASS_ALL_WITHIN_2PCT": bool(valid) and all(
+            abs(v - ref) / ref < 0.02 for v in valid),
         "PASS_BRACKETS_REFERENCE": _brackets_reference(valid, ref),
     }
     # Bestschaetzung: Mittel der Paare mit Spanne als Unsicherheit
