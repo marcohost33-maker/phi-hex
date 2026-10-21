@@ -372,3 +372,6 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | 106BAF09944E5CB9 | 2026-10-19 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (globale Gates NaN-fest (_max_fail_closed); Claim-Pfad als _assess_pair) |
 | 53554F0B0659B2ED | 2026-10-19 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression NaN-Max und Verdrahtung des Claim-Pfads) |
 | FB80B468ACC14B96 | 2026-10-19 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression SEM=inf im Tief-T-Merge) |
+| 54C73629E8BFC4C7 | 2026-10-21 | src | repo-native: `src/phy017 validation kernel v1 3 1.py` (Issue #62: PASS_LINK_IDENTITY NaN-fest (modul-lokales _max_fail_closed statt builtin max)) |
+| C9331907B6CABF36 | 2026-10-21 | src | repo-native: `src/260602 PHY029 triangular sandvik v01.py` (Issue #62: PASS_BRACKETS_REFERENCE NaN-/inf-fest (_brackets_reference)) |
+| 25AC8FA552732DBF | 2026-10-21 | tests | repo-native: `tests/test_nan_minmax_phy017_phy029.py` (Regression Issue #62: NaN an Position 0/1/letzte, inf, Negativkontrolle, Grenze) |
