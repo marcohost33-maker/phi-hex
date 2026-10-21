@@ -306,7 +306,7 @@ def wl_entropic_lattice(nbr_list, ei, ej, ax, ay, n: int, L: int,
                 f"lnf={lnf:.2e}); Fenster/Bin-Aufloesung pruefen.")
         if sweeps % resync_every == 0:
             E_exact = _full_energy(np.asarray(thl), ei, ej)
-            max_drift = max(max_drift, abs(E_exact - E))
+            max_drift = _max_fail_closed(max_drift, abs(E_exact - E))
             E = E_exact
             b = min(max(int((E - E_lo) // binw), 0), nbins - 1)
         if use_1t:
@@ -351,7 +351,7 @@ def wl_entropic_lattice(nbr_list, ei, ej, ax, ay, n: int, L: int,
                 b = bnew
         if (sw + 1) % resync_every == 0:
             E_exact = _full_energy(np.asarray(thl), ei, ej)
-            max_drift = max(max_drift, abs(E_exact - E))
+            max_drift = _max_fail_closed(max_drift, abs(E_exact - E))
             E = E_exact
             b = min(max(int((E - E_lo) // binw), 0), nbins - 1)
         th_arr = np.asarray(thl)
@@ -424,6 +424,33 @@ def uncovered_canonical_mass(res: WLResult, T: float) -> float:
     w = np.exp(x)
     w /= w.sum()
     return float(w[~res.mask].sum())
+
+
+def _max_fail_closed(acc: float, value) -> float:
+    """Running maximum for gate metrics: builtin max(0.0, nan) returns 0.0 and
+    silently drops a NaN metric, letting the gate PASS (audit 2026-10-19 A-1,
+    issue #62). Any non-finite value makes the maximum inf, so the gate fails
+    closed. Single source: PHY042 re-exports this helper (its kernel layer is
+    this module; the reverse import would be circular)."""
+    v = float(value)
+    if not math.isfinite(v):
+        return math.inf
+    return acc if acc >= v else v
+
+
+def _coverage_gate(results, Ls, t_grid, metric, tol: float):
+    """Global coverage gate of run_phy041: fail-closed maximum of ``metric``
+    over all (L, T) and the verdict ``max < tol``.
+
+    PASS hangs on a TRUE comparison and the maximum turns any non-finite metric
+    into inf, so a NaN leak or uncovered mass can never PASS (issue #62).
+    Returns (maximum, ok).
+    """
+    m = 0.0
+    for L in Ls:
+        for T in t_grid:
+            m = _max_fail_closed(m, metric(results[L], float(T)))
+    return m, bool(m < tol)
 
 
 def parse_phy032_grid(path: Path = PHY032_REPORT) -> dict:
@@ -523,21 +550,14 @@ def run_phy041(Ls=(12, 16, 24), lnf_final=1e-5, prod_sweeps=30000,
         curves[L] = upsilon_curves(res, t_grid)
 
     # --- Leak-Gate: kanonisches Gewicht an den Fensterraendern ------------
-    leak_max = 0.0
-    for L in Ls:
-        for T in t_grid:
-            leak_max = max(leak_max, canonical_edge_leak(results[L], float(T)))
-    leak_ok = leak_max < 1e-3
+    leak_max, leak_ok = _coverage_gate(results, Ls, t_grid,
+                                       canonical_edge_leak, 1e-3)
     print(f"\n[LEAK] max. Randgewicht ueber alle L, T: {leak_max:.2e} "
           f"(Gate < 1e-3) -> {'PASS' if leak_ok else 'FAIL'}")
 
     # --- Coverage-Massen-Gate (Backport PHY042; Code-Audit H2) -------------
-    unc_max = 0.0
-    for L in Ls:
-        for T in t_grid:
-            unc_max = max(unc_max,
-                          uncovered_canonical_mass(results[L], float(T)))
-    unc_ok = unc_max < 1e-3
+    unc_max, unc_ok = _coverage_gate(results, Ls, t_grid,
+                                     uncovered_canonical_mass, 1e-3)
     print(f"[COVER] max. kanonische Masse auf unbesetzten Bins: {unc_max:.2e} "
           f"(Gate < 1e-3) -> {'PASS' if unc_ok else 'FAIL'}")
 

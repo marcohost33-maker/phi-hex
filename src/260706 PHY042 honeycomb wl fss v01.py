@@ -215,14 +215,9 @@ def _bracket_in_common_domain(t_grid, y2_a, La, y2_b, Lb, tb,
     return sub is not None and abs(sub - tb) <= 1e-12
 
 
-def _max_fail_closed(acc: float, value) -> float:
-    """Running maximum for gate metrics: builtin max(0.0, nan) returns 0.0 and
-    silently drops a NaN metric, letting the gate PASS (audit 2026-10-19 A-1).
-    Any non-finite value makes the maximum inf, so the gate fails closed."""
-    v = float(value)
-    if not math.isfinite(v):
-        return math.inf
-    return acc if acc >= v else v
+# Running maximum for gate metrics, fail-closed on non-finite values (audit
+# 2026-10-19 A-1). Single source in the PHY041 kernel since issue #62.
+_max_fail_closed = _p41._max_fail_closed
 
 
 def _assess_pair(t_grid, main_curve, results, La: int, Lb: int, bounds, *,
