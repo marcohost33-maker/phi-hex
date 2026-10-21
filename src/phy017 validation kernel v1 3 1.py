@@ -303,6 +303,24 @@ def expectation_value_Q(Q_values: np.ndarray, rho_density: np.ndarray,
     return float(a * np.sum(rho_density * Q_values))
 
 
+def _max_fail_closed(values) -> float:
+    """Reihenfolge-unabhaengiges Maximum fuer Gate-Metriken (Issue #62).
+
+    Builtin max() ueber eine Folge mit NaN haengt von der Position ab:
+    max([nan, 1e-15]) ist nan, max([1e-15, nan]) ist 1e-15 - das NaN
+    verschwindet und PASS_LINK_IDENTITY ginge auf PASS. Hier macht jeder
+    nicht-endliche Wert das Maximum zu inf; das Gate ``max < tol`` faellt dann
+    auf einem WAHREN Vergleich durch. Bewusst modul-lokal: dieser Kernel ist
+    eigenstaendig (kein Import aus PHY041). Leere Folge -> ValueError wie max().
+    """
+    vals = [float(v) for v in values]
+    if not vals:
+        raise ValueError("_max_fail_closed: leere Folge")
+    if not all(math.isfinite(v) for v in vals):
+        return math.inf
+    return max(vals)
+
+
 def run_module_3_madelung_fisher() -> dict[str, Any]:
     """Smoke-Test 3: Operator-Kompatibilitaet und Skalierung N = 12...192."""
     results: dict[str, Any] = {"module": "madelung_fisher_discrete"}
@@ -340,7 +358,8 @@ def run_module_3_madelung_fisher() -> dict[str, Any]:
         convergence_3pt.append((N, Q_expectation))
 
     # PASS-Kriterium: kompatible Identitaet < 1e-12 fuer alle N
-    max_link_err = max(err for _, err, _, _ in link_errors)
+    # Issue #62 (Folge PR #64): fail-closed statt builtin max (NaN-Position).
+    max_link_err = _max_fail_closed(err for _, err, _, _ in link_errors)
 
     # Knot-Gate: min(rho) muss strikt positiv sein
     rho6, a6 = gaussian_on_ring(6)

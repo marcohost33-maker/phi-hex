@@ -83,6 +83,21 @@ def sandvik_pair(r1: int, r2: int, temps: list, cache: dict,
     return None
 
 
+def _brackets_reference(valid: list, ref: float) -> bool:
+    """PASS_BRACKETS_REFERENCE, fail-closed (Issue #62, Folge PR #64).
+
+    min()/max() ueber eine Liste mit NaN sind reihenfolgeabhaengig: bei
+    [1.418, nan] sind min = max = 1.418 und der Referenzwert galt als
+    eingeklammert; ein inf als obere Klammer klammert jeden Wert. PASS darum
+    nur mit mindestens zwei Werten, ALLE endlich, und einem wahren Vergleich.
+    """
+    if len(valid) < 2:
+        return False
+    if not all(math.isfinite(v) for v in valid):
+        return False
+    return bool(min(valid) <= ref <= max(valid))
+
+
 def run_phy029() -> dict[str, Any]:
     print("PHY029: T_BKT Triangular via Sandvik-Paar (korrigiert PHY027)")
     print("Coworker Research / Coworkerz, 02. Juni 2026")
@@ -113,9 +128,10 @@ def run_phy029() -> dict[str, Any]:
     valid = [v for v in results.values() if v is not None]
     pass_gates = {
         "PASS_BOTH_PAIRS_CONVERGE": len(valid) == len(pairs),
-        "PASS_ALL_WITHIN_2PCT": all(abs(v - ref) / ref < 0.02 for v in valid),
-        "PASS_BRACKETS_REFERENCE": (min(valid) <= ref <= max(valid))
-        if len(valid) >= 2 else False,
+        # Leeres valid: all() waere vakuum-wahr = PASS ohne Vergleich (#62).
+        "PASS_ALL_WITHIN_2PCT": bool(valid) and all(
+            abs(v - ref) / ref < 0.02 for v in valid),
+        "PASS_BRACKETS_REFERENCE": _brackets_reference(valid, ref),
     }
     # Bestschaetzung: Mittel der Paare mit Spanne als Unsicherheit
     if valid:
