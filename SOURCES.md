@@ -375,3 +375,4 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | 8FFB0AEE4D61C7B4 | 2026-10-21 | src | repo-native: `src/260702 PHY041 honeycomb wang-landau entropic helicity v01.py` (Issue #62: Leak-/Coverage-Gate und Drift-Maximum NaN-fest (_max_fail_closed, _coverage_gate)) |
 | 408BEC74BB932218 | 2026-10-21 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (Issue #62: _max_fail_closed aus dem PHY041-Kernel re-exportiert, kein Duplikat) |
 | 28A9054910232A46 | 2026-10-21 | tests | repo-native: `tests/test_phy041_honeycomb_wl.py` (Regression Issue #62: NaN-Metrik -> Gate FAIL, Negativ-Kontrolle, Grenzwert, Drift-Resync) |
+| 52DA21EC4A1699E8 | 2026-10-21 | tests | repo-native: `tests/test_phy041_honeycomb_wl.py` (Issue #62: + statische Verdrahtungs-Pruefung der beiden Gate-Zeilen in run_phy041) |

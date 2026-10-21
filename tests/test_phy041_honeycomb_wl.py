@@ -292,3 +292,35 @@ def test_wl_drift_nan_energy_resync_fails_closed(monkeypatch):
                                    -1.6, 1.6, lnf_final=0.9, prod_sweeps=1,
                                    resync_every=1, verbose=False)
     assert calls["k"] >= 2
+
+
+def test_run_phy041_wires_coverage_gates():
+    """Verdrahtung (Issue #62): run_phy041 braucht einen Produktionslauf; die
+    beiden Gate-Zeilen werden darum statisch geprueft -- beide Gates laufen
+    ueber _coverage_gate mit der richtigen Metrik und tol 1e-3, und im ganzen
+    Lauf steht kein laufendes builtin max/min mehr."""
+    import ast
+    import inspect
+    import textwrap
+
+    tree = ast.parse(textwrap.dedent(inspect.getsource(phy041.run_phy041)))
+    wired = {}
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Assign) and isinstance(node.value, ast.Call)
+                and isinstance(node.value.func, ast.Name)
+                and node.value.func.id == "_coverage_gate"):
+            names = tuple(t.id for t in node.targets[0].elts)
+            args = node.value.args
+            wired[names] = (args[3].id, args[4].value)
+        if (isinstance(node, ast.Assign) and len(node.targets) == 1
+                and isinstance(node.targets[0], ast.Name)
+                and isinstance(node.value, ast.Call)
+                and isinstance(node.value.func, ast.Name)
+                and node.value.func.id in ("max", "min")):
+            acc = node.targets[0].id
+            assert not any(isinstance(a, ast.Name) and a.id == acc
+                           for a in node.value.args), f"laufendes {acc}"
+    assert wired == {
+        ("leak_max", "leak_ok"): ("canonical_edge_leak", 1e-3),
+        ("unc_max", "unc_ok"): ("uncovered_canonical_mass", 1e-3),
+    }
