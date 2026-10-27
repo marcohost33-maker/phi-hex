@@ -376,3 +376,8 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | 408BEC74BB932218 | 2026-10-21 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (Issue #62: _max_fail_closed aus dem PHY041-Kernel re-exportiert, kein Duplikat) |
 | 28A9054910232A46 | 2026-10-21 | tests | repo-native: `tests/test_phy041_honeycomb_wl.py` (Regression Issue #62: NaN-Metrik -> Gate FAIL, Negativ-Kontrolle, Grenzwert, Drift-Resync) |
 | 52DA21EC4A1699E8 | 2026-10-21 | tests | repo-native: `tests/test_phy041_honeycomb_wl.py` (Issue #62: + statische Verdrahtungs-Pruefung der beiden Gate-Zeilen in run_phy041) |
+| 54C73629E8BFC4C7 | 2026-10-21 | src | repo-native: `src/phy017 validation kernel v1 3 1.py` (Issue #62: PASS_LINK_IDENTITY NaN-fest (modul-lokales _max_fail_closed statt builtin max)) |
+| C9331907B6CABF36 | 2026-10-21 | src | repo-native: `src/260602 PHY029 triangular sandvik v01.py` (Issue #62: PASS_BRACKETS_REFERENCE NaN-/inf-fest (_brackets_reference)) |
+| 25AC8FA552732DBF | 2026-10-21 | tests | repo-native: `tests/test_nan_minmax_phy017_phy029.py` (Regression Issue #62: NaN an Position 0/1/letzte, inf, Negativkontrolle, Grenze) |
+| 5D27F71C58013559 | 2026-10-21 | src | repo-native: `src/260602 PHY029 triangular sandvik v01.py` (Issue #62: PASS_ALL_WITHIN_2PCT bei leerem valid nicht mehr vakuum-wahr) |
+| 6BAD593C95EB72A2 | 2026-10-21 | tests | repo-native: `tests/test_nan_minmax_phy017_phy029.py` (+ Regression leeres valid ist kein 2%-PASS) |
