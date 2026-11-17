@@ -211,12 +211,36 @@ def test_contract_grid_matches_the_committed_phy032_report():
     assert tuple(got) == phy042.PHY032_L24_GRID
 
 
-def test_pair_quotable_requires_both_coverage_gates():
-    a, b = (0.56, 0.59), (0.56, 0.59)
-    assert phy042._pair_quotable(0.575, a, b, True, True, bracket_valid=True)
-    assert not phy042._pair_quotable(0.575, a, b, False, True, bracket_valid=True)
-    assert not phy042._pair_quotable(0.575, a, b, True, False, bracket_valid=True)
-    assert not phy042._pair_quotable(0.61, a, b, True, True, bracket_valid=True)
+def test_pair_table_quotes_only_the_quotable_reason():
+    """Issue #63 F-4/K-3: ``quotable`` wird in _assess_pairs aus dem Verdikt
+    abgeleitet (frueher Zeile ``q = reason == "QUOTABLE"`` in run_phy042, ohne
+    Test; der aufruferlose _pair_quotable ist entfernt)."""
+    assert not hasattr(phy042, "_pair_quotable")
+    t, ya, yb = _crossing_curves(0.647)
+    # L=48 so, dass (32,48) bei 0.600 kreuzt; (24,48) folgt daraus bei 0.6235
+    inv48 = 1.0 + 2.0 * math.log(48 / 32) - (t - 0.600)
+    y48 = 2.0 * t * (1.0 + 1.0 / inv48) / math.pi
+    curves = {24: {"y2": ya}, 32: {"y2": yb}, 48: {"y2": y48}}
+    results = {(24, 0): "a", (32, 0): "b", (48, 0): "c"}
+    clean = lambda res, T: 0.0  # noqa: E731
+    leaky = lambda res, T: 0.5 if res == "c" else 0.0  # noqa: E731
+    bounds = {24: (0.56, 0.65), 32: (0.52, 0.67), 48: (0.52, 0.67)}
+    table = phy042._assess_pairs(t, curves, results, [24, 32, 48], bounds,
+                                 leak_metric=leaky, unc_metric=clean)
+    assert list(table) == [(24, 32), (24, 48), (32, 48)]
+    assert phy042._size_pairs([24, 32, 48]) == list(table)
+    tb, reason, q = table[(24, 32)]
+    assert abs(tb - 0.647) < 1e-9 and reason == "QUOTABLE" and q is True
+    tb, reason, q = table[(24, 48)]                    # Crossing vorhanden, aber Leck
+    assert abs(tb - 0.6235) < 1e-9 and reason == "COVERAGE_LEAK" and q is False
+    tb, reason, q = table[(32, 48)]
+    assert abs(tb - 0.600) < 1e-9 and reason == "COVERAGE_LEAK" and q is False
+    # ohne Leck sind alle drei Paare quotierbar (Positiv-Kontrolle)
+    ok = phy042._assess_pairs(t, curves, results, [24, 32, 48], bounds,
+                              leak_metric=clean, unc_metric=clean)
+    assert [q for _tb, _r, q in ok.values()] == [True, True, True]
+    # jede Zeile: quotable genau dann, wenn das Verdikt QUOTABLE ist
+    assert all(q == (r == "QUOTABLE") for _tb, r, q in table.values())
 
 
 def test_pair_reason_names_the_failed_gate():
@@ -318,7 +342,10 @@ def test_global_gate_max_keeps_nan_and_inf():
 
 
 def test_assess_pair_wires_bracket_coverage_and_verdict():
-    """Claim-Pfad als Ganzes (Audit A-2): Klammer, Paar-Coverage und Verdikt."""
+    """Der Paar-Helfer _assess_pair Ende-zu-Ende (Audit A-2): Klammer,
+    Paar-Coverage und Verdikt -- mit Stub-Metriken. Die Produktions-Metriken
+    und die Restmassen-Haelfte deckt
+    test_assess_pair_default_metrics_on_a_real_wl_result (Issue #63 F-5)."""
     t, ya, yb = _crossing_curves(0.647)
     curves = {24: {"y2": ya}, 32: {"y2": yb}}
     results = {(24, 0): "a", (32, 0): "b", (48, 0): "c"}
@@ -338,3 +365,130 @@ def test_assess_pair_wires_bracket_coverage_and_verdict():
                                leak_metric=foreign, unc_metric=foreign)[1] == "QUOTABLE"
     assert phy042._assess_pair(t, curves, results, 24, 32, {32: (0.52, 0.67)},
                                leak_metric=clean, unc_metric=clean)[1] == "OUTSIDE_DOMAIN"
+
+
+# --- Issue #63: Regressionsschutz fuer Claim-Pfad und Domaenengrenzen --------
+
+def test_common_domain_is_nan_safe_and_order_independent():
+    """K-1: builtin max/min verlieren NaN je nach Argumentreihenfolge."""
+    nan = float("nan")
+    assert max(0.56, nan) == 0.56 and math.isnan(max(nan, 0.56))  # dokumentierte Falle
+    a = (0.56, 0.60)
+    for bad in ((nan, 0.67), (0.52, nan), (float("-inf"), 0.67), (0.52, float("inf"))):
+        assert phy042._common_domain(a, bad) is None
+        assert phy042._common_domain(bad, a) is None
+        # die drei Paar-Gates, in beiden Reihenfolgen fail-closed
+        assert not phy042._pair_inside_domains(0.58, a, bad)
+        assert not phy042._pair_inside_domains(0.58, bad, a)
+    assert phy042._common_domain(a, (0.61, 0.67)) is None        # leerer Schnitt
+    assert phy042._common_domain(a, None) is None
+    # Negativ-Kontrolle: endliche Grenzen liefern den Schnitt
+    assert phy042._common_domain(a, (0.52, 0.59)) == (0.56, 0.59)
+    assert phy042._pair_inside_domains(0.58, a, (0.52, 0.59))
+
+
+def test_nan_domain_bound_fails_closed_through_the_pair_gates():
+    """K-1 durch _assess_pair: eine NaN-Grenze ist keine gemeinsame Domaene,
+    unabhaengig davon, an welchem L sie haengt."""
+    nan = float("nan")
+    t, ya, yb = _crossing_curves(0.647)
+    curves = {24: {"y2": ya}, 32: {"y2": yb}}
+    results = {(24, 0): "a", (32, 0): "b"}
+    clean = lambda res, T: 0.0  # noqa: E731
+    good = (0.52, 0.67)
+    assert phy042._assess_pair(t, curves, results, 24, 32, {24: good, 32: good},
+                               leak_metric=clean, unc_metric=clean)[1] == "QUOTABLE"
+    for bad in ((nan, 0.67), (0.52, nan)):
+        for bounds in ({24: bad, 32: good}, {24: good, 32: bad}):
+            assert phy042._pair_coverage_max(results, 24, 32, t, bounds[24],
+                                             bounds[32], clean) is None
+            assert not phy042._bracket_in_common_domain(
+                t, ya, 24, yb, 32, 0.647, bounds[24], bounds[32])
+            assert phy042._assess_pair(t, curves, results, 24, 32, bounds,
+                                       leak_metric=clean, unc_metric=clean
+                                       )[1] == "OUTSIDE_DOMAIN"
+
+
+def _wl_result(L, *, peak=0.0, hole=False):
+    """Kleines echtes WLResult: lng so, dass das kanonische Gewicht bei allen
+    T des Gitters eine schmale Glocke um ``peak`` ist (Breite 1, Bins 0.5)."""
+    centers = np.linspace(-10.0, 10.0, 41)
+    lng = centers / 0.6 - 0.5 * (centers - peak) ** 2
+    mask = np.ones(41, dtype=bool)
+    if hole:
+        mask[20] = False                                  # Bin bei E = 0
+    return phy042._p41.WLResult(L=L, n=2 * L * L, centers=centers, lng=lng,
+                           mask=mask, micro_x={}, micro_y={}, wl_sweeps=1,
+                           prod_sweeps=1)
+
+
+def test_assess_pair_default_metrics_on_a_real_wl_result():
+    """F-2/F-3: die Produktions-Metriken (canonical_edge_leak, _uncovered_mass)
+    laufen durch _assess_pair -- ohne Stubs, auf echten WLResult-Objekten."""
+    t, ya, yb = _crossing_curves(0.647)
+    curves = {24: {"y2": ya}, 32: {"y2": yb}}
+    wide = {24: (0.56, 0.65), 32: (0.52, 0.67)}
+
+    def verdict(res24, res32):
+        return phy042._assess_pair(t, curves, {(24, 0): res24, (32, 0): res32},
+                                   24, 32, wide)[1]
+
+    clean24, clean32 = _wl_result(24), _wl_result(32)
+    assert phy042.canonical_edge_leak(clean32, 0.6) < 1e-12
+    assert phy042._uncovered_mass(clean32, 0.6) == 0.0
+    assert verdict(clean24, clean32) == "QUOTABLE"              # Positiv-Kontrolle
+    # Restmasse: Loch im Glockenzentrum, Fensterraender bleiben leer
+    holed = _wl_result(32, hole=True)
+    assert phy042.canonical_edge_leak(holed, 0.6) < 1e-12
+    assert phy042._uncovered_mass(holed, 0.6) > 0.1
+    assert verdict(clean24, holed) == "COVERAGE_UNCOVERED"
+    assert verdict(holed, clean32) == "COVERAGE_UNCOVERED"
+    # Kantenleck: Glocke am oberen Fensterrand, alle Bins besetzt
+    edgy = _wl_result(32, peak=9.5)
+    assert phy042.canonical_edge_leak(edgy, 0.6) > 0.5
+    assert phy042._uncovered_mass(edgy, 0.6) == 0.0
+    assert verdict(clean24, edgy) == "COVERAGE_LEAK"
+
+
+def test_global_gate_aggregation_is_nan_safe():
+    """F-1: die globale Leck-/Restmassen-Aggregation von run_phy042 als reine
+    Funktion. Mit builtin max ginge eine NaN-Metrik verloren (0.0 -> PASS)."""
+    t = [0.55, 0.60, 0.65]
+    results = {(24, 0): "a", (32, 0): "b", (32, 1): "c"}
+    domains = {24: None, 32: np.array([True, True, False])}
+
+    def metric(bad_res, bad_T, value):
+        return lambda res, T: value if (res, T) == (bad_res, bad_T) else 1e-6
+
+    nan = float("nan")
+    for agg, args in ((phy042._global_leak_max, (results, t)),
+                      (phy042._global_uncovered_max, (results, t, domains))):
+        # NaN an erster, mittlerer und letzter Position der Iteration
+        for where in (("a", 0.55), ("b", 0.60), ("c", 0.60)):
+            got = agg(*args, metric(*where, nan))
+            assert got == math.inf and not got < 1e-3
+            assert agg(*args, metric(*where, float("inf"))) == math.inf
+        # Negativ-Kontrollen: endliche Werte liefern das echte Maximum
+        assert agg(*args, metric("b", 0.60, 0.5)) == 0.5
+        assert agg(*args, metric("none", 0.0, 0.0)) == 1e-6
+    # Restmasse bindet nur in der Domaene: L=32 bei T=0.65 liegt ausserhalb,
+    assert phy042._global_uncovered_max(results, t, domains,
+                                        metric("c", 0.65, 0.5)) == 1e-6
+    assert phy042._global_uncovered_max(results, t, domains,
+                                        metric("c", 0.65, nan)) == 1e-6
+    # das Leck-Gate und ein L ohne gemessene Domaene zaehlen dagegen ueberall
+    assert phy042._global_leak_max(results, t, metric("c", 0.65, nan)) == math.inf
+    assert phy042._global_uncovered_max(results, t, domains,
+                                        metric("a", 0.65, nan)) == math.inf
+
+
+def test_global_gate_defaults_use_the_production_metrics():
+    """F-1/F-3: ohne metric-Argument greifen die Produktions-Metriken."""
+    t = phy042._T_GRID
+    full = {32: np.ones(len(t), dtype=bool)}
+    clean = {(32, 0): _wl_result(32)}
+    assert phy042._global_leak_max(clean, t) < 1e-12
+    assert phy042._global_uncovered_max(clean, t, full) == 0.0
+    assert phy042._global_leak_max({(32, 0): _wl_result(32, peak=9.5)}, t) > 0.5
+    assert phy042._global_uncovered_max({(32, 0): _wl_result(32, hole=True)},
+                                        t, full) > 0.1

@@ -193,6 +193,23 @@ def _w4_validate_walker_plan(walkers: dict[int, int],
             f"{min_walkers} Walker je L; unzureichend: {bad}")
 
 
+def _common_domain(dom_a, dom_b) -> tuple[float, float] | None:
+    """Intersection [lo, hi] of two evidence domains, or None.
+
+    Fail-closed (issue #63 K-1): builtin max/min keep or drop a NaN depending
+    on the argument order (max(0.56, nan) == 0.56, max(nan, 0.56) is nan), so
+    a NaN bound made the pair gates order-dependent. A missing domain, any
+    non-finite bound and an empty intersection all mean "no common domain".
+    """
+    if dom_a is None or dom_b is None:
+        return None
+    bounds = [float(v) for v in (dom_a[0], dom_a[1], dom_b[0], dom_b[1])]
+    if not all(math.isfinite(v) for v in bounds):
+        return None
+    lo, hi = max(bounds[0], bounds[2]), min(bounds[1], bounds[3])
+    return (lo, hi) if lo <= hi else None
+
+
 def _bracket_in_common_domain(t_grid, y2_a, La, y2_b, Lb, tb,
                               dom_a, dom_b) -> bool:
     """W4-G2(4): the root finder may connect only adjacent VALID T points.
@@ -203,10 +220,10 @@ def _bracket_in_common_domain(t_grid, y2_a, La, y2_b, Lb, tb,
     2026-10-19: a domain ending between grid points must not quote a root
     whose upper bracket point is uncovered).
     """
-    if tb is None or dom_a is None or dom_b is None:
+    common = _common_domain(dom_a, dom_b)
+    if tb is None or common is None:
         return False
-    lo = max(dom_a[0], dom_b[0])
-    hi = min(dom_a[1], dom_b[1])
+    lo, hi = common
     idx = [k for k, T in enumerate(t_grid) if lo - 1e-12 <= float(T) <= hi + 1e-12]
     if len(idx) < 2:
         return False
@@ -249,10 +266,10 @@ def _pair_coverage_max(results, La: int, Lb: int, t_grid, dom_a, dom_b,
     stay as pipeline-wide diagnostics. None without a common domain; any
     non-finite value returns inf (fail-closed).
     """
-    if dom_a is None or dom_b is None:
+    common = _common_domain(dom_a, dom_b)
+    if common is None:
         return None
-    lo = max(dom_a[0], dom_b[0])
-    hi = min(dom_a[1], dom_b[1])
+    lo, hi = common
     vals = [float(metric(res, float(T)))
             for (L, _w), res in results.items() if L in (La, Lb)
             for T in t_grid if lo - 1e-12 <= float(T) <= hi + 1e-12]
@@ -295,11 +312,48 @@ def _pair_verdict(tb, dom_a, dom_b, p_leak, p_unc, *, bracket_valid: bool) -> st
                         bracket_valid=bracket_valid)
 
 
-def _pair_quotable(tb, dom_a, dom_b, leak_ok: bool, unc_ok: bool, *,
-                   bracket_valid: bool) -> bool:
-    """Quotable only inside both domains AND with both coverage gates passed."""
-    return _pair_reason(tb, dom_a, dom_b, leak_ok, unc_ok,
-                        bracket_valid=bracket_valid) == "QUOTABLE"
+def _size_pairs(Ls) -> list[tuple[int, int]]:
+    """All (La, Lb) with La < Lb, in the order of ``Ls``."""
+    return [(a, b) for a in Ls for b in Ls if b > a]
+
+
+def _assess_pairs(t_grid, main_curve, results, Ls, bounds, *,
+                  leak_metric=None, unc_metric=None) -> dict:
+    """Pair table of run_phy042: {(La, Lb): (tb, reason, quotable)} for every
+    La < Lb in the order of ``Ls``. ``quotable`` is derived here and nowhere
+    else, so the report cannot quote a pair whose reason is not QUOTABLE
+    (issue #63 F-4)."""
+    table = {}
+    for La, Lb in _size_pairs(Ls):
+        tb, reason = _assess_pair(t_grid, main_curve, results, La, Lb, bounds,
+                                  leak_metric=leak_metric, unc_metric=unc_metric)
+        table[(La, Lb)] = (tb, reason, reason == "QUOTABLE")
+    return table
+
+
+def _global_leak_max(results, t_grid, metric=None) -> float:
+    """Pipeline-wide edge-leak maximum over all (L, walker, T), fail-closed on
+    non-finite values (issue #63 F-1: the aggregation was inline in
+    run_phy042 and could be reverted to builtin max without a red test)."""
+    metric = canonical_edge_leak if metric is None else metric
+    acc = 0.0
+    for res in results.values():
+        for T in t_grid:
+            acc = _max_fail_closed(acc, metric(res, float(T)))
+    return acc
+
+
+def _global_uncovered_max(results, t_grid, domains, metric=None) -> float:
+    """Pipeline-wide uncovered-mass maximum; binding only inside the walker
+    domain of each L (a lattice without a measured domain counts at every T).
+    Fail-closed on non-finite values (issue #63 F-1)."""
+    metric = _uncovered_mass if metric is None else metric
+    acc = 0.0
+    for (L, _w), res in results.items():
+        for k, T in enumerate(t_grid):
+            if domains[L] is None or domains[L][k]:
+                acc = _max_fail_closed(acc, metric(res, float(T)))
+    return acc
 
 
 def _pair_inside_domains(
@@ -312,11 +366,10 @@ def _pair_inside_domains(
     Insbesondere darf ein PHY032-Fallback, dessen Evidenz erst bei T=0.56
     beginnt, kein Crossing bei T<0.56 freigeben.
     """
-    if tb is None or bounds_a is None or bounds_b is None:
+    common = _common_domain(bounds_a, bounds_b)
+    if tb is None or common is None:
         return False
-    lo = max(bounds_a[0], bounds_b[0])
-    hi = min(bounds_a[1], bounds_b[1])
-    return bool(lo <= tb <= hi)
+    return bool(common[0] <= tb <= common[1])
 
 
 def _uncovered_mass(res, T: float) -> float:
@@ -449,10 +502,7 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
         }
 
     # --- Leak-Gate: kanonisches Gewicht an den Fensterraendern ------------
-    leak_max = 0.0
-    for key, res in results.items():
-        for T in t_grid:
-            leak_max = _max_fail_closed(leak_max, canonical_edge_leak(res, float(T)))
+    leak_max = _global_leak_max(results, t_grid)
     leak_ok = leak_max < 1e-3
     print(f"\n[LEAK] max. Randgewicht ueber alle (L, walker, T): "
           f"{leak_max:.2e} (Gate < 1e-3) -> {'PASS' if leak_ok else 'FAIL'}")
@@ -495,11 +545,7 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
               "VAL-B bleibt ein separater Drift-Guard.")
 
     # --- Coverage-Massen-Gate (nur innerhalb der Domaene bindend) ----------
-    unc_max = 0.0
-    for (L, w), res in results.items():
-        for k, T in enumerate(t_grid):
-            if domains[L] is None or domains[L][k]:
-                unc_max = _max_fail_closed(unc_max, _uncovered_mass(res, float(T)))
+    unc_max = _global_uncovered_max(results, t_grid, domains)
     unc_ok = unc_max < 1e-3
     print(f"\n[COVER] max. kanonische Masse auf unbesetzten Bins "
           f"(in-Domaene): {unc_max:.2e} (Gate < 1e-3) "
@@ -587,16 +633,15 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
 
     # --- Y2-Kanal: C-eliminierte Paare auf Mittel-Kurven + Quotierbarkeit --
     print("\n[Y2-FSS] C-eliminierte WM-Paare (Walker-Mittel-Kurven):")
-    pairs = [(Ls[i], Ls[j]) for i in range(len(Ls)) for j in range(len(Ls))
-             if Ls[j] > Ls[i]]
+    pairs = _size_pairs(Ls)
     pair_tbkt = {}
     pair_quotable = {}
     pair_reason = {}
+    pair_table = _assess_pairs(t_grid, main_curve, results, Ls,
+                               effective_domain_bounds)
     for La, Lb in pairs:
-        tb, reason = _assess_pair(t_grid, main_curve, results, La, Lb,
-                                  effective_domain_bounds)
+        tb, reason, q = pair_table[(La, Lb)]
         pair_tbkt[(La, Lb)] = tb
-        q = reason == "QUOTABLE"
         pair_quotable[(La, Lb)] = q
         pair_reason[(La, Lb)] = reason
         if tb is None:

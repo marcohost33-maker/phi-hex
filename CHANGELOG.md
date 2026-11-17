@@ -3,6 +3,42 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-11-17] W4-Folgearbeit: Regressionsschutz Claim-Pfad, NaN-feste Domaenengrenzen (#63)
+
+Folge-Issue zum Review von #51 (`f679442`). Kein Messlauf, keine neue Zahl:
+gepinnte Evidenz in `results/` ist byte-unveraendert. Die Aenderungen an
+PHY042 sind verhaltensgleich fuer endliche Eingaben (reine Extraktion).
+
+### Fixed
+- **K-1 — PHY042 Domaenengrenzen:** `max(dom_a[0], dom_b[0])` behielt oder
+  verlor ein NaN je nach Argumentreihenfolge
+  (`_pair_inside_domains(0.6, A, (nan, .67))` -> True, vertauscht -> False).
+  Ein Helfer `_common_domain` bildet den Schnitt jetzt fuer alle drei
+  Paar-Gates; fehlende Domaene, nicht-endliche Grenze und leerer Schnitt
+  heissen einheitlich "keine gemeinsame Domaene" (fail-closed, im Lauf heute
+  nicht erreichbar).
+- **K-2 — PHY043 `_is_pilot_budget`:** `int()` schnitt ab
+  (`n_measure=400.9` zaehlte als Pilot). Zaehler muessen echte Ganzzahlen
+  sein (builtin oder numpy, kein bool/float).
+
+### Changed
+- **F-1 — PHY042:** die globale Leck-/Restmassen-Aggregation ist aus
+  `run_phy042` in die reinen Funktionen `_global_leak_max` und
+  `_global_uncovered_max` gezogen.
+- **F-4 — PHY042:** die Paar-Tabelle (`quotable` aus dem Verdikt) liegt in
+  `_assess_pairs`; `run_phy042` liest sie nur noch.
+- **K-3 — PHY042:** der aufruferlose `_pair_quotable` ist entfernt.
+
+### Tests
+- F-1 NaN/inf an erster, mittlerer und letzter Iterationsposition; F-2/F-3
+  `COVERAGE_UNCOVERED` und `COVERAGE_LEAK` durch `_assess_pair` mit den
+  Produktions-Metriken auf echten `WLResult`-Objekten (keine Stubs); F-4
+  Paar-Tabelle; F-5 Docstring "Paar-Helfer Ende-zu-Ende" statt "als Ganzes";
+  K-1 beide Argumentreihenfolgen; K-2 Float-/NaN-/String-Zaehler.
+- Diskriminierung gemessen (2026-11-17, py3.13): 13 Mutanten (Guard
+  zurueckgenommen) -> 13 rot, jeweils per Assertion, kein Absturz.
+- `pytest -m "not slow"`: 241 passed, 4 deselected (vorher 235; verified 2026-11-17, py3.13).
+
 ## [2026-09-27] W4 Evidence-Contract Hardening (#45)
 
 ### Fixed
