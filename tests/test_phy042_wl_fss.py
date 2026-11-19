@@ -492,3 +492,70 @@ def test_global_gate_defaults_use_the_production_metrics():
     assert phy042._global_leak_max({(32, 0): _wl_result(32, peak=9.5)}, t) > 0.5
     assert phy042._global_uncovered_max({(32, 0): _wl_result(32, hole=True)},
                                         t, full) > 0.1
+
+
+# --- Legacy-API fuer PHY044-WL (Supersession #50/#52/#54, 2026-11-19) -------
+
+def _legacy_curves(spreads):
+    """Zwei Walker-Kurven, deren Spread je T genau `spreads` ist."""
+    base = np.linspace(1.0, 0.2, len(spreads))
+    return [base, base + np.asarray(spreads, dtype=float)]
+
+
+def test_legacy_walker_domain_finite_spread_is_measured():
+    """Positivkontrolle: endlicher Spread < DOMAIN_THRESHOLD ueber das ganze
+    Gitter -> gemessene Domaene bis zum letzten T (sonst waere der
+    NaN-Test unten auch mit einer immer-leeren Domaene gruen)."""
+    t = phy042._T_GRID
+    d = phy042._walker_domain(_legacy_curves([0.01] * len(t)), t)
+    assert d["measured"] is True and d["n_walkers"] == 2
+    assert bool(d["mask"].all())
+    assert d["tmax"] == float(t[-1]) and d["reason"] is None
+    st = phy042._domain_status(d)
+    assert st["max_spread"] == pytest.approx(0.01)
+    # Schwellen-Rand: Spread == thr ist NICHT innerhalb (Annahme nur bei s < thr)
+    edge = [0.01, 0.01, phy042.DOMAIN_THRESHOLD] + [0.0] * (len(t) - 3)
+    d_edge = phy042._walker_domain(_legacy_curves(edge), t)
+    assert d_edge["tmax"] == float(t[1])
+
+
+@pytest.mark.parametrize("pos", [0, 5, -1])
+def test_legacy_walker_domain_nan_spread_fails_closed(pos):
+    """Negativtest (toleranz-und-nan-gate): ein NaN in EINER Walker-Kurve ist
+    ein ungemessener Spread und darf die Domaene nicht verlaengern. NaN am
+    unteren Rand -> leere Domaene (tmax None, Paar nicht quotierbar); NaN
+    weiter oben -> Domaene endet davor. In #50 galt `s >= thr` (NaN = gueltig)."""
+    t = phy042._T_GRID
+    curves = _legacy_curves([0.01] * len(t))
+    curves[1] = curves[1].copy()
+    curves[1][pos] = math.nan
+    d = phy042._walker_domain(curves, t)
+    k = pos % len(t)
+    assert d["measured"] is True
+    assert int(d["mask"].sum()) == k
+    assert not bool(d["mask"][k:].any())
+    if k == 0:
+        assert d["tmax"] is None and d["reason"] is not None
+    else:
+        assert d["tmax"] == float(t[k - 1])
+
+
+def test_legacy_walker_domain_single_walker_is_not_a_measurement():
+    """< 2 Walker: keine Messung (tmax None + Grund), Gate-Maske konservativ."""
+    t = phy042._T_GRID
+    d = phy042._walker_domain([np.ones(len(t))], t)
+    assert d["measured"] is False and d["tmax"] is None
+    assert bool(d["mask"].all()) and "n_walkers=1 < 2" in d["reason"]
+    assert phy042._domain_status(d)["max_spread"] is None
+
+
+def test_legacy_api_is_additive_and_drops_pair_domain_limit():
+    """Supersession: nur die fuenf Symbole fuer PHY044-WL; der #50-Paar-Pfad
+    (`_pair_domain_limit`, 'partial' quotierbar) bleibt draussen, der
+    Claim-Pfad laeuft ueber _assess_pairs (#74)."""
+    for name in ("PHY042_REPORT_V01", "DOMAIN_THRESHOLD", "_UNMEASURED_REASON",
+                 "_walker_domain", "_domain_status"):
+        assert hasattr(phy042, name), name
+    assert not hasattr(phy042, "_pair_domain_limit")
+    assert not hasattr(phy042, "_pair_quotable")
+    assert (ROOT / phy042.PHY042_REPORT_V01).is_file()
