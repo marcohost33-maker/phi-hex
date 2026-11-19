@@ -3,6 +3,66 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-11-19] Supersession #50/#52/#54: nicht ersetzte Teile auf main
+
+Supersedes #50 (`21b51d1`), #52 (`c92d322`), #54 (`8c92301`). Frischer Zweig
+von main `8530866` (nach #74); nur Inhalte, die #51/#74 nicht ersetzt haben.
+Herkunft: #50/#54 aus Claude-Cloud-Sitzungen, #52 aus der Codex-Linie.
+Vorregistrierungen "vor den Daten" belegt ueber die Original-Commits
+`768fb19` (W4 v01), `82e2738` (O1-Entscheid + W4 v02), `994fdf9` (PHY051);
+die PR-Zweige bleiben deshalb bestehen.
+
+### Added (byte-identisch uebernommen)
+- #50: PHY044-WL (blinde WL-Kalibrierung, Numba-Zwilling), PHY045 (O1-Test),
+  PHY046 (W4 v02, Wolff pro Flaeche), PHY047 (Neuauswertung pro Flaeche),
+  PHY048 (square-V&V, post hoc) mit Reports und Tests; Specs O1-Entscheid
+  v01, W4-Prereg v01/v02 (Lineage), PR50-Selbstpruefung.
+- #52: PHY049 (Correlation-Ratio-Engine), PHY050 (FSS-Recovery-Gate) +
+  `results/260928 PHY050 deterministic G4 gate.json`; Specs W4 v03/v03a; die
+  #52-Fassungen von Provenienz-Addendum und PHY046-Interpretationsnote.
+- #54: PHY051 (triangular/kagome pro Flaeche) mit zwei Reports je Gitter,
+  PHY051-Prereg, Cross-Family-Review PR50-52 (deren Merge-Plan "#51
+  schliessen" ist durch den #51-Merge vom 2026-10-19 ueberholt).
+- `numba>=0.67` in `requirements-dev.txt`; BLAS-Pin-Regel in `AGENTS.md`.
+
+### Changed
+- PHY042: additiver Legacy-Block fuer PHY044-WL (`PHY042_REPORT_V01`,
+  `DOMAIN_THRESHOLD`, `_UNMEASURED_REASON`, `_walker_domain`,
+  `_domain_status`; Wortlaut #50). `_walker_domain` laeuft ueber das
+  main-`_validity_domain`: ein NaN-Spread beendet die Domaene (in #50 galt er
+  als gueltig). `_pair_domain_limit` ist bewusst nicht uebernommen.
+- test_phy044_wl: Band B gegen die #50-Prereg v01 statt gegen live
+  `REF_BAND["nn_mc"]` (auf main entfernt); neuer Test, dass B nicht aus dem
+  live-Ledger stammt.
+- PHY051: die 7 offenen Codex-Befunde von #54 eingebaut (Eingabe gegen
+  `PHY051_PLAN`, O1-Label nur bei `overall_pass is True`, Jackknife-SE
+  fail-closed, BLAS erzwungen, Vollvergleich des regenerierten Reports,
+  SOURCES-Korrekturzeile zum nicht gemessenen triangular-Lauf-Intervall).
+  Beide committeten PHY051-Reports regenerieren unveraendert (Vollvergleich).
+- README: Abschnitt Supersession (Alias-Tabelle PHY044-WL/-W4, geltende
+  W4-Prereg, W4 v02 als FINDING unter eigener Prereg, O1 formal offen mit
+  Grenzen, W4 v03 ohne Produktionsdaten, PHY051). spec/260703: nur neuer
+  Nachtrag zur Normierungs-Provenienz.
+
+### Not taken (Grund)
+- Alle #50/#52-Aenderungen an PHY041/042/043, deren Tests und an
+  spec/260808: durch #51/#74 strenger ersetzt.
+- `results/260926 PHY043 report erratum.md`: wiederholt den von #51
+  widerlegten Power-Satz.
+- `results/260926 PHY042 domain semantics erratum.json`: traegt die
+  schwaechere #50-Semantik ("partial" quotierbar); main fuehrt das Erratum
+  als Prosa.
+- core-v2-Docstring ("per Site falsifiziert") und README-Aussage "O1
+  entschieden": O1 bleibt bis zum Cross-Family-Review offen.
+- ci.yml-Aenderung aus #52/#54 (`pull_request` ohne Branch-Filter,
+  PHY050-G4-Schritt): main-CI bleibt Pruefmassstab.
+
+### Tests
+- Diskriminierung (`Tools/diskriminierung.py`, alle `provenienz_klasse`
+  VOLL): Legacy-Domaene 3/3 (DK-20261119T151713-29b9ea6084e8), Band B 3/3
+  (DK-20261119T151944-74022f253a2a), PHY051-Codex-Befunde 5/5
+  (DK-20261119T152937-eb3e08b1418f). Testzahlen nur gemessen im PR-Text.
+
 ## [2026-11-17] W4-Folgearbeit: Regressionsschutz Claim-Pfad, NaN-feste Domaenengrenzen (#63)
 
 Folge-Issue zum Review von #51 (`f679442`). Kein Messlauf, keine neue Zahl:

@@ -4,7 +4,16 @@
 # lokal (siehe README "Reproduzieren").
 # numpy-Floor 2.5.1: numpy 2.5.x traegt Requires-Python >=3.12 (keine cp310/cp311-
 # Wheels) -- moeglich, seit py3.10/3.11 fleet-weit gedroppt sind (Marco-Entscheid 2026-07-14).
+# numba (seit 2026-09-26, PHY044-WL; uebernommen 2026-11-19 mit der Supersession
+# #50/#52/#54): optionaler Beschleuniger. Gelistet, damit CI die Bit-Identitaets-
+# Gates Original vs Numba (u.a. tests/test_phy044_wl_calibration.py,
+# tests/test_phy049_correlation_ratio.py) KOMPILIERT prueft statt sie zu
+# ueberspringen. Mehrere Module nutzen numba ueber `HAVE_NUMBA` mit reinem
+# Python-Fallback (PHY044-WL, PHY045, PHY046, PHY048, PHY049, PHY051).
+# Wheels fuer cp312..cp314 mit dem numpy-Floor oben: lokal geprueft nur
+# numba 0.68.1 + numpy 2.5.5 (py3.12); die CI-Matrix ist der Beleg.
 numpy>=2.5.4
 scipy>=1.18.1
+numba>=0.67
 pytest>=9.2.0
 ruff>=0.17.4

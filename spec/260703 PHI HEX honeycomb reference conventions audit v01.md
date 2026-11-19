@@ -72,3 +72,25 @@ separaten Evidenzgrund fuer alternative Guards fest.
 3. Y2 und Y4 getrennt auswerten; Y4 nicht als stillen Y2-Ersatz verwenden.
 4. Kein neuer T_BKT-Bestwert ohne Modellwahl-/Finite-Size-Systematik und
    Cross-Family-Review.
+
+## Nachtrag 2026-11-19 - Normierung der Ledger-Kanaele (Supersession #50/#52/#54)
+
+Die Werte des Ledgers oben bleiben unveraendert die aktuelle Vergleichsbasis.
+Neu ist nur die **Normierungs-Provenienz** der Helicity-Kanaele, uebernommen
+aus `spec/260926 PHI HEX honeycomb reference provenance addendum v01.md`
+(Fassung aus PR #52, c92d322; Abschnitte 7 und 8):
+
+- Jiang (PTEP 2024 103A02) und de Andrade/Jorge/DaSilva (arXiv-Fassung v4 /
+  Phys. Scr. 100 065953) multiplizieren die Honeycomb-Steifigkeit mit dem
+  Geometriefaktor `4/(3 sqrt(3))`; das ist laut Primaertext-Abgleich vom
+  2026-09-27 die Steifigkeit **pro Flaeche** (NN-Abstand 1). Beleg und
+  Wortlaut: Addendum Abschnitte 7/8.
+- Okabe/Otsuka (`0.573`, rough estimate) ist normierungsfrei (Korrelations-
+  verhaeltnis) und bleibt Lageanker ohne Fehlerbalken.
+- Der Addendum-Text aus #50/#52 nennt Code-Symbole (`REF_PROVENANCE`,
+  `REF_CURRENT_KEYS`), die auf main nicht existieren; massgeblich fuer Code
+  bleiben `REF_BAND`/`REF_PRIMARY_KEYS` in PHY042 und dieser Ledger.
+
+Diese Normierungs-Provenienz entscheidet Audit O1 **nicht**: sie sagt, wie
+die Referenzen normieren, nicht, welche Normierung die Repo-Pipeline im
+NK-Kriterium verwenden muss. Stand O1 siehe README (O1-Abschnitt).
