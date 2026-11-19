@@ -1,0 +1,40 @@
+PHY047 - Neuauswertung committeter Daten mit Upsilon pro Flaeche
+Coworker Research / Coworkerz, 2026-09-26
+======================================================================
+Entscheid: spec/260926 PHI HEX O1 helicity normalization decision v01.md
+Reihenfolge: executed after W4 v02 pre-registration commit 82e2738
+Methoden identisch zu den Originalen; einzig Upsilon_area = Upsilon_site / a_s.
+
+--- honeycomb_phy042_wl (a_s = 1.2990, T-Gitter 0.52..0.67) ---
+  per_site  NK: L24=0.6262, L32=0.6131, L48=0.6107
+            Paare: (24,32)=0.5875, (24,48)=0.5898, (32,48)=0.5916
+            WM freies C: 0.5893
+  per_area  NK: L24=0.5895, L32=0.5838, L48=0.5794
+            Paare: (24,32)=0.5575, (24,48)=0.5587, (32,48)=0.5597
+            WM freies C: 0.5603
+
+--- honeycomb_phy032 (a_s = 1.2990, T-Gitter 0.56..0.6475) ---
+  per_site  NK: L12=ausserhalb Gitter, L24=0.6301, L48=0.6115
+            Paare: (12,24)=0.6014, (12,48)=0.5967, (24,48)=0.5917
+            WM freies C: 0.5981
+  per_area  NK: L12=0.5974, L24=0.5890, L48=0.5824
+            Paare: (12,24)=0.5632, (12,48)=0.5604, (24,48)=ausserhalb Gitter
+            WM freies C: 0.5600 [Gitterrand]
+
+--- kagome_phy033 (a_s = 1.1547, T-Gitter 0.8..1.0) ---
+  per_site  NK: L12=0.8899, L24=0.8749, L36=0.8671
+            Paare: (12,24)=0.8437, (12,36)=0.8410, (24,36)=0.8377
+            WM freies C: 0.8496
+  per_area  NK: L12=0.8544, L24=0.8460, L36=0.8403
+            Paare: (12,24)=0.8052, (12,36)=0.8200, (24,36)=0.8201
+            WM freies C: 0.8194
+
+--- triangular_phy030v02 (a_s = 0.8660, T-Gitter 1.36..1.46) ---
+  per_site  NK: L9=ausserhalb Gitter, L13=ausserhalb Gitter, L19=ausserhalb Gitter
+            Paare: (9,13)=1.3663, (9,19)=1.3852, (13,19)=1.3888
+            WM freies C: 1.4008
+  per_area  NK: L9=ausserhalb Gitter, L13=ausserhalb Gitter, L19=ausserhalb Gitter
+            Paare: (9,13)=ausserhalb Gitter, (9,19)=1.4496, (13,19)=1.4452
+            WM freies C: 1.4447
+
+Grenzen: kleine L (<= 48), keine HKS-Extrapolation; FINDING zur Groesse und Richtung des Normierungseffekts, kein Bestwert.
