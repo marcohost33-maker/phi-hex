@@ -125,6 +125,12 @@ def _synthetic_prod(lattice, T0, noise=2e-4, seed=5, ladder=None,
             "max_workers": 1, "have_numba": False}
 
 
+def _channel_label(rep):
+    """Ungegatete Wahrheitstafel aus den im Report stehenden Kanal-Verdikten."""
+    return phy051.o1_label(rep["primary_per_area"]["verdict"]["verdict"],
+                           rep["convention_crosscheck_per_site"]["verdict"]["verdict"])
+
+
 def test_analyse_recovers_wm_temperature_and_o1_truth_table_triangular():
     """Exakte WM-Kurven pro Flaeche bei T0 in B_tri: per-Flaeche-Kanal muss
     T0 liefern (CONSISTENT); der per-Site-Kanal (x a_s = 0.866) crosst die
@@ -141,7 +147,12 @@ def test_analyse_recovers_wm_temperature_and_o1_truth_table_triangular():
     assert site["T_P"] is not None and site["T_P"] < 1.45
     assert site["verdict"]["verdict"] == "INCONSISTENT"
     rep = phy051._clean(phy051.build_report(prod))
-    assert rep["o1_label"] == "O1_PER_AREA_CORROBORATED"
+    # Wahrheitstafel auf Kanal-Ebene; das veroeffentlichte Label ist an die
+    # Integritaets-Gates gebunden (Synthetik: 4 Seeds, Nicht-Plan-Gitter ->
+    # PASS_INPUT_COMPLETE False -> NEGATIVE_RESULT, Codex #54 Z.420/463)
+    assert _channel_label(rep) == "O1_PER_AREA_CORROBORATED"
+    assert rep["pass_gates"]["PASS_INPUT_COMPLETE"] is False
+    assert rep["o1_label"] == "NEGATIVE_RESULT"
     json.dumps(rep, allow_nan=False)
 
 
@@ -159,7 +170,8 @@ def test_o1_challenged_when_per_site_curves_hit_the_band():
     rep = phy051._clean(phy051.build_report(prod))
     assert rep["convention_crosscheck_per_site"]["verdict"]["verdict"] == "CONSISTENT"
     assert rep["primary_per_area"]["verdict"]["verdict"] == "INCONSISTENT"
-    assert rep["o1_label"] == "O1_CHALLENGED"
+    assert _channel_label(rep) == "O1_CHALLENGED"
+    assert rep["o1_label"] == "NEGATIVE_RESULT"    # Gates (Nicht-Plan-Eingabe)
 
 
 def test_stop_rules_fail_closed():
@@ -289,7 +301,7 @@ def test_budget_stop_marks_remaining_L_unmeasured():
 
 
 @pytest.mark.parametrize("lattice", ["triangular", "kagome"])
-def test_committed_report_if_present(lattice):
+def test_committed_report_if_present(lattice, tmp_path):
     p = ROOT / "results" / (phy051.report_stem(lattice) + ".json")
     if not p.exists():
         pytest.skip("PHY051-Report noch nicht committet")
@@ -299,20 +311,184 @@ def test_committed_report_if_present(lattice):
     assert pr["ladder"] == list(plan["ladder"])
     assert pr["t_grid"] == pytest.approx(list(plan["t_grid"]))
     assert pr["n_seeds"] == phy051.PHY051_N_SEEDS
+    assert pr["n_therm"] == phy051.PHY051_N_THERM
     assert pr["n_meas"] == phy051.PHY051_N_MEAS
     assert rep["o1_label"] in ("O1_PER_AREA_CORROBORATED", "O1_CHALLENGED",
                                "NON_DISCRIMINATING", "TENSION_BOTH_CHANNELS",
                                "NEGATIVE_RESULT")
-    # Report ist deterministisch aus den gespeicherten Rohdaten reproduzierbar
-    prod = {"lattice": lattice, "t_grid": pr["t_grid"], "ladder": pr["ladder"],
-            "n_seeds": pr["n_seeds"], "n_therm": pr["n_therm"],
-            "n_meas": pr["n_meas"], "unmeasured_L": pr["unmeasured_L"],
-            "wall_s": pr["wall_s"], "cpu_s": pr["cpu_s"],
-            "max_workers": pr["max_workers"], "have_numba": pr["have_numba"],
-            "ups_area": rep["data"]["ups_area"],
-            "ups_site": rep["data"]["ups_site"]}
-    again = phy051._clean(phy051.build_report(prod))
-    assert again["o1_label"] == rep["o1_label"]
-    assert again["primary_per_area"]["T_P"] == pytest.approx(
-        rep["primary_per_area"]["T_P"], abs=1e-9)
-    assert again["pass_gates"] == rep["pass_gates"]
+    # Report ist deterministisch aus den gespeicherten Rohdaten reproduzierbar:
+    # VOLLSTAENDIGER Vergleich (Codex #54 P2, Test-Z.313) - inkl. Lauf-
+    # Zeitstempel, Crossings, Unsicherheiten, Verdikt-Details, Referenzen und
+    # Rohdaten; Gleitkomma bis rel 1e-9 (plattformabhaengige Fits), alles
+    # andere exakt.
+    again = phy051._clean(phy051.build_report(phy051.prod_from_report(rep)))
+    _assert_report_equal(again, rep)
+    # Text-Report: aus dem regenerierten JSON byte-gleich (modulo Zeilenende)
+    out = tmp_path / "r.txt"
+    phy051.write_text_report(again, out)
+    committed_txt = p.with_suffix(".txt").read_bytes().replace(b"\r\n", b"\n")
+    assert out.read_bytes().replace(b"\r\n", b"\n") == committed_txt
+
+
+def _assert_report_equal(a, b, path="$"):
+    if isinstance(b, float) and not isinstance(a, bool) and isinstance(a, (int, float)):
+        assert a == pytest.approx(b, rel=1e-9, abs=1e-12), path
+        return
+    assert type(a) is type(b), (path, type(a), type(b))
+    if isinstance(b, dict):
+        assert set(a) == set(b), (path, set(a) ^ set(b))
+        for k in b:
+            _assert_report_equal(a[k], b[k], f"{path}.{k}")
+    elif isinstance(b, list):
+        assert len(a) == len(b), path
+        for i, (x, y) in enumerate(zip(a, b)):
+            _assert_report_equal(x, y, f"{path}[{i}]")
+    else:
+        assert a == b, path
+
+
+def test_report_comparison_catches_a_stale_field():
+    """Positivkontrolle des Vollvergleichs: eine einzige veraltete Zahl tief
+    im Report (Jackknife-SE eines Paars) oder ein fehlender Zeitstempel muss
+    auffallen."""
+    p = ROOT / "results" / (phy051.report_stem("kagome") + ".json")
+    rep = json.loads(p.read_text(encoding="utf-8"))
+    stale = json.loads(json.dumps(rep))
+    k = next(iter(stale["primary_per_area"]["pair_jackknife_se"]))
+    stale["primary_per_area"]["pair_jackknife_se"][k] *= 1.001
+    with pytest.raises(AssertionError):
+        _assert_report_equal(stale, rep)
+    no_ts = json.loads(json.dumps(rep))
+    no_ts["production"]["run_utc_start"] = None
+    with pytest.raises(AssertionError):
+        _assert_report_equal(no_ts, rep)
+
+
+# --- Codex #54 (8c92301): eingebaute Befunde -------------------------------
+
+def _plan_prod(lattice="kagome"):
+    """Plan-konforme Produktions-Metadaten + Kanalformen (Werte synthetisch)."""
+    plan = phy051.PHY051_PLAN[lattice]
+    nt, ns = len(plan["t_grid"]), phy051.PHY051_N_SEEDS
+    rows = {str(L): np.ones((nt, ns)).tolist() for L in plan["ladder"]}
+    return {"lattice": lattice, "t_grid": [float(t) for t in plan["t_grid"]],
+            "ladder": list(plan["ladder"]), "n_seeds": ns,
+            "n_therm": phy051.PHY051_N_THERM, "n_meas": phy051.PHY051_N_MEAS,
+            "ups_area": rows, "ups_site": json.loads(json.dumps(rows)),
+            "unmeasured_L": []}
+
+
+@pytest.mark.parametrize("lattice", ["triangular", "kagome"])
+def test_input_matches_plan_positive_control(lattice):
+    assert phy051._input_matches_plan(_plan_prod(lattice)) is True
+
+
+@pytest.mark.parametrize("mutate", [
+    "lattice", "ladder", "ladder_float", "t_grid_shift", "t_grid_nan",
+    "t_grid_short", "n_seeds", "n_seeds_bool", "n_therm", "n_meas",
+    "site_shape", "site_missing_L", "area_extra_L"])
+def test_input_matches_plan_rejects_deviation(mutate):
+    """Codex #54 P2 (Z.420): Abweichung vom registrierten Plan ->
+    PASS_INPUT_COMPLETE darf nicht gelten, auch wenn prod in sich stimmig ist."""
+    prod = _plan_prod("kagome")
+    nt = len(prod["t_grid"])
+    if mutate == "lattice":
+        prod["lattice"] = "square"
+    elif mutate == "ladder":
+        prod["ladder"] = prod["ladder"][:-1]
+    elif mutate == "ladder_float":
+        prod["ladder"] = [float(L) for L in prod["ladder"]]
+    elif mutate == "t_grid_shift":
+        prod["t_grid"] = [t + 0.005 for t in prod["t_grid"]]
+    elif mutate == "t_grid_nan":
+        prod["t_grid"][3] = math.nan
+    elif mutate == "t_grid_short":
+        prod["t_grid"] = prod["t_grid"][:-1]
+    elif mutate == "n_seeds":
+        prod["n_seeds"] = 4
+    elif mutate == "n_seeds_bool":
+        prod["n_seeds"] = True
+    elif mutate == "n_therm":
+        prod["n_therm"] = 499
+    elif mutate == "n_meas":
+        prod["n_meas"] = 1500.0
+    elif mutate == "site_shape":
+        prod["ups_site"]["32"] = np.ones((nt, 4)).tolist()
+    elif mutate == "site_missing_L":
+        del prod["ups_site"]["192"]
+    elif mutate == "area_extra_L":
+        prod["ups_area"]["256"] = np.ones((nt, 8)).tolist()
+    assert phy051._input_matches_plan(prod) is False
+
+
+def test_gated_o1_label_suppresses_affirmative_labels_on_gate_fail():
+    """Codex #54 P2 (Z.463): faellt ein Integritaets-Gate, kein bejahendes
+    O1-Label. Positivkontrolle: bei overall_pass True gilt die Tafel."""
+    pairs = [("CONSISTENT", "INCONSISTENT"), ("INCONSISTENT", "CONSISTENT"),
+             ("CONSISTENT", "CONSISTENT"), ("INCONSISTENT", "INCONSISTENT")]
+    for a, s in pairs:
+        assert phy051.gated_o1_label(a, s, True) == phy051.o1_label(a, s)
+        assert phy051.gated_o1_label(a, s, True) != "NEGATIVE_RESULT"
+        for bad in (False, None, 1, "True", np.bool_(True)):
+            assert phy051.gated_o1_label(a, s, bad) == "NEGATIVE_RESULT", bad
+
+
+def test_build_report_label_follows_gates(monkeypatch):
+    """Verdrahtung: build_report nutzt das gegatete Label. Mit erzwungen
+    bestandenen Gates erscheint das bejahende Label (Positivkontrolle),
+    mit einem gefallenen Gate NEGATIVE_RESULT; Kanal-Verdikte bleiben."""
+    prod = _synthetic_prod("triangular", T0=1.465,
+                           t_grid=phy051._grid(1.30, 1.60))
+    real = phy051.gates
+
+    def _force(passed):
+        def g(*a, **k):
+            out = real(*a, **k)
+            out["gates"] = {n: passed for n in out["gates"]}
+            out["overall_pass"] = all(out["gates"].values())
+            return out
+        return g
+    monkeypatch.setattr(phy051, "gates", _force(True))
+    ok = phy051._clean(phy051.build_report(prod))
+    assert ok["o1_label"] == "O1_PER_AREA_CORROBORATED"
+    monkeypatch.setattr(phy051, "gates", _force(False))
+    bad = phy051._clean(phy051.build_report(prod))
+    assert bad["o1_label"] == "NEGATIVE_RESULT"
+    assert _channel_label(bad) == "O1_PER_AREA_CORROBORATED"
+
+
+@pytest.mark.parametrize("pos", [0, 3, -1])
+def test_jackknife_se_fails_closed_on_missing_replicate(pos):
+    """Codex #54 P2 (Z.285): ein fehlendes/nicht-endliches Replikat ->
+    keine SE (None), statt SE aus den Ueberlebenden."""
+    vals = [1.46, 1.47, 1.45, 1.465, 1.455, 1.468, 1.462, 1.459]
+    assert phy051._jk_se(vals) is not None and phy051._jk_se(vals) > 0.0
+    for bad in (None, math.nan, math.inf):
+        v = list(vals)
+        v[pos] = bad
+        assert phy051._jk_se(v) is None, (pos, bad)
+    assert phy051._jk_se([1.46]) is None
+
+
+def test_blas_threads_are_forced_not_defaulted():
+    """Codex #54 P2 (Z.30): geerbte BLAS-Thread-Variablen werden auf 1
+    UEBERSCHRIEBEN (Quelltext-Pruefung: der Import geschieht vor numpy,
+    ein Laufzeit-Test im selben Prozess saehe nur den Endzustand)."""
+    import ast
+    src = (ROOT / "src" / ("260928 PHY051 triangular kagome area-helicity "
+                           "crosscheck v01.py")).read_text(encoding="utf-8")
+    tree = ast.parse(src)
+    loops = [n for n in tree.body if isinstance(n, ast.For)
+             and isinstance(n.iter, ast.Tuple)
+             and {getattr(e, "value", None) for e in n.iter.elts}
+             == {"OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"}]
+    assert len(loops) == 1
+    body = loops[0].body
+    assert len(body) == 1 and isinstance(body[0], ast.Assign)
+    assert ast.unparse(body[0]) == "os.environ[_v] = '1'"
+    first_numpy = min(n.lineno for n in tree.body if isinstance(n, ast.Import)
+                      and any(a.name == "numpy" for a in n.names))
+    assert loops[0].lineno < first_numpy
+    import os
+    for v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
+        assert os.environ[v] == "1"

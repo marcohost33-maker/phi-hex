@@ -26,8 +26,11 @@ from __future__ import annotations
 
 import os
 
+# BLAS auf 1 Thread ERZWINGEN, nicht nur vorbelegen (Codex #54 P2, Z.30):
+# ein vom Runner geerbtes OPENBLAS_NUM_THREADS=8 haette `setdefault`
+# stehen lassen (wie PHY049 nach Codex #52).
 for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
-    os.environ.setdefault(_v, "1")
+    os.environ[_v] = "1"
 
 import datetime  # noqa: E402
 import json  # noqa: E402
@@ -277,9 +280,14 @@ def estimate(curves: dict, curves_se: dict, t_grid, plan: dict,
 
 
 def _jk_se(vals: list) -> float | None:
-    v = [x for x in vals if x is not None]
+    """Jackknife-SE ueber ALLE Leave-one-seed-out-Replikate. Fail-closed
+    (Codex #54 P2, Z.285): fehlt ein Replikat (None) oder ist es nicht
+    endlich, gibt es KEINE SE (None -> Verdikt S2 bzw. ungewichtetes
+    Paar-Mittel) statt einer SE aus den Ueberlebenden, die Instabilitaet
+    des Schaetzers als kleine Unsicherheit ausweisen wuerde."""
+    v = list(vals)
     n = len(v)
-    if n < 2:
+    if n < 2 or not all(x is not None and math.isfinite(x) for x in v):
         return None
     m = float(np.mean(v))
     return float(math.sqrt((n - 1) / n * sum((x - m) ** 2 for x in v)))
@@ -318,6 +326,17 @@ def o1_label(area_verdict: str, site_verdict: str) -> str:
              ("CONSISTENT", "CONSISTENT"): "NON_DISCRIMINATING",
              ("INCONSISTENT", "INCONSISTENT"): "TENSION_BOTH_CHANNELS"}
     return table.get((area_verdict, site_verdict), "NEGATIVE_RESULT")
+
+
+def gated_o1_label(area_verdict: str, site_verdict: str,
+                   overall_pass) -> str:
+    """O1-Label nur bei bestandenen Integritaets-Gates (Codex #54 P2, Z.463;
+    Spec Abschnitt 7 'fails-closed'): faellt irgendein Pipeline-Gate, lautet
+    das Label NEGATIVE_RESULT. Die Kanal-Verdikte bleiben im Report als
+    Diagnostik stehen. Annahme nur bei woertlichem True (kein truthy)."""
+    if overall_pass is not True:
+        return "NEGATIVE_RESULT"
+    return o1_label(area_verdict, site_verdict)
 
 
 def _z(t: float | None, ref: dict | None, sigma_tot: float | None):
@@ -410,14 +429,49 @@ def geometry_oracle(lattice: str, ladder) -> dict:
     return out
 
 
+def _input_matches_plan(prod: dict) -> bool:
+    """Spec Abschnitt 7 'Eingabeform = Plan' (Codex #54 P2, Z.420): Gitter,
+    Leiter, T-Gitter, Seed-Zahl, Sweep-Zahlen und BEIDE Kanalformen muessen
+    dem vorregistrierten Plan entsprechen - nicht nur zueinander passen.
+    Fail-closed: jede Abweichung, jeder fehlende Schluessel, jede
+    Nicht-Ganzzahl (auch bool) und jedes NaN im T-Gitter -> False."""
+    plan = PHY051_PLAN.get(prod.get("lattice"))
+    if plan is None:
+        return False
+    ladder, t_grid = prod.get("ladder"), prod.get("t_grid")
+    if not isinstance(ladder, (list, tuple)) or not isinstance(t_grid, (list, tuple)):
+        return False
+    if not (all(type(L) is int for L in ladder)
+            and list(ladder) == list(plan["ladder"])):
+        return False
+    if not (len(t_grid) == len(plan["t_grid"])
+            and all(isinstance(t, float) and t == p
+                    for t, p in zip(t_grid, plan["t_grid"]))):
+        return False
+    for key, want in (("n_seeds", PHY051_N_SEEDS), ("n_therm", PHY051_N_THERM),
+                      ("n_meas", PHY051_N_MEAS)):
+        if not (type(prod.get(key)) is int and prod[key] == want):
+            return False
+    shape = (len(t_grid), PHY051_N_SEEDS)
+    for ch in ("ups_area", "ups_site"):
+        rows = prod.get(ch)
+        if not isinstance(rows, dict) or set(rows) != {str(L) for L in ladder}:
+            return False
+        if not all(np.asarray(rows[str(L)], dtype=float).shape == shape
+                   for L in ladder):
+            return False
+    return True
+
+
 def gates(prod: dict, area: dict, oracle: dict) -> dict:
     lattice = prod["lattice"]
     plan = PHY051_PLAN[lattice]
     t_grid = prod["t_grid"]
     ns = prod["n_seeds"]
     ladder = [int(x) for x in prod["ladder"]]
-    shapes_ok = all(np.asarray(prod["ups_area"][str(L)]).shape
-                    == (len(t_grid), ns) for L in ladder)
+    shapes_ok = (all(np.asarray(prod["ups_area"][str(L)]).shape
+                     == (len(t_grid), ns) for L in ladder)
+                 and _input_matches_plan(prod))
     finite = all(np.all(np.isfinite(np.asarray(prod[k][str(L)], dtype=float)))
                  for L in ladder for k in ("ups_area", "ups_site"))
     y0 = UPSILON0_SITE[lattice]
@@ -460,7 +514,8 @@ def build_report(prod: dict) -> dict:
     site = analyse(prod, "ups_site")
     oracle = geometry_oracle(lattice, prod["ladder"])
     g = gates(prod, area, oracle)
-    label = o1_label(area["verdict"]["verdict"], site["verdict"]["verdict"])
+    label = gated_o1_label(area["verdict"]["verdict"],
+                           site["verdict"]["verdict"], g["overall_pass"])
     return {"module": "PHY051_area_helicity_crosscheck",
             "attribution": "Coworker Research / Coworkerz",
             "date": "2026-09-28", "lattice": lattice,
