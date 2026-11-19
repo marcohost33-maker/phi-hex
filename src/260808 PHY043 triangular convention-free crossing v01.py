@@ -521,10 +521,19 @@ PILOT_N_BURN = 300  # PHY030 v02 pilot budget (n_burn=300)
 PILOT_TEMPS = tuple(round(1.36 + 0.02 * k, 2) for k in range(12))
 
 
+def _is_exact_int(x) -> bool:
+    """A genuine integer (builtin or numpy), never a bool or a float."""
+    return isinstance(x, (int, np.integer)) and not isinstance(x, (bool, np.bool_))
+
+
 def _is_pilot_budget(n_seeds: int, lattices_L, n_measure: int, temperatures,
                      n_burn: int) -> bool:
     """True only for the documented pilot of Spec §4 (the one budget whose
     1%-power limit is assessed)."""
+    counts = (n_seeds, n_measure, n_burn, *lattices_L)
+    # int() truncated: n_measure=400.9 counted as the pilot (issue #63 K-2)
+    if not all(_is_exact_int(x) for x in counts):
+        return False
     return (
         # ordered, like the grid below: pairs are built in the supplied order
         # and pair_analysis reads each pair as L1 < L2 (PR #51 Codex 2026-10-19)

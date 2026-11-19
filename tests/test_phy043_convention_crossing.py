@@ -243,6 +243,27 @@ def test_no_splay_nr_label_only_for_the_assessed_pilot_budget() -> None:
     assert "NR-PHY043" not in production and "UNBEWERTET" in production
 
 
+def test_pilot_budget_needs_exact_integers_not_truncation() -> None:
+    """Issue #63 K-2: int() schnitt ab -- n_measure=400.9 zaehlte als Pilot."""
+    import numpy as np
+    pilot_T = [1.36 + 0.02 * k for k in range(12)]
+    assert phy043._is_pilot_budget(4, [9, 13, 19], 400, pilot_T, 300)  # Positiv-Kontrolle
+    assert phy043._is_pilot_budget(np.int64(4), np.array([9, 13, 19]),
+                                   np.int32(400), pilot_T, 300)        # numpy-Ganzzahlen
+    for bad in (
+        (4, [9, 13, 19], 400.9, pilot_T, 300),
+        (4.5, [9, 13, 19], 400, pilot_T, 300),
+        (4, [9, 13, 19], 400, pilot_T, 300.2),
+        (4, [9.7, 13, 19], 400, pilot_T, 300),
+        (4, [9, 13, 19], 400.0, pilot_T, 300),     # float ist kein Zaehler
+        (4, [9, 13, 19], "400", pilot_T, 300),
+        (4, [9, 13, 19], float("nan"), pilot_T, 300),
+    ):
+        assert not phy043._is_pilot_budget(*bad)
+        assert "NR-PHY043" not in phy043._no_splay_finding(*bad)
+    assert not phy043._is_exact_int(True) and phy043._is_exact_int(np.int64(3))
+
+
 def test_nan_inputs_fail_closed_in_xi_splay_and_low_t_merge() -> None:
     """NaN darf weder einen xi-Wert, noch einen Splay, noch einen Merge belegen."""
     nan = float("nan")

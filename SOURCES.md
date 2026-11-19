@@ -381,3 +381,7 @@ die aktuellen Bytes auf dem W4-Haertungs-Branch.
 | 25AC8FA552732DBF | 2026-10-21 | tests | repo-native: `tests/test_nan_minmax_phy017_phy029.py` (Regression Issue #62: NaN an Position 0/1/letzte, inf, Negativkontrolle, Grenze) |
 | 5D27F71C58013559 | 2026-10-21 | src | repo-native: `src/260602 PHY029 triangular sandvik v01.py` (Issue #62: PASS_ALL_WITHIN_2PCT bei leerem valid nicht mehr vakuum-wahr) |
 | 6BAD593C95EB72A2 | 2026-10-21 | tests | repo-native: `tests/test_nan_minmax_phy017_phy029.py` (+ Regression leeres valid ist kein 2%-PASS) |
+| 8E70188767A60407 | 2026-11-17 | src | repo-native: `src/260706 PHY042 honeycomb wl fss v01.py` (Issue #63: _common_domain NaN-fest (K-1), _global_leak_max/_global_uncovered_max (F-1) und _assess_pairs (F-4) als reine Funktionen, _pair_quotable entfernt (K-3); verhaltensgleich fuer endliche Eingaben) |
+| 08D54104009B9B67 | 2026-11-17 | src | repo-native: `src/260808 PHY043 triangular convention-free crossing v01.py` (Issue #63 K-2: _is_pilot_budget verlangt echte Ganzzahlen statt int()-Abschneiden) |
+| CAF270291C22C80F | 2026-11-17 | tests | repo-native: `tests/test_phy042_wl_fss.py` (Regression Issue #63: F-1 globale Aggregation NaN-fest, F-2/F-3 Produktions-Metriken auf echtem WLResult, F-4 Paar-Tabelle, K-1 Domaenengrenzen; 13/13 Mutanten rot) |
+| 461DAC1F7F3E2E41 | 2026-11-17 | tests | repo-native: `tests/test_phy043_convention_crossing.py` (Regression Issue #63 K-2: Pilot-Budget nur mit exakten Ganzzahlen) |
