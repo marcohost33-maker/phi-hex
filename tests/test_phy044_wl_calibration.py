@@ -180,11 +180,42 @@ def test_w4_constants_match_preregistration_spec():
     assert f"< {phy044.W4_DOMAIN_THRESHOLD:.2f} bleibt" in spec
     assert f"**T_req = {phy044.W4_T_REQ:.2f}**" in spec
     assert ("{" + ", ".join(str(L) for L in phy044.W4_LADDER) + "}") in spec
-    # Band-Grenzen folgen aus dem Referenzband (Addendum §4)
-    band = phy044._p42.REF_BAND
-    assert lo == band["nn_mc"][0]
-    assert hi == band["binder_beta"][0]
+    # Band B ist das HISTORISCHE Band der #50-Vorregistrierung v01 (vor den
+    # Daten committet, 768fb19). Supersession 2026-11-19: die live
+    # REF_BAND-Kanaele "nn_mc"/"binder_beta", aus denen B einst abgeleitet
+    # wurde, sind auf main durch den versionierten Ledger ersetzt
+    # (spec/260703: beide "superseded"). B wird daher gegen den Wortlaut der
+    # Prereg-Herleitung geprueft, nicht gegen live REF_BAND.
+    assert (lo, hi) == (0.560, 0.580)
+    assert "Untere Grenze 0.560: arXiv:2406.14812 v1, NN-Kanal" in spec
+    assert "Obere Grenze 0.580: Binder-beta-Kanal von arXiv:2406.12076" in spec
     assert phy044.W4_DOMAIN_THRESHOLD == phy044._p42.DOMAIN_THRESHOLD
+
+
+def test_w4_band_is_historical_not_live_reference_ledger():
+    """Band B (#50-Prereg v01) darf NICHT aus den live gefuehrten
+    Referenzen stammen: keine Grenze faellt auf einen Wert aus
+    REF_PRIMARY_KEYS (oder sonst REF_BAND), und die gueltige W4-Prereg auf
+    main (spec/260927 ... v01) verbietet ein Min/Max-Band ausdruecklich.
+    Ein W4-v02-Verdikt gegen B ist damit ein FINDING unter der eigenen
+    Prereg v02, kein W4-Ergebnis nach main-Vertrag (Entscheid E1119b-01)."""
+    p42 = phy044._p42
+    lo, hi = phy044.W4_BAND
+    live_primary = {p42.REF_BAND[k][0] for k in p42.REF_PRIMARY_KEYS}
+    live_all = {v[0] for v in p42.REF_BAND.values()}
+    assert live_primary and live_primary <= live_all
+    assert lo not in live_all and hi not in live_all
+    # live-Ledger liegt INNERHALB von B: B ist nicht aus seinen Raendern gebaut
+    assert all(lo < v < hi for v in live_primary)
+    assert "nn_mc" not in p42.REF_BAND and "binder_beta" not in p42.REF_BAND
+    main_prereg = (ROOT / "spec" / "260927 PHI HEX w4 preregistration v01.md"
+                   ).read_text(encoding="utf-8")
+    assert 'Kein kuenstliches Min/Max-"Wahrheitsband".' in main_prereg
+    ledger = (ROOT / "spec" /
+              "260703 PHI HEX honeycomb reference conventions audit v01.md"
+              ).read_text(encoding="utf-8")
+    assert "| T_BKT,H = 0.560(9) | 0.560 +/- 0.009 | **superseded**" in ledger
+    assert "| 0.5800 +/- 0.0007 | **superseded**" in ledger
 
 
 def test_w4_verdict_rules_in_order():
