@@ -297,6 +297,30 @@ deterministische Recovery-Gate auf **synthetischen** Daten
 (`results/260928 PHY050 deterministic G4 gate.json`, Physik-Interpretation
 ausdruecklich false). Es gibt noch keinen W4-v03-Messwert.
 
+**PHY052 - Mixing-Pilot vor der W4-v03-Produktion (vorregistriert 2026-11-21).**
+Roadmap-Gate aus dem Cross-Family-Audit vom 2026-10-04: W4 v03 startet jede
+Kette geordnet; ein gemeinsamer Thermalisierungs-Bias waere zwischen den Ketten
+unsichtbar. PHY052 faehrt 9 Zellen (L 48/96/192 x T 0.560/0.575/0.595) mit je
+2 geordneten und 2 zufaelligen Starts und eigenen Seeds und prueft rhat <= 1.01,
+ess_bulk >= 400 (Stan-`posterior`-Definitionen, gegen ArviZ validiert) und den
+Zweistart-Test kalt gegen heiss (|z| <= 3.5). Nur bei PASS und gruenem
+PHY049-Preflight darf die Produktion starten
+(`spec/261121 PHI HEX phy052 w4 v03 mixing pilot preregistration v01.md`).
+Ergebnis 2026-11-21: **MIXING_PILOT_PASS** in allen 9 Zellen (rhat max 1.0019, ess_bulk min 4314, |z kalt-heiss| max 1.34; tau_int <= 1.85 Sweeps -> 1000 Thermalisierungs-Sweeps > 539 tau_int; Bias-Aufloesung des Zweistart-Tests in R: 0.0093..0.0112 (3.5 SE); Wall 273 s).
+Grenze: der Zweistart-Test loest Bias erst ab ~0.01 in R auf; er schliesst grobe
+Thermalisierungsfehler aus, nicht kleine. Die W4-v03-Produktion laeuft ueber den
+Runner PHY053 (Freigabe -> PHY049 -> PHY050).
+
+**W4 v03 gemessen (2026-11-21): INCONCLUSIVE - Negativ-Resultat NR-PHY049-01.**
+Produktion vollstaendig (1740/1740, 3.46 h, G0 und G4 bestanden). Der
+vorregistrierte Primaer-Collapse ist nicht quotierbar: Profilbreite 0.015 > 0.012
+(akzeptierte T0 0.566..0.581, bis an die obere Suchgrenze 0.582). Damit gibt es
+**keinen** W4-v03-T_BKT und keine Diskriminierung zwischen der W4-v02-Lage und der
+Literatur-Lage. Nachtraeglich, nicht entscheidend: Minimum bei 0.5753; persistenter
+Splay der R_L-Kurven ab T ~ 0.590..0.600. Gate-Logs:
+`results/261121 PHY053 w4 v03 production adjudication report.*`,
+`results/261121 PHY053 w4 v03 post-hoc collapse diagnostic.*`.
+
 **PHY051 (#54) mit eingebauten Codex-Befunden.** Die sieben offenen
 Codex-Befunde von #54 sind eingebaut (Plan-Pruefung der Eingabe,
 O1-Label nur bei bestandenen Gates, Jackknife fail-closed, BLAS erzwungen,

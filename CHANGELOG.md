@@ -3,6 +3,126 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-11-21] W4 v03 gemessen: INCONCLUSIVE (NR-PHY049-01)
+
+Erste PHY049-Produktion, exakt nach W4 v03/v03a, freigegeben durch PHY053
+(PHY052-Pilot PASS + PHY049-Preflight), Kopf `1c2b873`. Produkt:
+`results/260927 PHY049 honeycomb correlation-ratio production.json`
+(1740/1740 Zeilen, COMPLETE, Wall 12446 s = 3.46 h << 24 h;
+linux x86_64, py3.13.18, numpy 2.5.5, numba 0.68.1, Backend numba; BLAS 1 Thread; 4 Prozesse). Adjudikation nur durch
+`PHY050.assess_production` (Runner PHY053):
+`results/261121 PHY053 w4 v03 production adjudication report.{json,txt}`.
+
+### Ergebnis (vorregistriert)
+- **G0 Input: PASS**, G4 synthetische Recovery: PASS.
+- **Primaer-Collapse nicht quotierbar** -> G5/G6 nicht auswertbar ->
+  **INCONCLUSIVE**. Kein T_BKT, keine Diskriminierung zwischen H_A
+  (W4-v02-Lage) und H_B (Literatur-Lage).
+- **NR-PHY049-01 (Negativ-Resultat):** mit L <= 192 und 12 Seeds legt der
+  normierungsfreie Correlation-Ratio-Collapse T_BKT nicht innerhalb der
+  vorregistrierten Profilbreite 0.012 fest.
+
+### Nachtraegliche Diagnostik (NICHT entscheidend)
+`results/261121 PHY053 w4 v03 post-hoc collapse diagnostic.{json,txt}`,
+nach Sicht der Adjudikation geschrieben, erklaert das Label, aendert es nicht:
+- einziger Grund: Profilbreite 0.015 > 0.012. Score (0.66 <= 2.5) und
+  Rand-Kriterium waeren erfuellt.
+- akzeptierter T0-Bereich [0.566, 0.581] reicht an die obere Suchgrenze
+  0.582 (v03a, vor Daten fixiert) -> die wahre Breite ist eher groesser.
+- Lage des Minimums 0.5753 (c = 1.20) - ausdruecklich KEIN T_BKT-Schaetzer.
+- Kontext: persistenter 2-sigma-Splay der R_L-Kurven je L-Paar bei
+  T = 0.5900..0.6000; unterhalb ~0.57 liegen die Kurven innerhalb
+  ~1e-3 aufeinander.
+
+### Konsequenz
+O1 bzw. die Spannung PHY046 (0.5649) gegen die Literatur-Lage bleibt
+offen. Die Schwelle wird NICHT nachtraeglich gelockert. Ein naechster
+Versuch braucht eine neue Vorregistrierung mit vorab gerechneter Power
+(groessere L und/oder mehr Seeds, Suchbereich mit Rand oberhalb 0.582).
+
+### Added
+- `src/261121 PHY053 ...`: `posthoc_collapse_diagnostic` + CLI `posthoc`
+  (gleiche Gitter wie PHY050, als post hoc / nicht entscheidend markiert).
+- Tests: Bindung des Adjudikations-Reports an die Produkt-Bytes (SHA-256)
+  und an den Pilot-Report; Label konsistent mit den Gates; Post-hoc-Report
+  markiert und konsistent mit dem Fit.
+
+## [2026-11-21] PHY052 Mixing-Pilot: MIXING_PILOT_PASS; PHY053 Runner
+
+Pilot exakt nach der Vorregistrierung aus `a79c981` gerechnet (Linux,
+py3.13, numba 0.68.1, BLAS 1 Thread, 4 Prozesse).
+Report: `results/261121 PHY052 honeycomb correlation-ratio mixing pilot report.{json,txt}`.
+
+### Ergebnis (Diagnostik, keine Physikzahl)
+- **MIXING_PILOT_PASS**, alle 9 Zellen: rhat max 1.0019, ess_bulk min 4314, |z kalt-heiss| max 1.34; tau_int <= 1.85 Sweeps -> 1000 Thermalisierungs-Sweeps > 539 tau_int; Bias-Aufloesung des Zweistart-Tests in R: 0.0093..0.0112 (3.5 SE); Wall 273 s.
+- Grenze, ehrlich: die Bias-Aufloesung des Zweistart-Tests (~0.01 in R)
+  ist groesser als die Spreizung zwischen den L, um die es in W4 v03 geht
+  (~0.006 bei T = 0.595). Der Pilot schliesst grobe Thermalisierungsfehler
+  aus; das staerkere Argument ist tau_int: die Ketten vergessen ihren Start
+  nach wenigen Sweeps, 1000 Sweeps sind ein Vielfaches davon.
+
+### Added
+- `src/261121 PHY053 w4 v03 release and adjudication runner v01.py`: reiner
+  Runner ohne eigene Schwellen. `release` (Pilot-Entscheid aus den Zellen
+  neu berechnet + nativer PHY049-Preflight), `produce` (PHY049 mit den
+  vorregistrierten Defaults, Checkpoint/Resume), `adjudicate` (nur
+  `PHY050.assess_production`, 1000 Bootstrap-Replikate, Gate-Log nach
+  `results/`). Eigenes Modul, weil PHY045/049/050 im Provenienz-
+  Fingerprint des Produkts stehen und nicht mehr geaendert werden duerfen.
+- `tests/test_phy053_release_adjudication.py`: Freigabe nur mit PASS +
+  Preflight, gefaelschtes PASS-Label ohne Zellen wird abgewiesen, Produktion
+  startet ohne Freigabe nicht, Adjudikation = PHY050 unveraendert, Runner
+  nicht im Fingerprint.
+
+## [2026-11-21] PHY052: Mixing-Pilot vor W4 v03 vorregistriert (vor Daten)
+
+Roadmap-Gate aus dem Cross-Family-Gesamtaudit vom 2026-10-04 (007acc2,
+P1 6-8): vor der 5x29x12-Kampagne von PHY049 ein Pilot mit kalten und
+heissen Starts; nur bei PASS darf PHY049 messen. Dieser Eintrag ist der
+Pre-Data-Commit: Spec, Code und Tests, KEINE Pilotdaten.
+
+### Added
+- `spec/261121 PHI HEX phy052 w4 v03 mixing pilot preregistration v01.md`:
+  9 Zellen (L 48/96/192 x T 0.560/0.575/0.595), 4 Ketten je Zelle
+  (2 geordnet, 2 gleichverteilt zufaellig), 1000+4000 Sweeps wie W4 v03,
+  Seeds 79M (Messung) / 89M (Start), disjunkt von der Produktion (49M).
+  Gate je Zelle auf der Einflussreihe des Ratio-of-Means: rhat <= 1.01,
+  ess_bulk >= 400, |z kalt-heiss| <= 3.5. Freigabe der Produktion nur bei
+  PASS UND nativem PHY049-Preflight (5 Gates literal true).
+- `src/261121 PHY052 ...`: Diagnostik als zeilengenaue Portierung von
+  `stan-dev/posterior` (rhat = max(rank, folded) split-Rhat, ess_bulk mit
+  Geyer initial-positive/monotone, improved estimate, Kappung). Kernel aus
+  PHY049, VAL-BIT-gebunden; parallel ueber `PHY045.map_jobs`. PHY049/PHY050
+  bleiben unveraendert (ihr Fingerprint ebenso).
+- `tests/test_phy052_mixing_pilot.py` + `tests/data/phy052_arviz_golden.json`:
+  Golden-Werte aus arviz-stats 1.3.3 (unabhaengige Implementierung) auf
+  eingefrorenen RandomState-Daten, AR(1)-ESS-Orakel, Formel-Details,
+  fail-closed, Kalt/heiss-Design mit Negativ- und Positivkontrolle,
+  Entscheid/Freigabe, Mini-Lauf mit echtem Kernel.
+
+### Korrekturen gegenueber dem Audit-Bundle (vor Daten)
+- Normal-Score-Nenner: S + 1/4 (posterior `backtransform_ranks`:
+  S - 2c + 1, c = 3/8). Das Bundle hatte S - 1/4 und bezeichnete das als
+  Korrektur einer frueheren S + 1/4-Fassung - umgekehrt richtig.
+- Autokovarianz biased (1/N) wie Geyer (1992) und posterior; das Bundle
+  teilte durch N - k.
+- Das Bundle importierte sein Diagnostik-Modul unter einem Namen, den es im
+  Repo nicht gibt; es war in dieser Form nicht lauffaehig.
+- Neu, aus einem synthetischen Selbsttest vor den Daten: rhat <= 1.01
+  erkennt einen Versatz einer Kette erst ab ~0.3 sigma je Ziehung (0.15
+  sigma -> 1.0027). Der klassische Zweistart-Test kalt gegen heiss in
+  MCSE-Einheiten ist deshalb Gate, nicht nur Bericht.
+
+### Validierung
+- Herkunft Design: Drive-Datei `PhiHex_W4_v03_Audit_Hardening_v3_2026-10-04.zip`
+  (007acc2/05_REVIEW_BUNDLE, ID 1TsvFmSn7i9WyXq-Ep-iflflXy_c1MIT-), SHA-256
+  `003ce2d14c68dcdbd1aa0fef98bb896681f63d6aaaaf724f323d773edf02f708`; kein Code daraus uebernommen.
+- Portierung gegen arviz-stats 1.3.3 auf 24 synthetischen Faellen (AR(1)
+  rho -0.4..0.9, 2-8 Ketten, Versatz, Skala, Ties, schwere Raender): rhat
+  identisch bis auf Rundung, ess_bulk rel. <= 1.5e-15. Einzige Abweichung
+  1.2e-5 bei ungerader Kettenlaenge (posterior verwirft die mittlere
+  Ziehung, ArviZ eine andere); im Pilot ist N = 4000.
+
 ## [2026-11-21] Codex-Review am Supersession-PR #75: 6 Befunde eingebaut
 
 Review von Codex auf Kopf `1e21714` (2026-11-19): 2x P1, 4x P2, alle offen.

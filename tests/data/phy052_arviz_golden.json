@@ -1,0 +1,62 @@
+{
+ "generator": "arviz-stats 1.3.3 (arviz_stats.base.array_stats.rhat method=rank, .ess method=bulk); numpy 2.5.5, scipy 1.18.1",
+ "date": "2026-11-21",
+ "input": "numpy.random.RandomState(seed) (NEP 19 frozen stream); see tests/test_phy052_mixing_pilot.py _golden_input",
+ "purpose": "independent reference values for PHY052 rhat/ess_bulk (port of stan-dev/posterior)",
+ "cases": [
+  {
+   "seed": 11,
+   "kind": "ar1",
+   "param": 0.0,
+   "chains": 4,
+   "draws": 1000,
+   "rhat": 0.9996066062111111,
+   "ess_bulk": 3683.883115128562
+  },
+  {
+   "seed": 12,
+   "kind": "ar1",
+   "param": 0.7,
+   "chains": 4,
+   "draws": 1000,
+   "rhat": 1.0048020472429056,
+   "ess_bulk": 592.1254370867237
+  },
+  {
+   "seed": 13,
+   "kind": "ar1",
+   "param": 0.9,
+   "chains": 4,
+   "draws": 4000,
+   "rhat": 1.0034743976619453,
+   "ess_bulk": 973.9601561973171
+  },
+  {
+   "seed": 14,
+   "kind": "ar1",
+   "param": -0.4,
+   "chains": 4,
+   "draws": 1000,
+   "rhat": 0.9998973753219541,
+   "ess_bulk": 9316.008786912567
+  },
+  {
+   "seed": 15,
+   "kind": "shift",
+   "param": 0.3,
+   "chains": 4,
+   "draws": 2000,
+   "rhat": 1.0069871160470123,
+   "ess_bulk": 7108.32658614619
+  },
+  {
+   "seed": 16,
+   "kind": "scale",
+   "param": 1.8,
+   "chains": 4,
+   "draws": 2000,
+   "rhat": 1.0512100173210304,
+   "ess_bulk": 7536.1416891481385
+  }
+ ]
+}

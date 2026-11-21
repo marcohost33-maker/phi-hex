@@ -1,0 +1,44 @@
+PHY053 - NACHTRAEGLICHE Collapse-Diagnostik W4 v03 (NICHT entscheidend)
+Coworker Research / Coworkerz, 2026-11-21
+======================================================================
+written after the preregistered adjudication; explains the INCONCLUSIVE label, does not change it; the location below is NOT a T_BKT estimate
+
+Collapse-Minimum: T0 = 0.5753, c = 1.202, Score 0.659 (Grenze 2.5)
+Profil: akzeptiert (Q <= Q_min + 0.2) T0 in [0.566, 0.581], Breite 0.0150 (Grenze 0.012)
+Randtreffer: False; quotierbar: False
+Gruende: ['profile width 0.0150 > 0.012']
+
+  T0      min Q    c
+  0.550  4.182  2.500
+  0.551  3.518  2.500
+  0.552  2.925  2.500
+  0.553  2.480  2.500
+  0.554  2.137  2.500
+  0.555  1.787  2.500
+  0.556  1.509  2.500
+  0.557  1.298  2.500
+  0.558  1.149  2.500
+  0.559  1.062  2.500
+  0.560  1.027  2.413
+  0.561  0.993  2.328
+  0.562  0.959  2.247
+  0.563  0.928  2.168
+  0.564  0.899  2.092
+  0.565  0.872  1.948
+  0.566  0.837  1.880
+  0.567  0.807  1.814
+  0.568  0.781  1.751
+  0.569  0.761  1.631
+  0.570  0.731  1.574
+  0.571  0.709  1.518
+  0.572  0.694  1.414
+  0.573  0.679  1.365
+  0.574  0.671  1.271
+  0.575  0.660  1.226
+  0.576  0.665  1.142
+  0.577  0.670  1.102
+  0.578  0.680  1.026
+  0.579  0.706  0.956
+  0.580  0.748  0.890
+  0.581  0.801  0.829
+  0.582  inf  -
