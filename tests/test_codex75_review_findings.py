@@ -810,6 +810,9 @@ if __name__ == "__main__":
                          "260927 PHY049 honeycomb correlation ratio v01.py")
     p44 = conftest._load("phy044_wl_calibration",
                          "260926 PHY044 honeycomb wl calibration v01.py")
+    p51 = conftest._load("phy051_area_crosscheck",
+                         "260928 PHY051 triangular kagome area-helicity "
+                         "crosscheck v01.py")
     out = {"default_start_method": multiprocessing.get_start_method()}
     pool = p45.job_pool(p46._job, 2)
     out["pool_used"] = pool is not None
@@ -832,6 +835,12 @@ if __name__ == "__main__":
     pb = lambda w: p45.part_b(n_seeds=2, n_therm=2, n_meas=40,
                               max_workers=w, plan=plan)
     out["phy045_part_b"] = strip(pb(2)) == strip(pb(1))
+
+    k51 = dict(ladder=(4, 8), t_grid=(0.80, 0.85), n_seeds=2, n_therm=3,
+               n_meas=6)
+    a51 = p51.produce("kagome", max_workers=2, **k51)
+    b51 = p51.produce("kagome", max_workers=1, **k51)
+    out["phy051"] = all(a51[k] == b51[k] for k in ("ups_area", "ups_site"))
 
     jobs = [(8, k, T, s, 2, 3) for k, T in enumerate((0.56, 0.58))
             for s in range(2)]
@@ -869,13 +878,13 @@ def test_parallel_production_is_bit_equal_to_sequential_under_forkserver(
         "default_start_method": "forkserver", "pool_used": True,
         "phy046": True,
         "phy046_finite": True, "phy048": True, "phy045_part_b": True,
-        "phy049": True, "phy044_wl": True}
+        "phy049": True, "phy044_wl": True, "phy051": True}
 
 
 def test_w4_modules_never_build_a_pool_with_the_inherited_default_context():
     """Quelltext-Schranke: PHY046/048/049 bauen keinen eigenen Pool mehr;
     PHY045 und PHY044-WL nur ueber den fork-Zweig oder den `__main__`-Zweig."""
-    for fname in (F46, F48, F49):
+    for fname in (F46, F48, F49, F51):
         assert "ProcessPoolExecutor" not in (SRC / fname).read_text(
             encoding="utf-8"), fname
     for fname in (F45, F44):

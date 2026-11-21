@@ -772,6 +772,13 @@ def _walker_block(jobs: list, t_grid) -> dict:
             "wl_sweeps": [j["wl_sweeps"] for j in jobs]}
 
 
+# Lever-Varianten (Spec v01 Abschnitt 5): Name -> (Prod-Faktor, lnf_final).
+# Einzige Quelle fuer Rezept und Kostenzuordnung.
+_LEVER_VARIANTS = {"baseline_1x_lnf1e-5": (1, 1e-5),
+                   "prod_x4_lnf1e-5": (4, 1e-5),
+                   "prod_x1_lnf1e-6": (1, 1e-6)}
+
+
 def analyse(stages: dict) -> dict:
     """Blinde Auswertung K1-K3 + Gates aus den Stufen-JSONs."""
     t_grid = [float(t) for t in _p42._T_GRID]
@@ -923,7 +930,23 @@ def analyse(stages: dict) -> dict:
         dec_block["max_spread_upto_T_req_ratio_vs_baseline"] = prod_share
         recipe = None
         if cheapest is not None and "K1_cost" in out:
-            fac = 4 if cheapest.startswith("prod_x4") else 1
+            # Prod-Faktor UND Toleranz aus der gewaehlten Variante (Codex #75
+            # P2): vorher stand lnf_final fest auf 1e-5, auch wenn nur die
+            # 1e-6-Variante T_req erreichte - das Rezept haette dann das
+            # lockerere, NICHT kalibrierte Budget empfohlen.
+            fac, lnf_sel = _LEVER_VARIANTS[cheapest]
+            # WL-Kosten: K1 misst nur lnf 1e-5. Bei anderer Toleranz wird die
+            # Projektion mit dem an L gemessenen WL-Kostenverhaeltnis der
+            # gewaehlten Variante zur Baseline skaliert (sonst 1, damit
+            # bleiben Baseline-/x4-Rezepte zahlengleich).
+            wl_fac = 1.0
+            if lnf_sel != _LEVER_VARIANTS["baseline_1x_lnf1e-5"][1]:
+                sel = [j for j in jobs if j["kind"] == "cal"
+                       and j["lnf_final"] == lnf_sel
+                       and j.get("prod_factor", 1) == fac]
+                wl_fac = (float(np.mean([j["t_wl_s"] for j in sel]))
+                          / float(np.mean([j["t_wl_s"]
+                                           for j in _group(lad["jobs"], L=L)])))
             k1c = out["K1_cost"]
             L_last = max(int(x) for x in k1c["per_L"])
             r_last = k1c["per_L"][str(L_last)]
@@ -931,14 +954,16 @@ def analyse(stages: dict) -> dict:
             p_pr = k1c["fit_wall_prod_numba"]["local_p"][-1]
             proj = {}
             for Lp in (48, 64, 96, 128):
-                wl = r_last["wall_wl_s_mean"] * (Lp / L_last) ** p_wl
+                wl = wl_fac * r_last["wall_wl_s_mean"] * (Lp / L_last) ** p_wl
                 pr = fac * r_last["wall_prod_s_mean"] * (Lp / L_last) ** p_pr
                 proj[str(Lp)] = {"wall_numba_h_per_walker": (wl + pr) / 3600,
                                  "measured": Lp == L}
             proj["48"]["wall_numba_h_per_walker_measured"] = (
                 cost[cheapest]["wall_numba_s_mean"] / 3600)
             recipe = {"variant": cheapest, "prod_factor": fac,
-                      "lnf_final": 1e-5,
+                      "lnf_final": lnf_sel,
+                      **({} if wl_fac == 1.0 else
+                         {"wl_cost_factor_vs_baseline": wl_fac}),
                       "local_exponents": {"wl": p_wl, "prod": p_pr},
                       "projection": proj,
                       "note": "L=64/96/128 extrapoliert (K1-Exponenten des "

@@ -3,6 +3,33 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-11-21] Zwei Codex-Befunde nach dem Merge von #75 behoben
+
+Codex hat seine Review von #75 (Kopf `14c2e0b`) um 03:12 UTC abgeschlossen,
+drei Minuten NACH dem Merge. Beide Befunde sind berechtigt und hier behoben;
+auf #76 und #77 meldete Codex nichts. Kein Messlauf, keine neue Zahl.
+
+### Fixed
+- **P1 PHY051-Pool:** PHY051 baute einen eigenen fork-Pool, der auch auf
+  macOS forkte und damit die Regel aus `PHY045.job_pool` umging (fork nach
+  numpy-/System-Framework-Initialisierung ist dort nicht sicher). `_pool`
+  delegiert jetzt an `PHY045.job_pool`. Die Luecke stammte aus der eigenen
+  Arbeit (PHY051 war in #76 bewusst unveraendert geblieben). Die committeten
+  PHY051-Reports regenerieren unveraendert; parallel und sequenziell sind
+  unter erzwungenem forkserver bitgleich (Ende-zu-Ende-Test erweitert).
+- **P2 PHY044-WL-Rezept:** `lnf_final` stand fest auf 1e-5, auch wenn nur die
+  1e-6-Variante T_req erreichte; die WL-Kostenprojektion nutzte dann
+  Baseline-Zeiten. Prod-Faktor und Toleranz kommen jetzt aus einer
+  Variantentabelle, die WL-Projektion wird bei anderer Toleranz mit dem an L
+  gemessenen Kostenverhaeltnis skaliert. Der committete PHY044-WL-Report ist
+  nicht betroffen (gewaehlt war `prod_x4_lnf1e-5`, dort ist 1e-5 richtig).
+
+### Belege
+- Guard-Ruecknahme: drei Mutanten (alter PHY051-Pool, festes 1e-5, WL-Faktor
+  entfernt) -> drei rot per Assertion.
+- PHY044-WL, PHY051 stehen nicht im W4-v03-Fingerprint: das committete
+  PHY049-Produkt bleibt auf diesem Checkout adjudizierbar (geprueft).
+
 ## [2026-11-21] W4 v03 gemessen: INCONCLUSIVE (NR-PHY049-01)
 
 Erste PHY049-Produktion, exakt nach W4 v03/v03a, freigegeben durch PHY053

@@ -237,18 +237,35 @@ def test_regenerate_roundtrip(tmp_path):
     assert (tmp_path / f"{stem}.txt").exists()
 
 
-def test_pool_is_fork_only_and_sequential_otherwise(monkeypatch):
+def test_pool_goes_through_the_shared_job_pool_helper(monkeypatch):
+    """Codex #75 P1: kein eigener fork-Pool mehr; PHY051 delegiert an
+    PHY045.job_pool (fork nur unter Linux, nie auf macOS)."""
     import multiprocessing
     assert phy051._pool(1) is None
-    ex = phy051._pool(2)
-    if ex is not None:                       # Plattform mit fork
-        assert ex._mp_context.get_start_method() == "fork"
-        ex.shutdown()
+    seen = {}
 
-    def _no_fork(method):
-        raise ValueError("cannot find context for 'fork'")
-    monkeypatch.setattr(multiprocessing, "get_context", _no_fork)
-    assert phy051._pool(4) is None           # fail-safe: sequenziell
+    def fake_job_pool(fn, max_workers):
+        seen.update(fn=fn, max_workers=max_workers)
+        return "POOL"
+    monkeypatch.setattr(phy051._p45, "job_pool", fake_job_pool)
+    assert phy051._pool(3) == "POOL"
+    assert seen == {"fn": phy051._job, "max_workers": 3}
+    monkeypatch.undo()
+    # macOS bietet fork an, PHY051 darf trotzdem nicht forken
+    monkeypatch.setattr(phy051._p45.sys, "platform", "darwin")
+    monkeypatch.setattr(multiprocessing, "get_all_start_methods",
+                        lambda: ["spawn", "fork", "forkserver"])
+    assert phy051._pool(4) is None           # Bibliotheksaufruf: sequenziell
+
+
+def test_pool_forks_on_linux_where_available(monkeypatch):
+    import multiprocessing
+    if "fork" not in multiprocessing.get_all_start_methods():
+        pytest.skip("kein fork auf dieser Plattform")
+    monkeypatch.setattr(phy051._p45.sys, "platform", "linux")
+    ex = phy051._pool(2)
+    assert ex is not None and ex._mp_context.get_start_method() == "fork"
+    ex.shutdown()
 
 
 def test_analyse_with_incomplete_ladder_is_negative_s0():

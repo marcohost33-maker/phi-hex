@@ -307,6 +307,69 @@ def test_analyse_and_text_report_are_blind_and_complete(tmp_path):
     assert "OVERALL: PASS" in text and "W4-GO fuer L>=48: False" in text
 
 
+def _lever_stages(meeting: str):
+    """Leiter + Lever-Stufe, in der genau `meeting` T_req erreicht
+    (Spread 0 bis 0.62, sonst Spread 0.04 ab 0.60 wie _fake_job)."""
+    def job(kind, L, w, **kw):
+        j = _fake_job(kind, L, w, **kw)
+        name = ("prod_x4_lnf1e-5" if kw.get("pf", 1) == 4 else
+                "prod_x1_lnf1e-6" if kw.get("lnf", 1e-5) == 1e-6
+                else "baseline_1x_lnf1e-5")
+        if kind == "cal" and name == meeting:
+            t = phy044._p42._T_GRID
+            y2 = 1.3 - 2.0 * (t - 0.52) - 0.01 * math.log(L)
+            j["curve"]["y2"] = y2.tolist()           # kein Walker-Spread
+        if kw.get("lnf") == 1e-6:
+            j["t_wl_s"] *= 3.0                        # strengere Toleranz
+        return j
+    ladder = [job("cal", L, w) for L in (24, 32, 48, 64) for w in range(3)]
+    levers = ([job("cal", 48, w, pf=4) for w in range(3)]
+              + [job("cal", 48, w, lnf=1e-6) for w in range(3)]
+              + [_fake_job("decomp", 48, 0)])
+    if meeting == "baseline_1x_lnf1e-5":
+        ladder = [job("cal", L, w) for L in (24, 32, 48, 64)
+                  for w in range(3)]
+    return {"ladder": {"jobs": ladder, "wall_s": 1.0, "max_workers": 4,
+                       "windows": {}},
+            "levers": {"L": 48, "jobs": levers}}
+
+
+@pytest.mark.parametrize("meeting,lnf,fac", [
+    ("prod_x1_lnf1e-6", 1e-6, 1), ("prod_x4_lnf1e-5", 1e-5, 4)])
+def test_recipe_carries_the_tolerance_of_the_selected_variant(meeting, lnf,
+                                                               fac):
+    """Codex #75 P2: das Rezept empfiehlt genau das kalibrierte Budget."""
+    rep = phy044.analyse(_lever_stages(meeting))
+    k3 = rep["K3_levers"]
+    assert k3["cheapest_meeting_T_req"] == meeting
+    r = k3["w4_recipe"]
+    assert (r["variant"], r["lnf_final"], r["prod_factor"]) == (meeting,
+                                                                lnf, fac)
+    if lnf == 1e-6:
+        # WL-Kosten der strengeren Toleranz gehen in die Projektion ein
+        assert r["wl_cost_factor_vs_baseline"] == pytest.approx(3.0)
+    else:
+        assert "wl_cost_factor_vs_baseline" not in r
+
+
+def test_recipe_projection_scales_with_the_measured_wl_cost():
+    hi = phy044.analyse(_lever_stages("prod_x1_lnf1e-6"))["K3_levers"]
+    k1 = hi["w4_recipe"]["projection"]["64"]["wall_numba_h_per_walker"]
+    st = _lever_stages("prod_x1_lnf1e-6")
+    for j in st["levers"]["jobs"]:
+        if j["kind"] == "cal" and j["lnf_final"] == 1e-6:
+            j["t_wl_s"] /= 3.0                        # gleiche Kosten wie 1e-5
+    k2 = phy044.analyse(st)["K3_levers"]["w4_recipe"]["projection"]["64"][
+        "wall_numba_h_per_walker"]
+    assert k1 > k2
+
+
+def test_lever_variant_table_matches_the_variant_names():
+    for name, (fac, lnf) in phy044._LEVER_VARIANTS.items():
+        assert f"lnf{lnf:.0e}".replace("-0", "-") in name
+        assert ("x4" in name) == (fac == 4)
+
+
 def test_uncovered_mass_gate_binds_only_inside_domain():
     """PHY042-Vertrag: unbesetzte kanonische Masse zaehlt nur in-Domaene;
     ausserhalb (hier T > 0.60, wo der Walker-Spread 0.04 erreicht) ist
