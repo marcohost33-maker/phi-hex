@@ -3,6 +3,55 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-11-21] PHY052: Mixing-Pilot vor W4 v03 vorregistriert (vor Daten)
+
+Roadmap-Gate aus dem Cross-Family-Gesamtaudit vom 2026-10-04 (007acc2,
+P1 6-8): vor der 5x29x12-Kampagne von PHY049 ein Pilot mit kalten und
+heissen Starts; nur bei PASS darf PHY049 messen. Dieser Eintrag ist der
+Pre-Data-Commit: Spec, Code und Tests, KEINE Pilotdaten.
+
+### Added
+- `spec/261121 PHI HEX phy052 w4 v03 mixing pilot preregistration v01.md`:
+  9 Zellen (L 48/96/192 x T 0.560/0.575/0.595), 4 Ketten je Zelle
+  (2 geordnet, 2 gleichverteilt zufaellig), 1000+4000 Sweeps wie W4 v03,
+  Seeds 79M (Messung) / 89M (Start), disjunkt von der Produktion (49M).
+  Gate je Zelle auf der Einflussreihe des Ratio-of-Means: rhat <= 1.01,
+  ess_bulk >= 400, |z kalt-heiss| <= 3.5. Freigabe der Produktion nur bei
+  PASS UND nativem PHY049-Preflight (5 Gates literal true).
+- `src/261121 PHY052 ...`: Diagnostik als zeilengenaue Portierung von
+  `stan-dev/posterior` (rhat = max(rank, folded) split-Rhat, ess_bulk mit
+  Geyer initial-positive/monotone, improved estimate, Kappung). Kernel aus
+  PHY049, VAL-BIT-gebunden; parallel ueber `PHY045.map_jobs`. PHY049/PHY050
+  bleiben unveraendert (ihr Fingerprint ebenso).
+- `tests/test_phy052_mixing_pilot.py` + `tests/data/phy052_arviz_golden.json`:
+  Golden-Werte aus arviz-stats 1.3.3 (unabhaengige Implementierung) auf
+  eingefrorenen RandomState-Daten, AR(1)-ESS-Orakel, Formel-Details,
+  fail-closed, Kalt/heiss-Design mit Negativ- und Positivkontrolle,
+  Entscheid/Freigabe, Mini-Lauf mit echtem Kernel.
+
+### Korrekturen gegenueber dem Audit-Bundle (vor Daten)
+- Normal-Score-Nenner: S + 1/4 (posterior `backtransform_ranks`:
+  S - 2c + 1, c = 3/8). Das Bundle hatte S - 1/4 und bezeichnete das als
+  Korrektur einer frueheren S + 1/4-Fassung - umgekehrt richtig.
+- Autokovarianz biased (1/N) wie Geyer (1992) und posterior; das Bundle
+  teilte durch N - k.
+- Das Bundle importierte sein Diagnostik-Modul unter einem Namen, den es im
+  Repo nicht gibt; es war in dieser Form nicht lauffaehig.
+- Neu, aus einem synthetischen Selbsttest vor den Daten: rhat <= 1.01
+  erkennt einen Versatz einer Kette erst ab ~0.3 sigma je Ziehung (0.15
+  sigma -> 1.0027). Der klassische Zweistart-Test kalt gegen heiss in
+  MCSE-Einheiten ist deshalb Gate, nicht nur Bericht.
+
+### Validierung
+- Herkunft Design: Drive-Datei `PhiHex_W4_v03_Audit_Hardening_v3_2026-10-04.zip`
+  (007acc2/05_REVIEW_BUNDLE, ID 1TsvFmSn7i9WyXq-Ep-iflflXy_c1MIT-), SHA-256
+  `003ce2d14c68dcdbd1aa0fef98bb896681f63d6aaaaf724f323d773edf02f708`; kein Code daraus uebernommen.
+- Portierung gegen arviz-stats 1.3.3 auf 24 synthetischen Faellen (AR(1)
+  rho -0.4..0.9, 2-8 Ketten, Versatz, Skala, Ties, schwere Raender): rhat
+  identisch bis auf Rundung, ess_bulk rel. <= 1.5e-15. Einzige Abweichung
+  1.2e-5 bei ungerader Kettenlaenge (posterior verwirft die mittlere
+  Ziehung, ArviZ eine andere); im Pilot ist N = 4000.
+
 ## [2026-11-21] Codex-Review am Supersession-PR #75: 6 Befunde eingebaut
 
 Review von Codex auf Kopf `1e21714` (2026-11-19): 2x P1, 4x P2, alle offen.

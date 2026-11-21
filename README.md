@@ -297,6 +297,16 @@ deterministische Recovery-Gate auf **synthetischen** Daten
 (`results/260928 PHY050 deterministic G4 gate.json`, Physik-Interpretation
 ausdruecklich false). Es gibt noch keinen W4-v03-Messwert.
 
+**PHY052 - Mixing-Pilot vor der W4-v03-Produktion (vorregistriert 2026-11-21).**
+Roadmap-Gate aus dem Cross-Family-Audit vom 2026-10-04: W4 v03 startet jede
+Kette geordnet; ein gemeinsamer Thermalisierungs-Bias waere zwischen den Ketten
+unsichtbar. PHY052 faehrt 9 Zellen (L 48/96/192 x T 0.560/0.575/0.595) mit je
+2 geordneten und 2 zufaelligen Starts und eigenen Seeds und prueft rhat <= 1.01,
+ess_bulk >= 400 (Stan-`posterior`-Definitionen, gegen ArviZ validiert) und den
+Zweistart-Test kalt gegen heiss (|z| <= 3.5). Nur bei PASS und gruenem
+PHY049-Preflight darf die Produktion starten
+(`spec/261121 PHI HEX phy052 w4 v03 mixing pilot preregistration v01.md`).
+
 **PHY051 (#54) mit eingebauten Codex-Befunden.** Die sieben offenen
 Codex-Befunde von #54 sind eingebaut (Plan-Pruefung der Eingabe,
 O1-Label nur bei bestandenen Gates, Jackknife fail-closed, BLAS erzwungen,
