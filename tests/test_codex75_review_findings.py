@@ -8,6 +8,14 @@ Review 2026-11-19): 2x P1, 4x P2.
   P2-c  v3 = groesstes REGISTRIERTES Paar (und v2 analog)     (PHY046)
   P2-d  PHY031 (honeycomb-Builder) im Provenienz-Fingerprint  (PHY049/050)
 
+Selbstpruefung der eigenen Lieferung (2026-11-21, zweite Runde):
+
+  S-1   Prozess-Pool unter forkserver (Python-3.14-Standard) brach mit
+        BrokenProcessPool ab; der parallele Pfad war ungetestet
+        (PHY044-WL/045/046/048/049 -> `job_pool` / `map_jobs`)
+  S-2   das VAL-BIT-Gate verstellte den globalen numpy-RNG des Aufrufers
+  S-3   das Produkt nannte den Mess-Kernel nicht (PHY046 `backend`)
+
 Jeder Guard hat eine Negativprobe, die bei zurueckgenommenem Guard per
 Assertion rot wird, und eine Positivkontrolle. Kein Messlauf: die gepinnte
 Evidenz in results/ wird nur gelesen; der letzte Abschnitt belegt, dass die
@@ -585,7 +593,10 @@ def test_committed_phy046_report_regenerates_unchanged(tmp_path):
     assert _diff(rep, new) == []
     # die einzigen neuen Felder sind die S0-/Leiter-Angaben
     assert set(new["production"]) - set(rep["production"]) == {
-        "unmeasured_L", "wall_budget_h"}
+        "unmeasured_L", "wall_budget_h", "backend"}
+    # der Lauf vom 2026-09-26 hat seinen Kernel nicht protokolliert: das
+    # Feld bleibt leer, statt nachtraeglich "numba" zu behaupten
+    assert new["production"]["backend"] is None
     for block in ("primary_per_area", "convention_crosscheck_per_site"):
         assert set(new[block]) - set(rep[block]) == {
             "ladder_used", "ladder_complete"}
@@ -606,3 +617,219 @@ def test_committed_phy048_analysis_regenerates_unchanged():
     assert _diff(rep["analysis"], new) == []
     assert set(new) - set(rep["analysis"]) == {"ladder_used",
                                                "ladder_complete"}
+
+
+# ============================================================================
+# S-1  Prozess-Pool: unabhaengig von der Start-Methode, parallel == sequenziell
+# ============================================================================
+
+class _Recorder:
+    """Ersetzt ProcessPoolExecutor: merkt sich die Argumente, startet nichts."""
+    calls: list = []
+
+    def __init__(self, **kw):
+        type(self).calls.append(kw)
+
+
+@pytest.fixture
+def recorder(monkeypatch):
+    _Recorder.calls = []
+    monkeypatch.setattr(phy045, "ProcessPoolExecutor", _Recorder)
+    return _Recorder
+
+
+def _a_job(x):
+    return x
+
+
+def test_job_pool_is_sequential_for_a_single_worker(recorder):
+    assert phy045.job_pool(_a_job, 1) is None
+    assert phy045.job_pool(_a_job, 0) is None
+    assert recorder.calls == []
+
+
+def test_job_pool_requests_fork_explicitly_where_it_exists(recorder,
+                                                           monkeypatch):
+    """Nicht den Standard-Kontext erben: der ist seit 3.14 forkserver."""
+    import multiprocessing
+    monkeypatch.setattr(multiprocessing, "get_all_start_methods",
+                        lambda: ["forkserver", "fork", "spawn"])
+    sentinel = object()
+    monkeypatch.setattr(multiprocessing, "get_context",
+                        lambda m: (m, sentinel))
+    assert isinstance(phy045.job_pool(_a_job, 3), _Recorder)
+    assert recorder.calls == [{"max_workers": 3,
+                               "mp_context": ("fork", sentinel)}]
+
+
+def test_job_pool_without_fork_depends_on_where_the_job_lives(
+        recorder, monkeypatch, capsys):
+    import multiprocessing
+    monkeypatch.setattr(multiprocessing, "get_all_start_methods",
+                        lambda: ["spawn"])
+    # per Kunstnamen geladen: ein spawn-Kind koennte den Job nicht
+    # importieren -> sequenziell, mit Hinweis
+    assert _a_job.__module__ != "__main__"
+    assert phy045.job_pool(_a_job, 4) is None
+    assert recorder.calls == []
+    assert "sequenziell" in capsys.readouterr().out
+
+    def main_job(x):
+        return x
+    main_job.__module__ = "__main__"       # als Skript gestartet
+    assert isinstance(phy045.job_pool(main_job, 4), _Recorder)
+    assert recorder.calls == [{"max_workers": 4}]
+
+
+def test_map_jobs_keeps_input_order_sequentially():
+    assert phy045.map_jobs(_a_job, [3, 1, 2], 1) == [3, 1, 2]
+
+
+_POOL_SCRIPT = r"""
+import json, multiprocessing, sys
+import numpy as np
+if __name__ == "__main__":
+    # der Python-3.14-Standard, auf jeder Version erzwungen: so reproduziert
+    # der Test den BrokenProcessPool auch unter 3.12/3.13
+    multiprocessing.set_start_method("forkserver", force=True)
+    sys.path.insert(0, "tests")
+    import conftest
+    p45 = conftest._load("phy045_normalization",
+                         "260926 PHY045 helicity normalization O1 test v01.py")
+    p46 = conftest._load("phy046_w4_v02",
+                         "260926 PHY046 honeycomb w4 wolff area-helicity v01.py")
+    p48 = conftest._load("phy048_square_validation",
+                         "260926 PHY048 square pipeline validation v01.py")
+    p49 = conftest._load("phy049_corr_ratio",
+                         "260927 PHY049 honeycomb correlation ratio v01.py")
+    p44 = conftest._load("phy044_wl_calibration",
+                         "260926 PHY044 honeycomb wl calibration v01.py")
+    out = {"default_start_method": multiprocessing.get_start_method()}
+
+    kw = dict(ladder=(4, 8), t_grid=(0.55, 0.60), n_seeds=2, n_therm=3,
+              n_meas=6)
+    a, b = p46.produce(max_workers=2, **kw), p46.produce(max_workers=1, **kw)
+    out["phy046"] = all(a[k] == b[k] for k in ("ups_area", "ups_site"))
+    out["phy046_finite"] = bool(np.all(np.isfinite(a["ups_area"]["8"])))
+
+    p48.LADDER, p48.T_GRID = (4, 8), (0.88, 0.90)
+    p48.N_SEEDS, p48.N_THERM, p48.N_MEAS = 2, 3, 6
+    out["phy048"] = (p48.produce(max_workers=2)["ups_area"]
+                     == p48.produce(max_workers=1)["ups_area"])
+
+    plan = {"square": (0.45, (4, 6, 8, 10))}
+    strip = lambda r: json.dumps(r, sort_keys=True)
+    pb = lambda w: p45.part_b(n_seeds=2, n_therm=2, n_meas=40,
+                              max_workers=w, plan=plan)
+    out["phy045_part_b"] = strip(pb(2)) == strip(pb(1))
+
+    jobs = [(8, k, T, s, 2, 3) for k, T in enumerate((0.56, 0.58))
+            for s in range(2)]
+    drop = lambda rows: [{k: v for k, v in r.items() if k != "wall_s"}
+                         for r in rows]
+    out["phy049"] = (drop(p45.map_jobs(p49._job, jobs, 2))
+                     == drop([p49._job(j) for j in jobs]))
+
+    def fake(args):
+        return {"echo": list(args)}
+    p44._job = fake
+    j44 = [("x", 4, 0), ("x", 8, 1), ("x", 8, 0)]
+    order = sorted(j44, key=lambda j: (-j[1], j[2]))
+    out["phy044_wl"] = (p44._run_jobs(j44, 2)
+                        == [{"echo": list(j)} for j in order])
+    print("RESULT " + json.dumps(out))
+"""
+
+
+def test_parallel_production_is_bit_equal_to_sequential_under_forkserver(
+        tmp_path):
+    """Ende-zu-Ende in einem frischen Interpreter mit forkserver als
+    Standard: jeder parallele Produktionspfad laeuft durch und liefert
+    exakt die sequenziellen Zahlen (vorher: BrokenProcessPool)."""
+    script = tmp_path / "pool_check.py"
+    script.write_text(_POOL_SCRIPT, encoding="utf-8")
+    out = subprocess.run([sys.executable, str(script)], cwd=ROOT,
+                         capture_output=True, text=True, timeout=900)
+    assert out.returncode == 0, out.stderr[-3000:]
+    line = [ln for ln in out.stdout.splitlines() if ln.startswith("RESULT ")]
+    assert len(line) == 1, out.stdout[-2000:]
+    assert json.loads(line[0][7:]) == {
+        "default_start_method": "forkserver", "phy046": True,
+        "phy046_finite": True, "phy048": True, "phy045_part_b": True,
+        "phy049": True, "phy044_wl": True}
+
+
+def test_w4_modules_never_build_a_pool_with_the_inherited_default_context():
+    """Quelltext-Schranke: PHY046/048/049 bauen keinen eigenen Pool mehr;
+    PHY045 und PHY044-WL nur ueber den fork-Zweig oder den `__main__`-Zweig."""
+    for fname in (F46, F48, F49):
+        assert "ProcessPoolExecutor" not in (SRC / fname).read_text(
+            encoding="utf-8"), fname
+    for fname in (F45, F44):
+        tree = ast.parse((SRC / fname).read_text(encoding="utf-8"))
+        calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call)
+                 and getattr(n.func, "id", None) == "ProcessPoolExecutor"]
+        assert len(calls) == 2, fname
+        with_ctx = [c for c in calls
+                    if any(k.arg == "mp_context" for k in c.keywords)]
+        assert len(with_ctx) == 1, fname
+        assert "get_context('fork')" in ast.unparse(with_ctx[0])
+
+
+# ============================================================================
+# S-2  VAL-BIT veraendert den globalen numpy-RNG des Aufrufers nicht
+# ============================================================================
+
+@needs_numba
+def test_val_bit_leaves_the_callers_global_rng_untouched():
+    np.random.seed(20261121)
+    np.random.random(7)
+    before = np.random.get_state()
+    want = np.random.RandomState()
+    want.set_state(before)
+    assert phy045.backend_bit_identity() is True
+    after = np.random.get_state()
+    assert before[0] == after[0] and before[2:] == after[2:]
+    assert np.array_equal(before[1], after[1])
+    assert np.random.random() == want.random_sample()
+
+
+@needs_numba
+def test_val_bit_restores_the_rng_even_when_it_fails(monkeypatch):
+    real = phy045._nb_run
+    monkeypatch.setattr(phy045, "_nb_run", lambda *a: np.array(real(*a))[:-1])
+    np.random.seed(5)
+    before = np.random.get_state()
+    assert phy045.backend_bit_identity() is False
+    assert np.array_equal(before[1], np.random.get_state()[1])
+    assert before[2] == np.random.get_state()[2]
+
+
+# ============================================================================
+# S-3  Das Produkt nennt den Kernel, mit dem gemessen wurde
+# ============================================================================
+
+def test_production_names_the_kernel_that_measured(monkeypatch):
+    monkeypatch.setattr(phy046, "_job", _fake_job)
+    prod = phy046.produce(ladder=(4, 8), t_grid=(0.55,), n_seeds=2,
+                          max_workers=1)
+    assert prod["backend"] == ("numba" if phy045.HAVE_NUMBA else "python")
+    rep = phy046.build_report(dict(prod, n_therm=1, n_meas=1))
+    assert rep["production"]["backend"] == prod["backend"]
+
+
+def test_backend_name_follows_the_gate_not_the_mere_availability(monkeypatch):
+    monkeypatch.setattr(phy045, "HAVE_NUMBA", False)
+    monkeypatch.setattr(phy045, "_VAL_BIT_OK", None)
+    assert phy045.production_backend_name() == "python"
+
+
+@needs_numba
+def test_production_stops_before_any_job_when_val_bit_fails(monkeypatch):
+    monkeypatch.setattr(phy045, "_VAL_BIT_OK", None)
+    monkeypatch.setattr(phy045, "backend_bit_identity", lambda: False)
+    monkeypatch.setattr(phy046, "_job",
+                        lambda a: pytest.fail("Job trotz VAL-BIT-Fehlschlag"))
+    with pytest.raises(RuntimeError, match="VAL-BIT failed"):
+        phy046.produce(ladder=(4, 8), t_grid=(0.55,), n_seeds=2,
+                       max_workers=1)

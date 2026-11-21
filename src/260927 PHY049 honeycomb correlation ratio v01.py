@@ -21,7 +21,6 @@ import os
 import platform
 import sys
 import time
-from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
@@ -575,11 +574,7 @@ def produce(
             )
             _atomic_write_json(checkpoint, payload)
 
-        if max_workers <= 1:
-            block = [_job(j) for j in jobs]
-        else:
-            with ProcessPoolExecutor(max_workers=max_workers) as ex:
-                block = list(ex.map(_job, jobs, chunksize=1))
+        block = _p45.map_jobs(_job, jobs, max_workers)
         if not _completed_block_valid(block, L, t_grid, n_seeds):
             raise RuntimeError(f"internal production block validation failed L={L}")
         rows.extend(block)

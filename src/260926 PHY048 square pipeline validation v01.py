@@ -27,7 +27,6 @@ import math  # noqa: E402
 import sys  # noqa: E402
 import time  # noqa: E402
 import importlib.util  # noqa: E402
-from concurrent.futures import ProcessPoolExecutor  # noqa: E402
 from pathlib import Path  # noqa: E402
 
 import numpy as np  # noqa: E402
@@ -84,8 +83,7 @@ def produce(max_workers: int = 4) -> dict:
             for s in range(N_SEEDS)]
     jobs.sort(key=lambda j: (-j[0], j[1], j[3]))
     t0 = time.perf_counter()
-    with ProcessPoolExecutor(max_workers=max_workers) as ex:
-        res = list(ex.map(_job, jobs, chunksize=1))
+    res = _p45.map_jobs(_job, jobs, max_workers)
     area = {L: np.zeros((len(T_GRID), N_SEEDS)) for L in LADDER}
     cpu = 0.0
     for r in res:

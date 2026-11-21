@@ -60,11 +60,54 @@ byte-unveraendert. Gestapelt auf dem #75-Kopf.
 - `tests/test_codex75_review_findings.py`: 64 Tests. Diskriminierung gemessen
   (2026-11-21, py3.13): 24 Mutanten (je ein Guard zurueckgenommen) -> 24 rot,
   jeweils per Assertion.
-- Verified 2026-11-21 (Linux, numba 0.68.1, numpy 2.5.5): py3.13 `ruff check
-  src tests` sauber, `compileall src` ok, `pytest -m "not slow"` 475 passed,
-  4 deselected (vorher 411), `pytest -m slow` 4 passed; py3.14 die
-  betroffenen Module (dieser Test, PHY045/046/048/049/051, SOURCES-Gate)
-  168 passed. Nicht gefahren: py3.12, Windows, die volle Suite unter py3.14.
+- `tests/test_codex75_review_findings.py` deckt beide Runden (siehe unten).
+
+### Selbstpruefung der eigenen Lieferung (zweite Runde, gleicher Tag)
+Kritische Durchsicht des ersten Commits (`1443df0`) hat drei Luecken
+gefunden; alle drei sind gemessen, behoben und mit Regression belegt.
+- **S-1 Prozess-Pool unter Python 3.14 (gemessen, vorher nur vermutet):**
+  seit 3.14 ist `forkserver` der POSIX-Standard. Dessen Kinder koennen ein
+  per Kunstnamen geladenes Modul nicht importieren; `produce` von PHY046 und
+  PHY048 sowie `part_b` von PHY045 brachen mit `BrokenProcessPool` ab
+  (py3.14.6, 2 Worker), PHY051 nicht (eigener fork-Pool). Betroffen ist der
+  programmatische Aufruf, nicht der CLI-Lauf (dort liegt der Job in
+  `__main__`). Kein falsches Ergebnis, aber ein Absturz - und kein Test
+  uebte bisher irgendeinen parallelen Pfad. Neu: `PHY045.job_pool` /
+  `map_jobs` (fork explizit, wo es ihn gibt; sonst Standard-Kontext nur als
+  gestartetes Skript; sonst sequenziell), benutzt von PHY045/046/048/049;
+  PHY044-WL `_run_jobs` mit derselben Logik lokal. Anders als der
+  PHY051-Pool bleibt ein CLI-Lauf unter Windows parallel. Test: frischer
+  Interpreter mit erzwungenem `forkserver`, 2 Worker, jeder parallele Pfad
+  bitgleich zum sequenziellen. PHY042 (`run_phy042`, nur CLI) und der
+  PHY051-Pool sind unveraendert.
+- **S-2 Nebenwirkung des VAL-BIT-Gates:** der Python-Kernel seedet den
+  globalen numpy-RNG; das Gate (erster Commit) verstellte damit den
+  RNG-Zustand des Aufrufers beim ersten Kernel-Zugriff. Jetzt wird der
+  Zustand gesichert und wiederhergestellt, auch bei Fehlschlag.
+- **S-3 Kernel im Produkt:** `PHY046.produce` prueft VAL-BIT im
+  Elternprozess, bevor Rechenzeit fliesst, und schreibt `backend`
+  ("numba"/"python") ins Produkt und in den Report. Der committete Lauf vom
+  2026-09-26 traegt `None` - sein Kernel ist nicht protokolliert und wird
+  nicht nachtraeglich behauptet.
+- Korrektur einer eigenen Aussage: der erste PR-Text nannte den Pool-Punkt
+  "nicht getestet, nur aus dem Code gelesen" und listete ihn als offen. Er
+  ist jetzt gemessen und geschlossen.
+- Nicht geaendert, bewusst: PHY048 hat weiter keinen Budget-Stop (post hoc,
+  kein vorregistriertes Budget); die BLAS-Pins wirken nur, wenn numpy beim
+  Modul-Import noch nicht geladen ist (CLI, Pool-Worker) - der Wolff-Kernel
+  selbst ruft kein BLAS, betroffen sind Aggregate ab L=64 im WL-Pfad.
+
+### Belege
+- Die committeten Reports PHY046 und PHY048 regenerieren weiterhin
+  unveraendert (Vollvergleich im Test).
+- Diskriminierung gemessen (2026-11-21, py3.13): 32 Mutanten (je ein Guard
+  zurueckgenommen, beide Runden) -> 32 rot, jeweils per Assertion.
+- Verified 2026-11-21 (Linux, numba 0.68.1, numpy 2.5.5), volle CI-Matrix
+  lokal: `pytest -m "not slow"` py3.12.3 / py3.13.18 / py3.14.6 je 486
+  passed, 4 deselected (vor beiden Runden 411); py3.13 `ruff check src
+  tests` sauber, `compileall src` ok auf allen drei, `pytest -m slow`
+  4 passed. Nicht gefahren: Windows, GitHub-CI (laeuft nur fuer PRs gegen
+  main; dieser PR ist auf den #75-Zweig gestapelt).
 
 ## [2026-11-19] Supersession #50/#52/#54: nicht ersetzte Teile auf main
 

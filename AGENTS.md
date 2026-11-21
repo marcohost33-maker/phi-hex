@@ -20,6 +20,9 @@ KI-Coding-Agent-Anweisungen. Reihenfolge: §1 Working agreements > §2 Conventio
   (`os.environ[...] = "1"` vor dem numpy-Import), kein `setdefault` (seit Codex-Review
   #75 auch PHY044-WL/045/046/048; Test `test_codex75_review_findings.py`). Den
   PHY045-Mess-Kernel nur ueber `production_run_backend()` beziehen (VAL-BIT je Prozess).
+  Prozess-Pools nur ueber `PHY045.job_pool` / `map_jobs` bauen, nie `ProcessPoolExecutor()`
+  mit geerbtem Standard-Kontext (Python 3.14: forkserver, Kinder koennen die per Kunstnamen
+  geladenen Module nicht importieren).
 - **Provenance:** `SOURCES.md` ist die Integritaets-Wahrheit (SHA-256 je Quelldatei). Quelle ist
   Drive `0Phi Hex` + `Universe 2.0\Hqstphi Hex` (KEINE dde-Doppelhaltung - anders als hex-hqst/u2/u6/hexa-ntk).
 

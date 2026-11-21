@@ -72,6 +72,7 @@ for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
 import hashlib  # noqa: E402
 import json  # noqa: E402
 import math  # noqa: E402
+import multiprocessing  # noqa: E402
 import time  # noqa: E402
 from concurrent.futures import ProcessPoolExecutor  # noqa: E402
 
@@ -511,9 +512,23 @@ def _curve_dict(c: dict) -> dict:
 
 def _run_jobs(jobs: list, max_workers: int) -> list:
     jobs = sorted(jobs, key=lambda j: (-j[1], j[2]))   # grosse L zuerst
+    # Pool-Kontext wie PHY045.job_pool (dieses Modul importiert PHY045
+    # nicht): fork, wo es ihn gibt - seit Python 3.14 ist forkserver der
+    # POSIX-Standard, und dessen Kinder koennen ein per Kunstnamen geladenes
+    # Modul nicht importieren (BrokenProcessPool). Ohne fork: Standard-
+    # Kontext nur als gestartetes Skript, sonst sequenziell. Die Jobs sind
+    # per Seed deterministisch; das Prozessmodell aendert keine Zahl.
     if max_workers <= 1:
         return [_job(j) for j in jobs]
-    with ProcessPoolExecutor(max_workers=max_workers) as ex:
+    if "fork" in multiprocessing.get_all_start_methods():
+        ex = ProcessPoolExecutor(
+            max_workers=max_workers,
+            mp_context=multiprocessing.get_context("fork"))
+    elif _job.__module__ == "__main__":
+        ex = ProcessPoolExecutor(max_workers=max_workers)
+    else:
+        return [_job(j) for j in jobs]
+    with ex:
         return list(ex.map(_job, jobs))
 
 

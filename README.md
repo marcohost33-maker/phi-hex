@@ -315,6 +315,10 @@ PHY049/PHY050: der honeycomb-Builder PHY031 steht im Provenienz-Fingerprint.
 Die committeten PHY046- und PHY048-Reports regenerieren unter dem gehaerteten
 Code unveraendert (JSON rel 1e-9, PHY046-Text bytegleich) - das W4-v02-FINDING
 aendert sich nicht. Tests: `tests/test_codex75_review_findings.py`.
+Selbstpruefung am selben Tag: der parallele Pfad von PHY045/046/048 brach
+unter Python 3.14 (Standard `forkserver`) mit `BrokenProcessPool` ab und war
+ungetestet - behoben ueber `PHY045.job_pool` (gilt auch fuer PHY049 und
+PHY044-WL), parallel und sequenziell sind bitgleich getestet.
 
 ## Naechste Stufe nach PHY043 + Review-Nachtrag 2026-08-08
 

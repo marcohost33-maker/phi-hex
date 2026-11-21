@@ -33,7 +33,6 @@ import math  # noqa: E402
 import sys  # noqa: E402
 import time  # noqa: E402
 import importlib.util  # noqa: E402
-from concurrent.futures import ProcessPoolExecutor  # noqa: E402
 from pathlib import Path  # noqa: E402
 
 import numpy as np  # noqa: E402
@@ -131,8 +130,10 @@ def produce(ladder=W4V2_LADDER, t_grid=W4V2_T_GRID, n_seeds=W4V2_N_SEEDS,
     site = {L: np.full((len(t_grid), n_seeds), np.nan) for L in ladder}
     unmeasured, cpu = [], 0.0
     t0 = _clock()
-    ex = (ProcessPoolExecutor(max_workers=max_workers)
-          if max_workers > 1 else None)
+    # VAL-BIT im Elternprozess, BEVOR Rechenzeit fliesst; der Name des
+    # Kernels steht im Produkt (Reality-Anchor: womit wurde gemessen).
+    backend = _p45.production_backend_name()
+    ex = _p45.job_pool(_job, max_workers)
     try:
         done = 0
         for L in sorted(ladder, reverse=True):
@@ -158,7 +159,7 @@ def produce(ladder=W4V2_LADDER, t_grid=W4V2_T_GRID, n_seeds=W4V2_N_SEEDS,
             "unmeasured_L": sorted(unmeasured),
             "wall_budget_h": float(wall_budget_h),
             "wall_s": _clock() - t0, "cpu_s": cpu,
-            "max_workers": max_workers}
+            "max_workers": max_workers, "backend": backend}
 
 
 # ============================================================================
@@ -369,7 +370,10 @@ def build_report(prod: dict) -> dict:
                 # die Felder nicht: [] bzw. das registrierte Budget.
                 "unmeasured_L": [int(x) for x in prod.get("unmeasured_L", [])],
                 "wall_budget_h": prod.get("wall_budget_h",
-                                          W4V2_WALL_BUDGET_H)},
+                                          W4V2_WALL_BUDGET_H),
+                # None = Lauf vor Einfuehrung des Feldes (Backend dann nur
+                # aus der Lauf-Umgebung rekonstruierbar, nicht belegt)
+                "backend": prod.get("backend")},
             "primary_per_area": area,
             "convention_crosscheck_per_site": site,
             "data": {"ups_area": prod["ups_area"],
