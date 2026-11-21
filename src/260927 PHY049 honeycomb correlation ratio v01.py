@@ -31,7 +31,13 @@ import numpy as np  # noqa: E402
 
 _SRC = Path(__file__).resolve().parent
 _ROOT = _SRC.parent
+# PHY031 gehoert in den Fingerprint (Codex #75 P2): `_p45.build("honeycomb")`
+# delegiert an dessen `build_honeycomb_lattice`; schon eine geaenderte
+# Kantenreihenfolge laesst Geometrie- und VAL-BIT-Gate gruen, aendert aber
+# die Nachbar-Traversierung und damit die geseedeten Wolff-Trajektorien.
+# Die Liste ist in PHY049 (Produzent) und PHY050 (Adjudikation) identisch.
 _RUNTIME_SOURCE_PATHS = (
+    "src/260607 PHY031 honeycomb tbkt per-site v01.py",
     "src/260926 PHY045 helicity normalization O1 test v01.py",
     "src/260927 PHY049 honeycomb correlation ratio v01.py",
     "src/260927 PHY050 correlation ratio fss recovery v01.py",

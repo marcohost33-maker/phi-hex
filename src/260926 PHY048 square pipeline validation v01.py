@@ -16,8 +16,11 @@ from __future__ import annotations
 
 import os
 
+# ERZWUNGEN (Codex #75 P1, AGENTS.md): ein vom Runner geerbtes
+# OPENBLAS_NUM_THREADS=8 haette `setdefault` ueberlebt. Wirkt nur, wenn numpy
+# noch nicht geladen ist (CLI-Lauf, Pool-Worker).
 for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
-    os.environ.setdefault(_v, "1")
+    os.environ[_v] = "1"
 
 import json  # noqa: E402
 import math  # noqa: E402
@@ -62,7 +65,7 @@ def _job(args: tuple) -> dict:
     lat = _p45.build("square", L)
     nbr, deg = _p45._nbr_arrays(lat)
     th = np.zeros(lat.n)
-    run = _p45._nb_run if _p45.HAVE_NUMBA else _p45._py_run
+    run = _p45.production_run_backend()   # VAL-BIT-gebunden
     t0 = time.perf_counter()
     d = run(th, nbr, deg, lat.ei, lat.ej,
             np.ascontiguousarray(lat.disp[:, 0]),

@@ -61,10 +61,13 @@ import os
 # (verifiziert 2026-09-26, OpenBLAS 0.3.34: np.dot bitweise verschieden bei
 # 4 vs 1 Thread ab n=12288 = honeycomb-Bindungen L=64; bis n=6912 = L=48
 # identisch -> committete PHY042-Laeufe L<=48 unberuehrt).
-# setdefault: eine bewusste Umgebungs-Vorgabe gewinnt und wird im Report
-# protokolliert. Wirkt nur, wenn numpy noch nicht geladen ist (CLI-Lauf).
+# ERZWUNGEN statt setdefault (Codex #75 P1, AGENTS.md): ein vom Runner
+# geerbtes OPENBLAS_NUM_THREADS=8 haette `setdefault` ueberlebt und sowohl
+# die K1-Wall-Zeiten als auch (ab L=64) die Aggregate veraendert. Der Pin
+# wird im Report protokolliert (`blas_threads_env`). Wirkt nur, wenn numpy
+# noch nicht geladen ist (CLI-Lauf, Pool-Worker).
 for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
-    os.environ.setdefault(_v, "1")
+    os.environ[_v] = "1"
 
 import hashlib  # noqa: E402
 import json  # noqa: E402

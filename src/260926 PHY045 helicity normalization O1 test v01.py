@@ -39,8 +39,11 @@ from __future__ import annotations
 
 import os
 
+# ERZWUNGEN (Codex #75 P1, AGENTS.md): ein vom Runner geerbtes
+# OPENBLAS_NUM_THREADS=8 haette `setdefault` ueberlebt. Wirkt nur, wenn numpy
+# noch nicht geladen ist (CLI-Lauf, Pool-Worker).
 for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
-    os.environ.setdefault(_v, "1")
+    os.environ[_v] = "1"
 
 import json  # noqa: E402
 import math  # noqa: E402
@@ -346,6 +349,63 @@ if HAVE_NUMBA:
         return out
 
 
+# VAL-BIT (Codex #75 P1, AGENTS.md "Kernel-Zwillinge nur mit Bit-Identitaets-
+# Gate"): gleiche Seeds, voller Kernel (_wolff_sweep + _measure + _run) auf
+# zwei Gittern verschiedener Koordinationszahl; Python- und Numba-Ausgabe
+# muessen bitgleich sein, sonst ist Numba nicht produktionsfaehig.
+VAL_BIT_CASES = (("honeycomb", 6, 0.57), ("triangular", 5, 1.40))
+VAL_BIT_SWEEPS = (2, 4)            # (n_therm, n_meas)
+VAL_BIT_SEED = 45_999_001
+_VAL_BIT_OK: bool | None = None    # je Interpreter (also je Pool-Worker)
+
+
+def _kernel_args(lat: Lat) -> tuple:
+    nbr, deg = _nbr_arrays(lat)
+    return (nbr, deg, lat.ei, lat.ej,
+            np.ascontiguousarray(lat.disp[:, 0]),
+            np.ascontiguousarray(lat.disp[:, 1]))
+
+
+def backend_bit_identity() -> bool:
+    """True genau dann, wenn _nb_run und _py_run fuer alle VAL_BIT_CASES
+    dieselbe Messreihe (dtype, shape, jedes Bit) liefern. Ohne Numba gibt es
+    nichts zu vergleichen (True; produziert wird dann mit _py_run)."""
+    if not HAVE_NUMBA:
+        return True
+    n_therm, n_meas = VAL_BIT_SWEEPS
+    for name, L, T in VAL_BIT_CASES:
+        lat = build(name, L)
+        args = _kernel_args(lat) + (1.0 / T, n_therm, n_meas, VAL_BIT_SEED)
+        py = _py_run(np.zeros(lat.n), *args)
+        nb = _nb_run(np.zeros(lat.n), *args)
+        # tobytes statt array_equal: NaN == NaN und -0.0 != 0.0, also echte
+        # Bit-Identitaet; ein beidseitiges NaN bestaetigt aber keinen Kernel.
+        if not (py.dtype == nb.dtype and py.shape == nb.shape
+                and bool(np.all(np.isfinite(py)))
+                and py.tobytes() == nb.tobytes()):
+            return False
+    return True
+
+
+def production_run_backend():
+    """Der EINE Zugang zum Mess-Kernel fuer Produktion (PHY045 Teil B/C,
+    PHY046, PHY048, PHY051). Numba wird nur nach bestandenem VAL-BIT
+    herausgegeben; das Ergebnis ist je Interpreter gecacht, jeder Pool-
+    Worker prueft also seine eigene Laufzeit vor seinem ersten Job. Faellt
+    VAL-BIT, wird NICHT still auf Python umgeschaltet (das wuerde zwei
+    Backends in einer Kampagne mischen), sondern abgebrochen."""
+    global _VAL_BIT_OK
+    if not HAVE_NUMBA:
+        return _py_run
+    if _VAL_BIT_OK is None:
+        _VAL_BIT_OK = bool(backend_bit_identity())
+    if not _VAL_BIT_OK:
+        raise RuntimeError(
+            "VAL-BIT failed: PHY045 Numba kernel is not bit-identical to "
+            "the Python kernel; Numba backend is not production-eligible")
+    return _nb_run
+
+
 def mc_point(args: tuple) -> dict:
     """Ein (Gitter, L, T, Seed)-Lauf. Start: geordnet (Tieftemperatur-
     Phase), Thermalisierung n_therm Wolff-Sweeps."""
@@ -353,7 +413,7 @@ def mc_point(args: tuple) -> dict:
     lat = build(name, L)
     nbr, deg = _nbr_arrays(lat)
     th = np.zeros(lat.n)
-    run = _nb_run if HAVE_NUMBA else _py_run
+    run = production_run_backend()
     t0 = time.perf_counter()
     data = run(th, nbr, deg, lat.ei, lat.ej,
                np.ascontiguousarray(lat.disp[:, 0]),
@@ -500,7 +560,7 @@ def wolff_efficiency_point(args: tuple) -> dict:
     lat = build(name, L)
     nbr, deg = _nbr_arrays(lat)
     th = np.zeros(lat.n)
-    run = _nb_run if HAVE_NUMBA else _py_run
+    run = production_run_backend()
     t0 = time.perf_counter()
     data = run(th, nbr, deg, lat.ei, lat.ej,
                np.ascontiguousarray(lat.disp[:, 0]),

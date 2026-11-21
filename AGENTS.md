@@ -16,8 +16,10 @@ KI-Coding-Agent-Anweisungen. Reihenfolge: §1 Working agreements > §2 Conventio
   Kernel-Zwillinge nur mit Bit-Identitaets-Gate gegen den Python-Kernel einsetzen; fuer
   reproduzierbare Laeufe BLAS auf 1 Thread pinnen (`OPENBLAS_NUM_THREADS=1`; Befund #50
   21b51d1, OpenBLAS 0.3.34: np.dot haengt ab n=12288 (honeycomb L=64) bitweise von der
-  Thread-Zahl ab, bis n=6912 (L=48) nicht). Neue Module ERZWINGEN den Pin
-  (`os.environ[...] = "1"` vor dem numpy-Import, wie PHY049/PHY051), statt `setdefault`.
+  Thread-Zahl ab, bis n=6912 (L=48) nicht). Alle Numba-Module ERZWINGEN den Pin
+  (`os.environ[...] = "1"` vor dem numpy-Import), kein `setdefault` (seit Codex-Review
+  #75 auch PHY044-WL/045/046/048; Test `test_codex75_review_findings.py`). Den
+  PHY045-Mess-Kernel nur ueber `production_run_backend()` beziehen (VAL-BIT je Prozess).
 - **Provenance:** `SOURCES.md` ist die Integritaets-Wahrheit (SHA-256 je Quelldatei). Quelle ist
   Drive `0Phi Hex` + `Universe 2.0\Hqstphi Hex` (KEINE dde-Doppelhaltung - anders als hex-hqst/u2/u6/hexa-ntk).
 

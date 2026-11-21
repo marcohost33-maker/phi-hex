@@ -22,8 +22,11 @@ from __future__ import annotations
 
 import os
 
+# ERZWUNGEN (Codex #75 P1, AGENTS.md): ein vom Runner geerbtes
+# OPENBLAS_NUM_THREADS=8 haette `setdefault` ueberlebt. Wirkt nur, wenn numpy
+# noch nicht geladen ist (CLI-Lauf, Pool-Worker).
 for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
-    os.environ.setdefault(_v, "1")
+    os.environ[_v] = "1"
 
 import json  # noqa: E402
 import math  # noqa: E402
@@ -94,7 +97,7 @@ def _job(args: tuple) -> dict:
     lat = _p45.build("honeycomb", L)
     nbr, deg = _p45._nbr_arrays(lat)
     th = np.zeros(lat.n)
-    run = _p45._nb_run if _p45.HAVE_NUMBA else _p45._py_run
+    run = _p45.production_run_backend()   # VAL-BIT-gebunden
     t0 = time.perf_counter()
     d = run(th, nbr, deg, lat.ei, lat.ej,
             np.ascontiguousarray(lat.disp[:, 0]),
@@ -111,28 +114,50 @@ def _job(args: tuple) -> dict:
 
 def produce(ladder=W4V2_LADDER, t_grid=W4V2_T_GRID, n_seeds=W4V2_N_SEEDS,
             n_therm=W4V2_N_THERM, n_meas=W4V2_N_MEAS,
-            max_workers=4) -> dict:
-    jobs = [(L, k, T, s, n_therm, n_meas) for L in ladder
-            for k, T in enumerate(t_grid) for s in range(n_seeds)]
-    jobs.sort(key=lambda j: (-j[0], j[1], j[3]))
-    t0 = time.perf_counter()
-    if max_workers <= 1:
-        res = [_job(j) for j in jobs]
-    else:
-        with ProcessPoolExecutor(max_workers=max_workers) as ex:
-            res = list(ex.map(_job, jobs, chunksize=1))
-    area = {L: np.zeros((len(t_grid), n_seeds)) for L in ladder}
-    site = {L: np.zeros((len(t_grid), n_seeds)) for L in ladder}
-    cpu = 0.0
-    for r in res:
-        area[r["L"]][r["t_idx"], r["s"]] = r["ups_area"]
-        site[r["L"]][r["t_idx"], r["s"]] = r["ups_site"]
-        cpu += r["wall_s"]
+            max_workers=4, wall_budget_h=W4V2_WALL_BUDGET_H,
+            _clock=time.perf_counter) -> dict:
+    """Produktion in ganzen L-Bloecken, groesstes L zuerst (dieselbe
+    Reihenfolge wie der Lauf vom 2026-09-26). Stop-Regel S0 (Spec v02
+    Abschnitt 5; Codex #75 P2): das Wall-Budget wird ZWISCHEN den Bloecken
+    geprueft; ist es ueberschritten, werden die restlichen L NICHT gerechnet
+    und als `unmeasured_L` ausgewiesen (NaN-Daten). Es wird nicht umgeplant.
+    Der erste Block laeuft immer. Jeder Job ist per (L, T, Seed) deterministisch,
+    die Blockung aendert also keine Zahl. `_clock` nur fuer Tests."""
+    if not (isinstance(wall_budget_h, (int, float))
+            and not isinstance(wall_budget_h, bool)
+            and math.isfinite(wall_budget_h) and wall_budget_h >= 0.0):
+        raise ValueError("wall_budget_h must be a finite non-negative number")
+    area = {L: np.full((len(t_grid), n_seeds), np.nan) for L in ladder}
+    site = {L: np.full((len(t_grid), n_seeds), np.nan) for L in ladder}
+    unmeasured, cpu = [], 0.0
+    t0 = _clock()
+    ex = (ProcessPoolExecutor(max_workers=max_workers)
+          if max_workers > 1 else None)
+    try:
+        done = 0
+        for L in sorted(ladder, reverse=True):
+            if done and (_clock() - t0) / 3600.0 > wall_budget_h:
+                unmeasured.append(L)
+                continue
+            jobs = [(L, k, T, s, n_therm, n_meas)
+                    for k, T in enumerate(t_grid) for s in range(n_seeds)]
+            res = (list(ex.map(_job, jobs, chunksize=1)) if ex
+                   else [_job(j) for j in jobs])
+            for r in res:
+                area[r["L"]][r["t_idx"], r["s"]] = r["ups_area"]
+                site[r["L"]][r["t_idx"], r["s"]] = r["ups_site"]
+                cpu += r["wall_s"]
+            done += 1
+    finally:
+        if ex:
+            ex.shutdown()
     return {"t_grid": list(t_grid), "ladder": list(ladder),
             "n_seeds": n_seeds, "n_therm": n_therm, "n_meas": n_meas,
             "ups_area": {str(L): area[L].tolist() for L in ladder},
             "ups_site": {str(L): site[L].tolist() for L in ladder},
-            "wall_s": time.perf_counter() - t0, "cpu_s": cpu,
+            "unmeasured_L": sorted(unmeasured),
+            "wall_budget_h": float(wall_budget_h),
+            "wall_s": _clock() - t0, "cpu_s": cpu,
             "max_workers": max_workers}
 
 
@@ -141,8 +166,11 @@ def produce(ladder=W4V2_LADDER, t_grid=W4V2_T_GRID, n_seeds=W4V2_N_SEEDS,
 # ============================================================================
 
 def pair_crossings(curves: dict, t_grid, ladder) -> dict:
+    """Crossing je REGISTRIERTEM Paar der Leiter; fehlt eine der beiden
+    Kurven (S0: L nicht gemessen), ist das Crossing None."""
     t = np.asarray(t_grid, dtype=float)
-    return {(a, b): tbkt_pair_from_curves(t, curves[a], a, curves[b], b)
+    return {(a, b): (tbkt_pair_from_curves(t, curves[a], a, curves[b], b)
+                     if a in curves and b in curves else None)
             for a, b in hks_pairs(ladder)}
 
 
@@ -226,10 +254,22 @@ def estimate(curves: dict, curves_se: dict, t_grid, ladder,
             sig = None
     prim = fit_hks(Ls, Ts, sig)
     v1 = fit_hks(Ls, Ts, sig, b_fixed=1.0)
-    v2 = fit_hks(Ls[1:], Ts[1:], None if sig is None else sig[1:]) \
-        if len(Ls) >= 4 else None
-    v3 = Ts[-1] if Ts else None
-    v4 = wm_free_c_fit(curves, curves_se, t_grid, ladder)
+    # v2/v3 sind in Spec v02 Abschnitt 4 ueber die Paar-IDENTITAET registriert
+    # ("ohne das kleinste Paar", "groesstes Paar allein"), nicht ueber die
+    # Position unter den ueberlebenden Crossings (Codex #75 P2): kreuzt
+    # (128,256) nicht, ist v3 None und nicht stillschweigend (96,192).
+    reg = hks_pairs(ladder)
+    if reg:
+        keep = [i for i, a in enumerate(Ls) if a != reg[0][0]]
+        v2 = (fit_hks([Ls[i] for i in keep], [Ts[i] for i in keep],
+                      None if sig is None else [sig[i] for i in keep])
+              if len(Ls) >= 4 else None)
+        v3 = pc.get(reg[-1])
+    else:
+        v2 = v3 = None
+    measured = [L for L in ladder if L in curves]
+    v4 = (wm_free_c_fit(curves, curves_se, t_grid, measured)
+          if measured else None)
     return {"pairs": {f"{a}_{b}": T for (a, b), T in pc.items()},
             "n_pairs_with_crossing": len(pts),
             "primary_hks": prim, "v1_hks_b1": v1, "v2_hks_drop_smallest": v2,
@@ -237,9 +277,15 @@ def estimate(curves: dict, curves_se: dict, t_grid, ladder,
 
 
 def _jk_se(vals: list) -> float | None:
-    v = [x for x in vals if x is not None]
+    """Jackknife-SE ueber ALLE Leave-one-seed-out-Replikate (Spec v02
+    Abschnitt 3). Fail-closed (Codex #75 P2; wie PHY051): fehlt ein Replikat
+    (None) oder ist es nicht endlich, gibt es KEINE SE (None -> Regel S2
+    bzw. ungewichteter HKS-Fit) statt einer SE aus den Ueberlebenden, die
+    einen instabilen Schaetzer als kleine Unsicherheit ausweisen wuerde
+    (sieben gleiche Werte + ein None ergaben vorher sigma = 0)."""
+    v = list(vals)
     n = len(v)
-    if n < 2:
+    if n < 2 or not all(x is not None and math.isfinite(x) for x in v):
         return None
     m = float(np.mean(v))
     return float(math.sqrt((n - 1) / n * sum((x - m) ** 2 for x in v)))
@@ -248,13 +294,22 @@ def _jk_se(vals: list) -> float | None:
 def analyse(prod: dict, key: str = "ups_area") -> dict:
     """Vollstaendige vorregistrierte Auswertung inkl. Jackknife + Verdikt."""
     t_grid = prod["t_grid"]
-    ladder = [int(x) for x in prod["ladder"]]
-    data = {L: np.asarray(prod[key][str(L)]) for L in ladder}
+    ladder = [int(x) for x in prod["ladder"]]      # registrierte Leiter
     ns = prod["n_seeds"]
-    mean = {L: data[L].mean(axis=1) for L in ladder}
-    se = {L: data[L].std(axis=1, ddof=1) / math.sqrt(ns) for L in ladder}
+    # S0: ein L zaehlt nur als gemessen, wenn es nicht als unmeasured
+    # ausgewiesen ist UND jeder (T, Seed)-Wert endlich ist (fail-closed auch
+    # gegen ein halb gefuelltes oder aus JSON als null gelesenes Feld).
+    declared = set(int(x) for x in prod.get("unmeasured_L", []))
+    data = {L: np.asarray(prod[key][str(L)], dtype=float)
+            for L in ladder if L not in declared}
+    used = [L for L in ladder if L in data and data[L].shape
+            == (len(t_grid), ns) and bool(np.all(np.isfinite(data[L])))]
+    data = {L: data[L] for L in used}
+    complete = used == ladder
+    mean = {L: data[L].mean(axis=1) for L in used}
+    se = {L: data[L].std(axis=1, ddof=1) / math.sqrt(ns) for L in used}
     jk_curves = [{L: np.delete(data[L], s, axis=1).mean(axis=1)
-                  for L in ladder} for s in range(ns)]
+                  for L in used} for s in range(ns)]
     # Paar-Jackknife-SE (Gewichte fuer HKS)
     pc_full = pair_crossings(mean, t_grid, ladder)
     pc_jk = [pair_crossings(c, t_grid, ladder) for c in jk_curves]
@@ -277,15 +332,22 @@ def analyse(prod: dict, key: str = "ups_area") -> dict:
     vv = [v for v in variants if v is not None]
     sigma_fss = 0.5 * (max(vv) - min(vv)) if len(vv) >= 2 else None
     sigma_sampler = _jk_se(jk_T)
-    verdict = w4_verdict(T_w4, sigma_sampler, sigma_fss,
-                         full["n_pairs_with_crossing"])
-    return {"normalization": key, "estimates": full,
+    if complete:
+        verdict = w4_verdict(T_w4, sigma_sampler, sigma_fss,
+                             full["n_pairs_with_crossing"])
+    else:
+        # S0 steht VOR S1/S2/C/I: aus einer abgebrochenen Leiter gibt es
+        # kein Physik-Verdikt, auch wenn die gemessenen Paare eines erlaubten.
+        verdict = {"verdict": "NEGATIVE_RESULT", "rule": "S0",
+                   "sigma_tot": None}
+    return {"normalization": key, "ladder_used": used,
+            "ladder_complete": complete, "estimates": full,
             "pair_jackknife_se": {f"{a}_{b}": v
                                   for (a, b), v in pair_sig.items()},
             "T_w4": T_w4, "sigma_sampler": sigma_sampler,
             "sigma_fss_raw": sigma_fss, "variants": variants,
             "verdict": verdict,
-            "curve_se_max": {str(L): float(np.max(se[L])) for L in ladder}}
+            "curve_se_max": {str(L): float(np.max(se[L])) for L in used}}
 
 
 REPORT_STEM = "260926 PHY046 honeycomb w4 wolff area-helicity report"
@@ -299,9 +361,15 @@ def build_report(prod: dict) -> dict:
             "date": "2026-09-26",
             "spec": "spec/260926 PHI HEX w4 honeycomb preregistration v02.md",
             "band_B": list(W4_BAND),
-            "production": {k: prod[k] for k in (
-                "t_grid", "ladder", "n_seeds", "n_therm", "n_meas",
-                "wall_s", "cpu_s", "max_workers")},
+            "production": {
+                **{k: prod[k] for k in (
+                    "t_grid", "ladder", "n_seeds", "n_therm", "n_meas",
+                    "wall_s", "cpu_s", "max_workers")},
+                # Laeufe vor Einfuehrung von S0 im Code (2026-09-26) tragen
+                # die Felder nicht: [] bzw. das registrierte Budget.
+                "unmeasured_L": [int(x) for x in prod.get("unmeasured_L", [])],
+                "wall_budget_h": prod.get("wall_budget_h",
+                                          W4V2_WALL_BUDGET_H)},
             "primary_per_area": area,
             "convention_crosscheck_per_site": site,
             "data": {"ups_area": prod["ups_area"],
@@ -327,6 +395,16 @@ def _fmt(x, f=".4f"):
     return "null" if x is None else format(x, f)
 
 
+def _s0_lines(p: dict) -> list:
+    """Zusatzzeile NUR bei Budget-Stop (ein vollstaendiger Lauf erzeugt
+    denselben Text wie vor Einfuehrung von S0 im Code)."""
+    if not p.get("unmeasured_L"):
+        return []
+    return [f"S0 BUDGET-STOP: Wall-Budget {p['wall_budget_h']} h "
+            f"ueberschritten; NICHT gemessen: L = {p['unmeasured_L']} "
+            f"(kein Physik-Verdikt)"]
+
+
 def write_text_report(rep: dict, path: Path) -> None:
     a = rep["primary_per_area"]
     s = rep["convention_crosscheck_per_site"]
@@ -338,7 +416,7 @@ def write_text_report(rep: dict, path: Path) -> None:
           f"({len(p['t_grid'])} Punkte), {p['n_seeds']} Seeds x "
           f"({p['n_therm']}+{p['n_meas']}) Sweeps",
           f"Wall {p['wall_s']:.0f} s auf {p['max_workers']} Prozessen, "
-          f"CPU {p['cpu_s'] / 3600:.2f} h", "",
+          f"CPU {p['cpu_s'] / 3600:.2f} h", *_s0_lines(p), "",
           "--- Paar-Crossings T*(L,2L) (Upsilon pro Flaeche) ---"]
     for k, T in a["estimates"]["pairs"].items():
         L_.append(f"  ({k.replace('_', ',')}): {_fmt(T)} "

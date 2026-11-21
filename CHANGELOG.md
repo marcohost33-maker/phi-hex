@@ -3,6 +3,69 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-11-21] Codex-Review am Supersession-PR #75: 6 Befunde eingebaut
+
+Review von Codex auf Kopf `1e21714` (2026-11-19): 2x P1, 4x P2, alle offen.
+Kein Messlauf, keine neue Zahl; gepinnte Evidenz in `results/` ist
+byte-unveraendert. Gestapelt auf dem #75-Kopf.
+
+### Fixed
+- **P1 BLAS-Pin (PHY044-WL, PHY045, PHY046, PHY048):** `os.environ[...] = "1"`
+  statt `setdefault`. Ein vom Runner geerbtes `OPENBLAS_NUM_THREADS=8`
+  ueberlebte vorher; ab L=64 aendert das die Aggregate bitweise und
+  verfaelscht die Kalibrier-Wall-Zeiten (Befund #50). Damit erzwingen alle
+  sechs Numba-Module den Pin.
+- **P1 Numba-Backend ohne Bit-Identitaets-Gate (PHY045 -> 046/048/051):**
+  `mc_point`, die Effizienzmessung und die `_job` von PHY046/048/051 waehlten
+  `_nb_run` allein aus der Verfuegbarkeit von Numba. Neu:
+  `backend_bit_identity()` vergleicht den vollen Kernel (Sweep + Messung +
+  Lauf) bei gleichem Seed auf honeycomb (z=3) und triangular (z=6) bitweise
+  (`tobytes`, endliche Werte verlangt); `production_run_backend()` gibt Numba
+  nur danach heraus, gecacht je Interpreter (jeder Pool-Worker prueft seine
+  Laufzeit). Faellt der Vergleich, wird abgebrochen - kein stiller Wechsel
+  auf Python, der zwei Backends in einer Kampagne mischen wuerde.
+  Gemessen 2026-11-21 (Linux, py3.13, numba 0.68.1, numpy 2.5.5):
+  bitgleich auf allen vier Gittern.
+- **P2 PHY046 Jackknife:** `_jk_se` verwarf fehlende Replikate und rechnete
+  die SE aus den Ueberlebenden (sieben gleiche Werte + ein `None` ergaben
+  sigma = 0). Jetzt `None`, sobald ein Replikat fehlt oder nicht endlich ist
+  -> Regel S2 (wie PHY051).
+- **P2 PHY046 Budget-Stop S0:** `W4V2_WALL_BUDGET_H` wurde nie gelesen.
+  `produce` rechnet in ganzen L-Bloecken (groesstes L zuerst, wie bisher) und
+  prueft das Budget zwischen den Bloecken; restliche L stehen als
+  `unmeasured_L` (NaN) im Produkt. `analyse` zaehlt ein L nur als gemessen,
+  wenn jeder (T, Seed)-Wert endlich ist, und gibt bei unvollstaendiger Leiter
+  `NEGATIVE_RESULT` / Regel `S0` aus, bevor S1/S2/C/I greifen. Report und
+  Text weisen den Stop aus.
+- **P2 PHY046 Varianten v2/v3:** v3 war das letzte UEBERLEBENDE Crossing,
+  nicht das registrierte Paar (128,256); kreuzte es nicht, lief (96,192) als
+  "groesstes Paar" in sigma_FSS. Jetzt Nachschlagen ueber die Paar-Identitaet
+  (`None`, wenn es nicht kreuzt). Derselbe Fehler bei v2 ("ohne das kleinste
+  Paar" verwarf positionsweise) ist mitbehoben - von Codex nicht gemeldet.
+- **P2 PHY049/PHY050 Fingerprint:** `src/260607 PHY031 ...` (honeycomb-
+  Builder, an den `PHY045.build` delegiert) steht jetzt in beiden
+  `_RUNTIME_SOURCE_PATHS`. Eine geaenderte Kantenreihenfolge haette sonst
+  Resume und Adjudikation passiert. Das ist eine Verschaerfung von v03a
+  Abschnitt 12 ("insbesondere ... PHY045/PHY049/PHY050"); die Spec-Dateien
+  sind unveraendert (sie stehen selbst im Fingerprint). Es gibt keinen
+  Produktions-Checkpoint, der dadurch ungueltig wuerde.
+
+### Evidenz
+- Die committeten Reports PHY046 (W4 v02) und PHY048 regenerieren aus ihren
+  eigenen Daten unveraendert: JSON rel 1e-9 ueber alle committeten Felder,
+  PHY046-Textreport bytegleich; neu sind nur `unmeasured_L`/`wall_budget_h`
+  bzw. `ladder_used`/`ladder_complete`. Im committeten Lauf kreuzen alle fuenf
+  Paare, alle acht Jackknife-Replikate existieren, Wall 2628 s << 24 h - keiner
+  der drei PHY046-Fehler war dort wirksam. Das W4-v02-FINDING bleibt.
+- `tests/test_codex75_review_findings.py`: 64 Tests. Diskriminierung gemessen
+  (2026-11-21, py3.13): 24 Mutanten (je ein Guard zurueckgenommen) -> 24 rot,
+  jeweils per Assertion.
+- Verified 2026-11-21 (Linux, numba 0.68.1, numpy 2.5.5): py3.13 `ruff check
+  src tests` sauber, `compileall src` ok, `pytest -m "not slow"` 475 passed,
+  4 deselected (vorher 411), `pytest -m slow` 4 passed; py3.14 die
+  betroffenen Module (dieser Test, PHY045/046/048/049/051, SOURCES-Gate)
+  168 passed. Nicht gefahren: py3.12, Windows, die volle Suite unter py3.14.
+
 ## [2026-11-19] Supersession #50/#52/#54: nicht ersetzte Teile auf main
 
 Supersedes #50 (`21b51d1`), #52 (`c92d322`), #54 (`8c92301`). Frischer Zweig
