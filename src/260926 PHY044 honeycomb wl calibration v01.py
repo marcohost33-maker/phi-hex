@@ -61,14 +61,19 @@ import os
 # (verifiziert 2026-09-26, OpenBLAS 0.3.34: np.dot bitweise verschieden bei
 # 4 vs 1 Thread ab n=12288 = honeycomb-Bindungen L=64; bis n=6912 = L=48
 # identisch -> committete PHY042-Laeufe L<=48 unberuehrt).
-# setdefault: eine bewusste Umgebungs-Vorgabe gewinnt und wird im Report
-# protokolliert. Wirkt nur, wenn numpy noch nicht geladen ist (CLI-Lauf).
+# ERZWUNGEN statt setdefault (Codex #75 P1, AGENTS.md): ein vom Runner
+# geerbtes OPENBLAS_NUM_THREADS=8 haette `setdefault` ueberlebt und sowohl
+# die K1-Wall-Zeiten als auch (ab L=64) die Aggregate veraendert. Der Pin
+# wird im Report protokolliert (`blas_threads_env`). Wirkt nur, wenn numpy
+# noch nicht geladen ist (CLI-Lauf). Fork-Worker erben den Prozess-
+# zustand des Elternprozesses (Pin und BLAS-Pool inklusive).
 for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
-    os.environ.setdefault(_v, "1")
+    os.environ[_v] = "1"
 
 import hashlib  # noqa: E402
 import json  # noqa: E402
 import math  # noqa: E402
+import multiprocessing  # noqa: E402
 import time  # noqa: E402
 from concurrent.futures import ProcessPoolExecutor  # noqa: E402
 
@@ -508,9 +513,25 @@ def _curve_dict(c: dict) -> dict:
 
 def _run_jobs(jobs: list, max_workers: int) -> list:
     jobs = sorted(jobs, key=lambda j: (-j[1], j[2]))   # grosse L zuerst
+    # Pool-Kontext wie PHY045.job_pool (dieses Modul importiert PHY045
+    # nicht): fork nur unter Linux (macOS: nicht fork-sicher, Accelerate-
+    # BLAS) - seit Python 3.14 ist forkserver der
+    # POSIX-Standard, und dessen Kinder koennen ein per Kunstnamen geladenes
+    # Modul nicht importieren (BrokenProcessPool). Ohne fork: Standard-
+    # Kontext nur als gestartetes Skript, sonst sequenziell. Die Jobs sind
+    # per Seed deterministisch; das Prozessmodell aendert keine Zahl.
     if max_workers <= 1:
         return [_job(j) for j in jobs]
-    with ProcessPoolExecutor(max_workers=max_workers) as ex:
+    if (sys.platform.startswith("linux")
+            and "fork" in multiprocessing.get_all_start_methods()):
+        ex = ProcessPoolExecutor(
+            max_workers=max_workers,
+            mp_context=multiprocessing.get_context("fork"))
+    elif _job.__module__ == "__main__":
+        ex = ProcessPoolExecutor(max_workers=max_workers)
+    else:
+        return [_job(j) for j in jobs]
+    with ex:
         return list(ex.map(_job, jobs))
 
 

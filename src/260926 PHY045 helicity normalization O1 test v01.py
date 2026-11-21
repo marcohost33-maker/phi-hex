@@ -39,14 +39,19 @@ from __future__ import annotations
 
 import os
 
+# ERZWUNGEN (Codex #75 P1, AGENTS.md): ein vom Runner geerbtes
+# OPENBLAS_NUM_THREADS=8 haette `setdefault` ueberlebt. Wirkt nur, wenn numpy
+# noch nicht geladen ist (CLI-Lauf). Fork-Worker erben den Prozess-
+# zustand des Elternprozesses (Pin und BLAS-Pool inklusive).
 for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
-    os.environ.setdefault(_v, "1")
+    os.environ[_v] = "1"
 
 import json  # noqa: E402
 import math  # noqa: E402
 import sys  # noqa: E402
 import time  # noqa: E402
 import importlib.util  # noqa: E402
+import multiprocessing  # noqa: E402
 from concurrent.futures import ProcessPoolExecutor  # noqa: E402
 from pathlib import Path  # noqa: E402
 
@@ -72,6 +77,55 @@ def _load(name: str, filename: str):
     sys.modules[name] = mod
     spec.loader.exec_module(mod)
     return mod
+
+
+def _fork_is_safe() -> bool:
+    """fork nur unter Linux (siehe job_pool)."""
+    return (sys.platform.startswith("linux")
+            and "fork" in multiprocessing.get_all_start_methods())
+
+
+def job_pool(fn, max_workers: int):
+    """Prozess-Pool fuer `fn`, oder None (= sequenziell rechnen).
+
+    Die Module dieses Repos werden per importlib unter einem Kunstnamen
+    geladen (Dateinamen mit Leerzeichen). Ein spawn-/forkserver-Kind muss
+    `fn` aber ueber seinen Modulnamen importieren koennen; das gelingt nur,
+    wenn `fn` im gestarteten Skript (`__main__`) liegt. Seit Python 3.14 ist
+    forkserver der POSIX-Standard: ohne expliziten Kontext brach der Pool
+    dann mit BrokenProcessPool ab (gemessen 2026-11-21, py3.14.6).
+    Reihenfolge: (1) fork, aber NUR unter Linux (das Kind erbt die
+    geladenen Module); macOS bietet fork zwar an, aber es ist dort nicht
+    fork-sicher (Accelerate-BLAS der numpy-Wheels, System-Frameworks) und
+    deshalb seit Python 3.8 nicht mehr Standard; (2) sonst der Standard-
+    Kontext, wenn `fn` in `__main__` liegt (CLI-Lauf unter Windows/macOS);
+    (3) sonst sequenziell. Jeder Job ist per Seed deterministisch, das
+    Prozessmodell aendert also keine Zahl - nur die Wall-Zeit.
+    Fork-Kinder erben Prozesszustand des Elternprozesses: den BLAS-Pin und
+    einen dort bereits gecachten VAL-BIT-Entscheid (gleicher JIT-Code, also
+    korrekt; geprueft wird dann einmal im Elternprozess, nicht je Worker)."""
+    if max_workers <= 1:
+        return None
+    if _fork_is_safe():
+        return ProcessPoolExecutor(
+            max_workers=max_workers,
+            mp_context=multiprocessing.get_context("fork"))
+    if getattr(fn, "__module__", None) == "__main__":
+        return ProcessPoolExecutor(max_workers=max_workers)
+    print(f"{getattr(fn, '__qualname__', fn)}: kein fork-Kontext und nicht "
+          "als Skript gestartet -> sequenziell (Wall laenger, Ergebnisse "
+          "identisch)", flush=True)
+    return None
+
+
+def map_jobs(fn, jobs, max_workers: int, chunksize: int = 1) -> list:
+    """`[fn(j) for j in jobs]` in Eingabe-Reihenfolge, parallel ueber
+    `job_pool`, sonst sequenziell."""
+    ex = job_pool(fn, max_workers)
+    if ex is None:
+        return [fn(j) for j in jobs]
+    with ex:
+        return list(ex.map(fn, jobs, chunksize=chunksize))
 
 
 _core = _load("phi_hex_core_v2", "260602 PHI HEX core v2 2 hardened.py")
@@ -346,6 +400,80 @@ if HAVE_NUMBA:
         return out
 
 
+# VAL-BIT (Codex #75 P1, AGENTS.md "Kernel-Zwillinge nur mit Bit-Identitaets-
+# Gate"): gleiche Seeds, voller Kernel (_wolff_sweep + _measure + _run) auf
+# zwei Gittern verschiedener Koordinationszahl; Python- und Numba-Ausgabe
+# muessen bitgleich sein, sonst ist Numba nicht produktionsfaehig.
+VAL_BIT_CASES = (("honeycomb", 6, 0.57), ("triangular", 5, 1.40))
+VAL_BIT_SWEEPS = (2, 4)            # (n_therm, n_meas)
+VAL_BIT_SEED = 45_999_001
+_VAL_BIT_OK: bool | None = None    # je Interpreter (fork-Kinder erben ihn)
+
+
+def _kernel_args(lat: Lat) -> tuple:
+    nbr, deg = _nbr_arrays(lat)
+    return (nbr, deg, lat.ei, lat.ej,
+            np.ascontiguousarray(lat.disp[:, 0]),
+            np.ascontiguousarray(lat.disp[:, 1]))
+
+
+def backend_bit_identity() -> bool:
+    """True genau dann, wenn _nb_run und _py_run fuer alle VAL_BIT_CASES
+    dieselbe Messreihe (dtype, shape, jedes Bit) liefern. Ohne Numba gibt es
+    nichts zu vergleichen (True; produziert wird dann mit _py_run)."""
+    if not HAVE_NUMBA:
+        return True
+    n_therm, n_meas = VAL_BIT_SWEEPS
+    # _py_run seedet den GLOBALEN numpy-RNG. Der Vergleich darf den Zustand
+    # des Aufrufers nicht veraendern (sonst haengt eine spaetere
+    # np.random-Ziehung davon ab, ob das Gate schon gelaufen ist).
+    state = np.random.get_state()
+    try:
+        for name, L, T in VAL_BIT_CASES:
+            lat = build(name, L)
+            args = _kernel_args(lat) + (1.0 / T, n_therm, n_meas,
+                                        VAL_BIT_SEED)
+            py = _py_run(np.zeros(lat.n), *args)
+            nb = _nb_run(np.zeros(lat.n), *args)
+            # tobytes statt array_equal: NaN == NaN und -0.0 != 0.0, also
+            # echte Bit-Identitaet; ein beidseitiges NaN bestaetigt aber
+            # keinen Kernel.
+            if not (py.dtype == nb.dtype and py.shape == nb.shape
+                    and bool(np.all(np.isfinite(py)))
+                    and py.tobytes() == nb.tobytes()):
+                return False
+        return True
+    finally:
+        np.random.set_state(state)
+
+
+def production_backend_name() -> str:
+    """Welcher Kernel `production_run_backend` in diesem Prozess herausgibt
+    ("numba" nur nach bestandenem VAL-BIT, sonst Abbruch dort)."""
+    return "numba" if production_run_backend() is not _py_run else "python"
+
+
+def production_run_backend():
+    """Der EINE Zugang zum Mess-Kernel fuer Produktion (PHY045 Teil B/C,
+    PHY046, PHY048, PHY051). Numba wird nur nach bestandenem VAL-BIT
+    herausgegeben; das Ergebnis ist je Interpreter gecacht. Ein spawn-/
+    forkserver-Worker prueft seine eigene Laufzeit vor seinem ersten Job;
+    ein fork-Worker erbt den Cache des Elternprozesses (gleicher Code und
+    dieselbe Laufzeit, daher gueltig). Faellt
+    VAL-BIT, wird NICHT still auf Python umgeschaltet (das wuerde zwei
+    Backends in einer Kampagne mischen), sondern abgebrochen."""
+    global _VAL_BIT_OK
+    if not HAVE_NUMBA:
+        return _py_run
+    if _VAL_BIT_OK is None:
+        _VAL_BIT_OK = bool(backend_bit_identity())
+    if not _VAL_BIT_OK:
+        raise RuntimeError(
+            "VAL-BIT failed: PHY045 Numba kernel is not bit-identical to "
+            "the Python kernel; Numba backend is not production-eligible")
+    return _nb_run
+
+
 def mc_point(args: tuple) -> dict:
     """Ein (Gitter, L, T, Seed)-Lauf. Start: geordnet (Tieftemperatur-
     Phase), Thermalisierung n_therm Wolff-Sweeps."""
@@ -353,7 +481,7 @@ def mc_point(args: tuple) -> dict:
     lat = build(name, L)
     nbr, deg = _nbr_arrays(lat)
     th = np.zeros(lat.n)
-    run = _nb_run if HAVE_NUMBA else _py_run
+    run = production_run_backend()
     t0 = time.perf_counter()
     data = run(th, nbr, deg, lat.ei, lat.ej,
                np.ascontiguousarray(lat.disp[:, 0]),
@@ -433,8 +561,7 @@ def part_b(n_seeds=4, n_therm=2000, n_meas=20000, max_workers=4,
                 jobs.append((name, L, T, 45_000_000 + 100_000 * lid
                              + 1000 * L + s, n_therm, n_meas))
     jobs.sort(key=lambda j: -j[1])
-    with ProcessPoolExecutor(max_workers=max_workers) as ex:
-        res = list(ex.map(mc_point, jobs))
+    res = map_jobs(mc_point, jobs, max_workers)
     out = {}
     for name, (T, Ls) in plan.items():
         rows = []
@@ -500,7 +627,7 @@ def wolff_efficiency_point(args: tuple) -> dict:
     lat = build(name, L)
     nbr, deg = _nbr_arrays(lat)
     th = np.zeros(lat.n)
-    run = _nb_run if HAVE_NUMBA else _py_run
+    run = production_run_backend()
     t0 = time.perf_counter()
     data = run(th, nbr, deg, lat.ei, lat.ej,
                np.ascontiguousarray(lat.disp[:, 0]),
@@ -527,8 +654,7 @@ def part_c(Ls=(32, 64, 128), temps=(0.56, 0.58, 0.60), n_seeds=2,
              n_therm, n_meas)
             for L in Ls for k, T in enumerate(temps) for s in range(n_seeds)]
     jobs.sort(key=lambda j: -j[1])
-    with ProcessPoolExecutor(max_workers=max_workers) as ex:
-        res = list(ex.map(wolff_efficiency_point, jobs))
+    res = map_jobs(wolff_efficiency_point, jobs, max_workers)
     out = {}
     for L in Ls:
         g = [r for r in res if r["L"] == L]

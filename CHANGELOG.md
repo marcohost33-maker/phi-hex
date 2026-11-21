@@ -3,6 +3,142 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-11-21] Codex-Review am Supersession-PR #75: 6 Befunde eingebaut
+
+Review von Codex auf Kopf `1e21714` (2026-11-19): 2x P1, 4x P2, alle offen.
+Kein Messlauf, keine neue Zahl; gepinnte Evidenz in `results/` ist
+byte-unveraendert. Gestapelt auf dem #75-Kopf.
+
+### Fixed
+- **P1 BLAS-Pin (PHY044-WL, PHY045, PHY046, PHY048):** `os.environ[...] = "1"`
+  statt `setdefault`. Ein vom Runner geerbtes `OPENBLAS_NUM_THREADS=8`
+  ueberlebte vorher; ab L=64 aendert das die Aggregate bitweise und
+  verfaelscht die Kalibrier-Wall-Zeiten (Befund #50). Damit erzwingen alle
+  sechs Numba-Module den Pin.
+- **P1 Numba-Backend ohne Bit-Identitaets-Gate (PHY045 -> 046/048/051):**
+  `mc_point`, die Effizienzmessung und die `_job` von PHY046/048/051 waehlten
+  `_nb_run` allein aus der Verfuegbarkeit von Numba. Neu:
+  `backend_bit_identity()` vergleicht den vollen Kernel (Sweep + Messung +
+  Lauf) bei gleichem Seed auf honeycomb (z=3) und triangular (z=6) bitweise
+  (`tobytes`, endliche Werte verlangt); `production_run_backend()` gibt Numba
+  nur danach heraus, gecacht je Interpreter (jeder Pool-Worker prueft seine
+  Laufzeit). Faellt der Vergleich, wird abgebrochen - kein stiller Wechsel
+  auf Python, der zwei Backends in einer Kampagne mischen wuerde.
+  Gemessen 2026-11-21 (Linux, py3.13, numba 0.68.1, numpy 2.5.5):
+  bitgleich auf allen vier Gittern.
+- **P2 PHY046 Jackknife:** `_jk_se` verwarf fehlende Replikate und rechnete
+  die SE aus den Ueberlebenden (sieben gleiche Werte + ein `None` ergaben
+  sigma = 0). Jetzt `None`, sobald ein Replikat fehlt oder nicht endlich ist
+  -> Regel S2 (wie PHY051).
+- **P2 PHY046 Budget-Stop S0:** `W4V2_WALL_BUDGET_H` wurde nie gelesen.
+  `produce` rechnet in ganzen L-Bloecken (groesstes L zuerst, wie bisher) und
+  prueft das Budget zwischen den Bloecken; restliche L stehen als
+  `unmeasured_L` (NaN) im Produkt. `analyse` zaehlt ein L nur als gemessen,
+  wenn jeder (T, Seed)-Wert endlich ist, und gibt bei unvollstaendiger Leiter
+  `NEGATIVE_RESULT` / Regel `S0` aus, bevor S1/S2/C/I greifen. Report und
+  Text weisen den Stop aus.
+- **P2 PHY046 Varianten v2/v3:** v3 war das letzte UEBERLEBENDE Crossing,
+  nicht das registrierte Paar (128,256); kreuzte es nicht, lief (96,192) als
+  "groesstes Paar" in sigma_FSS. Jetzt Nachschlagen ueber die Paar-Identitaet
+  (`None`, wenn es nicht kreuzt). Derselbe Fehler bei v2 ("ohne das kleinste
+  Paar" verwarf positionsweise) ist mitbehoben - von Codex nicht gemeldet.
+- **P2 PHY049/PHY050 Fingerprint:** `src/260607 PHY031 ...` (honeycomb-
+  Builder, an den `PHY045.build` delegiert) steht jetzt in beiden
+  `_RUNTIME_SOURCE_PATHS`. Eine geaenderte Kantenreihenfolge haette sonst
+  Resume und Adjudikation passiert. Das ist eine Verschaerfung von v03a
+  Abschnitt 12 ("insbesondere ... PHY045/PHY049/PHY050"); die Spec-Dateien
+  sind unveraendert (sie stehen selbst im Fingerprint). Es gibt keinen
+  Produktions-Checkpoint, der dadurch ungueltig wuerde.
+
+### Evidenz
+- Die committeten Reports PHY046 (W4 v02) und PHY048 regenerieren aus ihren
+  eigenen Daten unveraendert: JSON rel 1e-9 ueber alle committeten Felder,
+  PHY046-Textreport bytegleich; neu sind nur `unmeasured_L`/`wall_budget_h`
+  bzw. `ladder_used`/`ladder_complete`. Im committeten Lauf kreuzen alle fuenf
+  Paare, alle acht Jackknife-Replikate existieren, Wall 2628 s << 24 h - keiner
+  der drei PHY046-Fehler war dort wirksam. Das W4-v02-FINDING bleibt.
+- `tests/test_codex75_review_findings.py`: 64 Tests. Diskriminierung gemessen
+  (2026-11-21, py3.13): 24 Mutanten (je ein Guard zurueckgenommen) -> 24 rot,
+  jeweils per Assertion.
+- `tests/test_codex75_review_findings.py` deckt beide Runden (siehe unten).
+
+### Selbstpruefung der eigenen Lieferung (zweite Runde, gleicher Tag)
+Kritische Durchsicht des ersten Commits (`1443df0`) hat drei Luecken
+gefunden; alle drei sind gemessen, behoben und mit Regression belegt.
+- **S-1 Prozess-Pool unter Python 3.14 (gemessen, vorher nur vermutet):**
+  seit 3.14 ist `forkserver` der POSIX-Standard. Dessen Kinder koennen ein
+  per Kunstnamen geladenes Modul nicht importieren; `produce` von PHY046 und
+  PHY048 sowie `part_b` von PHY045 brachen mit `BrokenProcessPool` ab
+  (py3.14.6, 2 Worker), PHY051 nicht (eigener fork-Pool). Betroffen ist der
+  programmatische Aufruf, nicht der CLI-Lauf (dort liegt der Job in
+  `__main__`). Kein falsches Ergebnis, aber ein Absturz - und kein Test
+  uebte bisher irgendeinen parallelen Pfad. Neu: `PHY045.job_pool` /
+  `map_jobs` (fork explizit, wo es ihn gibt; sonst Standard-Kontext nur als
+  gestartetes Skript; sonst sequenziell), benutzt von PHY045/046/048/049;
+  PHY044-WL `_run_jobs` mit derselben Logik lokal. Anders als der
+  PHY051-Pool bleibt ein CLI-Lauf unter Windows parallel. Test: frischer
+  Interpreter mit erzwungenem `forkserver`, 2 Worker, jeder parallele Pfad
+  bitgleich zum sequenziellen. PHY042 (`run_phy042`, nur CLI) und der
+  PHY051-Pool sind unveraendert.
+- **S-2 Nebenwirkung des VAL-BIT-Gates:** der Python-Kernel seedet den
+  globalen numpy-RNG; das Gate (erster Commit) verstellte damit den
+  RNG-Zustand des Aufrufers beim ersten Kernel-Zugriff. Jetzt wird der
+  Zustand gesichert und wiederhergestellt, auch bei Fehlschlag.
+- **S-3 Kernel im Produkt:** `PHY046.produce` prueft VAL-BIT im
+  Elternprozess, bevor Rechenzeit fliesst, und schreibt `backend`
+  ("numba"/"python") ins Produkt und in den Report. Der committete Lauf vom
+  2026-09-26 traegt `None` - sein Kernel ist nicht protokolliert und wird
+  nicht nachtraeglich behauptet.
+- Korrektur einer eigenen Aussage: der erste PR-Text nannte den Pool-Punkt
+  "nicht getestet, nur aus dem Code gelesen" und listete ihn als offen. Er
+  ist jetzt gemessen und geschlossen.
+- Nicht geaendert, bewusst: PHY048 hat weiter keinen Budget-Stop (post hoc,
+  kein vorregistriertes Budget); die BLAS-Pins wirken nur, wenn numpy beim
+  Modul-Import noch nicht geladen ist (CLI, Pool-Worker) - der Wolff-Kernel
+  selbst ruft kein BLAS, betroffen sind Aggregate ab L=64 im WL-Pfad.
+
+### Unabhaengige Review (dritte Runde, gleicher Tag)
+Ein frischer Review-Agent ohne Kenntnis der eigenen Schlussfolgerungen hat
+`1e21714..f30dc29` geprueft: kein Fehler, der eine committete Zahl aendert
+oder ein Gate umgeht; die PHY051-Reports regenerieren bytegleich (vom Test
+bisher nicht abgedeckt, hier von Hand gefahren). Vier Punkte, alle behoben:
+- **Wirkungsloser Test:** der Frischprozess-Test zum BLAS-Pin pruefte den
+  Endzustand. Fuer PHY046/PHY048 war er nicht diskriminierend, weil PHY045
+  den Pin NACH deren numpy-Import nachtraeglich setzt (ein zurueckgedrehtes
+  `setdefault` blieb gruen; nur der AST-Test fing es). Neu: eine Import-
+  Sonde misst die Variablen im Moment des ersten numpy-Imports - nur dann
+  liest OpenBLAS sie -, fuer alle sechs Numba-Module, mit Positivkontrolle.
+- **fork auf macOS:** `job_pool` (und PHY044 `_run_jobs`) haetten auf macOS
+  fork gewaehlt, das dort angeboten, aber nicht fork-sicher ist
+  (Accelerate-BLAS der numpy-Wheels). fork jetzt nur unter Linux. Die
+  Aussagen "jeder Pool-Worker prueft seine Laufzeit" bzw. "Pin wirkt im
+  Pool-Worker" waren fuer fork falsch (Kinder erben Pin und VAL-BIT-Cache
+  des Elternprozesses - gleicher Code, also korrekt, aber einmal geprueft);
+  Docstrings und Kommentare korrigiert.
+- **S0-Grenzfall dokumentiert und getestet:** ein Block, der innerhalb des
+  Budgets beginnt, laeuft zu Ende und zaehlt, auch wenn er es
+  ueberschreitet (Spec v02: nur "fehlende L" werden als nicht gemessen
+  berichtet). PHY049 prueft mit `>=` und kann - anders als PHY046/051 - auch
+  den ersten Block auslassen; das ist dort vorregistriert (v03a Abschnitt
+  9) und bleibt.
+- **v2-Waechter:** `len(Ls) >= 4` passte nicht mehr zur Bindung an das
+  registrierte kleinste Paar; jetzt `len(keep) >= 3` (genug Punkte fuer den
+  3-Parameter-Fit nach dem Weglassen). Kein Effekt auf committete Zahlen.
+- Der Forkserver-Ende-zu-Ende-Test belegt jetzt, dass wirklich ein Pool lief
+  (vorher waere er auf einer Plattform ohne fork leer durchgelaufen).
+
+### Belege
+- Die committeten Reports PHY046 und PHY048 regenerieren weiterhin
+  unveraendert (Vollvergleich im Test).
+- Diskriminierung gemessen (2026-11-21, py3.13): 32 Mutanten (je ein Guard
+  zurueckgenommen, beide Runden) -> 32 rot, jeweils per Assertion.
+- Verified 2026-11-21 (Linux, numba 0.68.1, numpy 2.5.5), volle CI-Matrix
+  lokal: `pytest -m "not slow"` py3.12.3 / py3.13.18 / py3.14.6 je 486
+  passed, 4 deselected (vor beiden Runden 411); py3.13 `ruff check src
+  tests` sauber, `compileall src` ok auf allen drei, `pytest -m slow`
+  4 passed. Nicht gefahren: Windows, GitHub-CI (laeuft nur fuer PRs gegen
+  main; dieser PR ist auf den #75-Zweig gestapelt).
+
 ## [2026-11-19] Supersession #50/#52/#54: nicht ersetzte Teile auf main
 
 Supersedes #50 (`21b51d1`), #52 (`c92d322`), #54 (`8c92301`). Frischer Zweig

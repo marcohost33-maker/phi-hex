@@ -16,15 +16,18 @@ from __future__ import annotations
 
 import os
 
+# ERZWUNGEN (Codex #75 P1, AGENTS.md): ein vom Runner geerbtes
+# OPENBLAS_NUM_THREADS=8 haette `setdefault` ueberlebt. Wirkt nur, wenn numpy
+# noch nicht geladen ist (CLI-Lauf). Fork-Worker erben den Prozess-
+# zustand des Elternprozesses (Pin und BLAS-Pool inklusive).
 for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
-    os.environ.setdefault(_v, "1")
+    os.environ[_v] = "1"
 
 import json  # noqa: E402
 import math  # noqa: E402
 import sys  # noqa: E402
 import time  # noqa: E402
 import importlib.util  # noqa: E402
-from concurrent.futures import ProcessPoolExecutor  # noqa: E402
 from pathlib import Path  # noqa: E402
 
 import numpy as np  # noqa: E402
@@ -62,7 +65,7 @@ def _job(args: tuple) -> dict:
     lat = _p45.build("square", L)
     nbr, deg = _p45._nbr_arrays(lat)
     th = np.zeros(lat.n)
-    run = _p45._nb_run if _p45.HAVE_NUMBA else _p45._py_run
+    run = _p45.production_run_backend()   # VAL-BIT-gebunden
     t0 = time.perf_counter()
     d = run(th, nbr, deg, lat.ei, lat.ej,
             np.ascontiguousarray(lat.disp[:, 0]),
@@ -81,8 +84,7 @@ def produce(max_workers: int = 4) -> dict:
             for s in range(N_SEEDS)]
     jobs.sort(key=lambda j: (-j[0], j[1], j[3]))
     t0 = time.perf_counter()
-    with ProcessPoolExecutor(max_workers=max_workers) as ex:
-        res = list(ex.map(_job, jobs, chunksize=1))
+    res = _p45.map_jobs(_job, jobs, max_workers)
     area = {L: np.zeros((len(T_GRID), N_SEEDS)) for L in LADDER}
     cpu = 0.0
     for r in res:

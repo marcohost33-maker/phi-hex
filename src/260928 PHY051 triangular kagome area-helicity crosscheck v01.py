@@ -135,7 +135,7 @@ def _job(args: tuple) -> dict:
     lat = _p45.build(lattice, L)
     nbr, deg = _p45._nbr_arrays(lat)
     th = np.zeros(lat.n)
-    run = _p45._nb_run if _p45.HAVE_NUMBA else _p45._py_run
+    run = _p45.production_run_backend()   # VAL-BIT-gebunden
     t0 = time.perf_counter()
     d = run(th, nbr, deg, lat.ei, lat.ej,
             np.ascontiguousarray(lat.disp[:, 0]),

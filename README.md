@@ -304,6 +304,22 @@ Vollvergleich des regenerierten Reports, SOURCES-Korrekturzeile zum
 nicht gemessenen Lauf-Intervall). Beide committeten Reports regenerieren
 damit unveraendert.
 
+**Codex-Review am Supersession-PR #75 (2026-11-19) eingebaut.** Sechs Befunde
+(2x P1, 4x P2), alle an der W4-Linie PHY044-WL..PHY050, kein Messlauf:
+BLAS-Pin erzwungen statt `setdefault` (PHY044-WL/045/046/048); der
+PHY045-Numba-Kernel wird nur noch nach bestandenem Bit-Identitaets-Vergleich
+mit dem Python-Kernel herausgegeben (`production_run_backend`, gilt fuer
+PHY045/046/048/051); PHY046: Jackknife fail-closed, Budget-Stop S0 in
+Produktion und Verdikt, v2/v3 an die registrierten Paare gebunden;
+PHY049/PHY050: der honeycomb-Builder PHY031 steht im Provenienz-Fingerprint.
+Die committeten PHY046- und PHY048-Reports regenerieren unter dem gehaerteten
+Code unveraendert (JSON rel 1e-9, PHY046-Text bytegleich) - das W4-v02-FINDING
+aendert sich nicht. Tests: `tests/test_codex75_review_findings.py`.
+Selbstpruefung am selben Tag: der parallele Pfad von PHY045/046/048 brach
+unter Python 3.14 (Standard `forkserver`) mit `BrokenProcessPool` ab und war
+ungetestet - behoben ueber `PHY045.job_pool` (gilt auch fuer PHY049 und
+PHY044-WL), parallel und sequenziell sind bitgleich getestet.
+
 ## Naechste Stufe nach PHY043 + Review-Nachtrag 2026-08-08
 
 1. Mehr Produktions-Statistik, damit die Crossings (24,48)/(32,48) in-Domaene und belastbar werden (NR-PHY042-02 aufloesen).
