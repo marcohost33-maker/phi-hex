@@ -219,6 +219,107 @@ Der historische PHY042-JSON bleibt unveraendert; sein
 `domain_tmax_spread004["24"]=0.67` ist als Daten-Semantik-Erratum
 dokumentiert und darf nicht als gemessene Spread-Domaene gelesen werden.
 
+## Supersession #50/#52/#54 (2026-11-19): O1-Evidenz, W4 v02, W4 v03, PHY051
+
+Die nicht durch #51/#74 ersetzten Teile der PRs #50 (`21b51d1`), #52
+(`c92d322`) und #54 (`8c92301`) sind byte-identisch uebernommen (Liste
+"uebernommen / bewusst nicht + Grund" im PR-Text). PHY041/042/043 bleiben auf
+dem Stand von #51/#74; PHY042 hat nur einen additiven Legacy-Block fuer
+PHY044-WL erhalten. Vorregistrierungen sind nur ueber ihre Original-Commits
+als "vor den Daten" belegt: `768fb19` (W4 v01, #50), `82e2738` (O1-Entscheid +
+W4 v02, #50), `994fdf9` (PHY051, #54).
+
+**PHY044 traegt zwei Module (Alias-Tabelle, keine Umnummerierung).** Die
+Vorregistrierungen und gepinnten Reports nennen "PHY044"; Umbenennen wuerde
+deren Bezuege brechen.
+
+| Alias | Datei | Rolle |
+|---|---|---|
+| PHY044-WL | `src/260926 PHY044 honeycomb wl calibration v01.py` | blinde WL-Kalibrierung K1-K3 + bit-identischer Numba-Kernel; gelaufen (`results/260926 PHY044 ... report.*`); W4-Konstanten der #50-Prereg v01 |
+| PHY044-W4 | `src/260927 PHY044 honeycomb w4 calibration v01.py` | Kalibrier-Runner der main-Prereg `spec/260927 ... w4 preregistration v01.md`; noch kein Report |
+
+**Welche W4-Vorregistrierung gilt.** Vertrag fuer W4 ist
+`spec/260927 PHI HEX w4 preregistration v01.md` (main; Ledger statt
+Min/Max-Band, >= 3 WL-Walker je L). Die #50-Specs `spec/260926 ... w4
+honeycomb preregistration v01.md`/`v02.md` sind Lineage des tatsaechlich
+gelaufenen W4-v02; ihr Band B = [0.560, 0.580] stammt aus heute
+**superseded** Kanaelen (Ledger oben) und ist nur noch historisch
+(`tests/test_phy044_wl_calibration.py` prueft das).
+
+**W4 v02 (PHY046) — FINDING unter eigener Prereg v02, kein W4-Ergebnis nach
+main-Vertrag.** Wolff, Upsilon pro Flaeche, L = 32..256, 8 Seeds:
+T_W4 = 0.5649, sigma_tot = 0.0040, Verdikt gegen das historische Band B:
+CONSISTENT. Post hoc (nicht vorregistriert) gegen den aktuellen Ledger
+gelesen liegt der Wert 1.2-1.9 % unter den Ledger-Ankern 0.572-0.576
+(gegen den normierungsfreien Okabe/Otsuka-Wert 0.573: 1.4 %); das ist eine
+offene Diskrepanz, keine Bestaetigung. Interpretationsnote in der #52-Fassung
+(`results/260926 PHY046 W4 v02 interpretation note.md`): die fruehere
+Hypothese "Literatur ist per Site" ist dort fuer PTEP und de Andrade v4
+primaertextlich verworfen. PHY047 (Neuauswertung committeter Daten pro
+Flaeche) und PHY048 (square-V&V der v02-Pipeline, **post hoc**) gehoeren dazu.
+
+**Audit O1 (Helicity-Normierung im NK-Kriterium) — formal weiterhin OFFEN.**
+Die Spec `spec/260926 PHI HEX O1 helicity normalization decision v01.md`
+(#50) und PHY045 sprechen fuer "pro Flaeche"; dieses README fuehrt O1 trotzdem
+nicht als entschieden, solange kein Cross-Family-Review vorliegt. Die
+Beleglage mit ihren Grenzen:
+
+- PHY045 Teil B (eta gegen Upsilon, Wolff): per Site auf triangular/
+  honeycomb/kagome mit z = -30.2 / +53.8 / +22.3 verworfen, pro Flaeche
+  z = -0.25 / -1.83 / -0.41. **Grenzen:** die Gate-Schwellen wurden post hoc
+  gesetzt (Report: "Schwellen post-hoc"); die square-Kontrolle trifft R = 1
+  nur auf 0.9885(31) (z = -3.7), also ~1.2 % Pipeline-Systematik.
+- PHY051 triangular (vorregistriert, #54): pro Flaeche T_P = 1.4635, z = -0.26
+  gegen die HT-Reihe 1.4654(17); per Site 1.4160 (z = -3.36). Das ist der
+  staerkste normierungsfreie Einzelbeleg.
+- PHY051 kagome: pro Flaeche 0.8155 (z = -2.31), per Site 0.8318 (z = +0.79)
+  gegen Okabe/Otsuka 0.825 "rough estimate" **ohne** Fehlerbalken (z nur mit
+  eigener Unsicherheit) - diskriminiert nicht.
+- PHY051s eigenes vorregistriertes O1-Label ist in **beiden** Reports
+  `NEGATIVE_RESULT` (per-Site-Kanal S2). Formal entscheidet PHY051 O1 also nicht.
+- Normierungs-Provenienz der Referenzen: Nachtrag 2026-11-19 in
+  `spec/260703 ... conventions audit v01.md` (beide Helicity-Familien
+  normieren mit `4/(3 sqrt(3))`, d.h. pro Flaeche).
+- Offen: ob die gemeinsame Unterschaetzung pro Flaeche (honeycomb ~1.4 %,
+  kagome ~1.2 %, square-Kontrolle ~1.2 %) eine Pipeline-Systematik ist. Genau
+  das soll W4 v03 normierungsfrei pruefen.
+
+Bis zum Entscheid gilt der Abschnitt *Konvention: Helicity-Modulus per Site*
+oben unveraendert; der core-v2-Docstring aus #50 ("per Site falsifiziert")
+ist deshalb **nicht** uebernommen.
+
+**W4 v03 (#52) — Engine ohne Produktionsdaten.**
+`spec/260927 ... preregistration v03 correlation-ratio.md` + `v03a fss
+estimator hardening.md`: normierungsfreier Diskriminator
+R_L = <g(L/2)>/<g(L/4)> (Methode wie Okabe/Otsuka). PHY049 ist die
+Mess-/Preflight-Engine (Checkpoint/Resume, VAL-BIT), PHY050 der
+deterministische Recovery-Gate auf **synthetischen** Daten
+(`results/260928 PHY050 deterministic G4 gate.json`, Physik-Interpretation
+ausdruecklich false). Es gibt noch keinen W4-v03-Messwert.
+
+**PHY051 (#54) mit eingebauten Codex-Befunden.** Die sieben offenen
+Codex-Befunde von #54 sind eingebaut (Plan-Pruefung der Eingabe,
+O1-Label nur bei bestandenen Gates, Jackknife fail-closed, BLAS erzwungen,
+Vollvergleich des regenerierten Reports, SOURCES-Korrekturzeile zum
+nicht gemessenen Lauf-Intervall). Beide committeten Reports regenerieren
+damit unveraendert.
+
+**Codex-Review am Supersession-PR #75 (2026-11-19) eingebaut.** Sechs Befunde
+(2x P1, 4x P2), alle an der W4-Linie PHY044-WL..PHY050, kein Messlauf:
+BLAS-Pin erzwungen statt `setdefault` (PHY044-WL/045/046/048); der
+PHY045-Numba-Kernel wird nur noch nach bestandenem Bit-Identitaets-Vergleich
+mit dem Python-Kernel herausgegeben (`production_run_backend`, gilt fuer
+PHY045/046/048/051); PHY046: Jackknife fail-closed, Budget-Stop S0 in
+Produktion und Verdikt, v2/v3 an die registrierten Paare gebunden;
+PHY049/PHY050: der honeycomb-Builder PHY031 steht im Provenienz-Fingerprint.
+Die committeten PHY046- und PHY048-Reports regenerieren unter dem gehaerteten
+Code unveraendert (JSON rel 1e-9, PHY046-Text bytegleich) - das W4-v02-FINDING
+aendert sich nicht. Tests: `tests/test_codex75_review_findings.py`.
+Selbstpruefung am selben Tag: der parallele Pfad von PHY045/046/048 brach
+unter Python 3.14 (Standard `forkserver`) mit `BrokenProcessPool` ab und war
+ungetestet - behoben ueber `PHY045.job_pool` (gilt auch fuer PHY049 und
+PHY044-WL), parallel und sequenziell sind bitgleich getestet.
+
 ## Naechste Stufe nach PHY043 + Review-Nachtrag 2026-08-08
 
 1. Mehr Produktions-Statistik, damit die Crossings (24,48)/(32,48) in-Domaene und belastbar werden (NR-PHY042-02 aufloesen).

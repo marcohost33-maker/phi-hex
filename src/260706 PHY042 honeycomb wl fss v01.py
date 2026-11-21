@@ -831,6 +831,62 @@ def run_phy042(Ls=(24, 32, 48), n_walkers=3, master_seed=42,
     }
 
 
+# ---------------------------------------------------------------------------
+# Legacy-API fuer PHY044-WL (260926) — Supersession #50/#52/#54, 2026-11-19.
+# PHY044-WL (src/260926 PHY044 honeycomb wl calibration v01.py, byte-identisch
+# aus #50 21b51d1) importiert diese fuenf Symbole aus PHY042. Wortlaut aus
+# #50 21b51d1 (dort Z.212-243, 269-276, 758-759), rein ADDITIV: keine
+# main-Definition wird ersetzt, `_pair_domain_limit` (#50: nur Obergrenze,
+# "partial" quotierbar) wird bewusst NICHT uebernommen — der Claim-Pfad
+# laeuft ausschliesslich ueber _common_domain/_assess_pairs (#51/#74).
+# NaN-Semantik: `_walker_domain` ruft das main-`_validity_domain` (Annahme
+# nur bei WAHREM `s < thr`), d.h. ein NaN-Spread beendet die Domaene
+# (fail-closed); in #50 galt dort noch `s >= thr` (NaN = gueltig).
+DOMAIN_THRESHOLD = 0.04  # VAL-A-Y2-Toleranz (Lauf-1-Haertung)
+_UNMEASURED_REASON = (
+    "n_walkers={n} < 2: walker spread undefined, no sampler validity "
+    "domain measured (single-walker L; PHY041 bridge). Not a measurement.")
+
+
+def _walker_domain(y2_curves: list, t_grid: np.ndarray,
+                   thr: float = DOMAIN_THRESHOLD) -> dict:
+    """Sampler-Validitaets-Domaene EINES L aus den Y2-Kurven seiner Walker.
+
+    >= 2 Walker -> gemessen: spread = max-min je T, mask = _validity_domain,
+    tmax = groesstes T der Domaene bzw. None, wenn die gemessene Domaene
+    LEER ist (dann ist jedes Paar mit diesem L fail-closed NICHT quotierbar).
+    < 2 Walker -> NICHT gemessen: spread = tmax = None, reason gesetzt;
+    mask = alles True nur als konservative Gate-Maske.
+    """
+    n = len(y2_curves)
+    if n < 2:
+        return {"measured": False, "n_walkers": n, "spread": None,
+                "mask": np.ones(len(t_grid), dtype=bool), "tmax": None,
+                "reason": _UNMEASURED_REASON.format(n=n)}
+    stack = np.stack([np.asarray(c, dtype=float) for c in y2_curves])
+    spread = stack.max(axis=0) - stack.min(axis=0)
+    mask = _validity_domain(spread, thr)
+    tmax = float(t_grid[mask].max()) if mask.any() else None
+    return {"measured": True, "n_walkers": n, "spread": spread, "mask": mask,
+            "tmax": tmax,
+            "reason": None if tmax is not None else
+            f"measured: walker spread >= {thr} already at the lowest T "
+            "(empty validity domain)"}
+
+
+def _domain_status(d: dict) -> dict:
+    """JSON-taugliche Sicht auf _walker_domain (ohne Arrays)."""
+    return {"measured": d["measured"], "n_walkers": d["n_walkers"],
+            "tmax": d["tmax"],
+            "max_spread": (None if d["spread"] is None
+                           else float(np.max(d["spread"]))),
+            "reason": d["reason"]}
+
+
+PHY042_REPORT_V01 = ("results/260707 PHY042 honeycomb wl-fss L24-32-48 "
+                     "gate report.json")
+
+
 def _clean(o):
     if o is None:
         return None
