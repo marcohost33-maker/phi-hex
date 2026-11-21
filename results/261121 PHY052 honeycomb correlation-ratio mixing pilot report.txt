@@ -1,0 +1,24 @@
+PHY052 - Mixing-Pilot W4 v03 (PHY049-Kernel, kalt/heiss)
+Coworker Research / Coworkerz, 2026-11-21
+======================================================================
+Spec: spec/261121 PHI HEX phy052 w4 v03 mixing pilot preregistration v01.md
+L [48, 96, 192], T [0.56, 0.575, 0.595], 4 Ketten je Zelle (geordnet/zufaellig), 1000+4000 Sweeps, Backend numba
+Wall 273 s auf 4 Prozessen, CPU 1081 s
+Gate: rhat(ratio_influence) <= 1.01, ess_bulk >= 400, |z kalt-heiss| <= 3.5
+
+   L      T     R      rhat_u  ess_u   rhat_q  rhat_h  kalt-heiss z  Gate
+   48  0.560  0.9279  1.0016    4646  1.0005  1.0009   +0.25        PASS
+   48  0.575  0.9226  1.0015    4314  1.0002  1.0009   +0.28        PASS
+   48  0.595  0.9098  1.0003    5155  1.0003  1.0005   -0.30        PASS
+   96  0.560  0.9279  1.0008    4693  1.0002  1.0003   -0.33        PASS
+   96  0.575  0.9201  1.0019    5072  1.0008  1.0012   +1.34        PASS
+   96  0.595  0.9063  1.0006    4906  1.0007  1.0005   +1.13        PASS
+  192  0.560  0.9272  1.0002    4361  1.0003  1.0002   -0.43        PASS
+  192  0.575  0.9203  1.0006    4555  1.0005  1.0008   +0.49        PASS
+  192  0.595  0.9040  1.0004    6135  1.0004  1.0000   -0.37        PASS
+
+Entscheid: MIXING_PILOT_PASS (Design vorregistriert: True)
+
+Grenzen: Diagnostik, keine Physikzahl; ein PASS belegt
+Stationaritaet/Durchmischung im Pilot, nicht die Richtigkeit
+von T_BKT. Die Pilot-Seeds sind fuer PHY050 nicht verwertbar.

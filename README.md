@@ -306,6 +306,10 @@ ess_bulk >= 400 (Stan-`posterior`-Definitionen, gegen ArviZ validiert) und den
 Zweistart-Test kalt gegen heiss (|z| <= 3.5). Nur bei PASS und gruenem
 PHY049-Preflight darf die Produktion starten
 (`spec/261121 PHI HEX phy052 w4 v03 mixing pilot preregistration v01.md`).
+Ergebnis 2026-11-21: **MIXING_PILOT_PASS** in allen 9 Zellen (rhat max 1.0019, ess_bulk min 4314, |z kalt-heiss| max 1.34; tau_int <= 1.85 Sweeps -> 1000 Thermalisierungs-Sweeps > 539 tau_int; Bias-Aufloesung des Zweistart-Tests in R: 0.0093..0.0112 (3.5 SE); Wall 273 s).
+Grenze: der Zweistart-Test loest Bias erst ab ~0.01 in R auf; er schliesst grobe
+Thermalisierungsfehler aus, nicht kleine. Die W4-v03-Produktion laeuft ueber den
+Runner PHY053 (Freigabe -> PHY049 -> PHY050).
 
 **PHY051 (#54) mit eingebauten Codex-Befunden.** Die sieben offenen
 Codex-Befunde von #54 sind eingebaut (Plan-Pruefung der Eingabe,

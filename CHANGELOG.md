@@ -3,6 +3,33 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-11-21] PHY052 Mixing-Pilot: MIXING_PILOT_PASS; PHY053 Runner
+
+Pilot exakt nach der Vorregistrierung aus `a79c981` gerechnet (Linux,
+py3.13, numba 0.68.1, BLAS 1 Thread, 4 Prozesse).
+Report: `results/261121 PHY052 honeycomb correlation-ratio mixing pilot report.{json,txt}`.
+
+### Ergebnis (Diagnostik, keine Physikzahl)
+- **MIXING_PILOT_PASS**, alle 9 Zellen: rhat max 1.0019, ess_bulk min 4314, |z kalt-heiss| max 1.34; tau_int <= 1.85 Sweeps -> 1000 Thermalisierungs-Sweeps > 539 tau_int; Bias-Aufloesung des Zweistart-Tests in R: 0.0093..0.0112 (3.5 SE); Wall 273 s.
+- Grenze, ehrlich: die Bias-Aufloesung des Zweistart-Tests (~0.01 in R)
+  ist groesser als die Spreizung zwischen den L, um die es in W4 v03 geht
+  (~0.006 bei T = 0.595). Der Pilot schliesst grobe Thermalisierungsfehler
+  aus; das staerkere Argument ist tau_int: die Ketten vergessen ihren Start
+  nach wenigen Sweeps, 1000 Sweeps sind ein Vielfaches davon.
+
+### Added
+- `src/261121 PHY053 w4 v03 release and adjudication runner v01.py`: reiner
+  Runner ohne eigene Schwellen. `release` (Pilot-Entscheid aus den Zellen
+  neu berechnet + nativer PHY049-Preflight), `produce` (PHY049 mit den
+  vorregistrierten Defaults, Checkpoint/Resume), `adjudicate` (nur
+  `PHY050.assess_production`, 1000 Bootstrap-Replikate, Gate-Log nach
+  `results/`). Eigenes Modul, weil PHY045/049/050 im Provenienz-
+  Fingerprint des Produkts stehen und nicht mehr geaendert werden duerfen.
+- `tests/test_phy053_release_adjudication.py`: Freigabe nur mit PASS +
+  Preflight, gefaelschtes PASS-Label ohne Zellen wird abgewiesen, Produktion
+  startet ohne Freigabe nicht, Adjudikation = PHY050 unveraendert, Runner
+  nicht im Fingerprint.
+
 ## [2026-11-21] PHY052: Mixing-Pilot vor W4 v03 vorregistriert (vor Daten)
 
 Roadmap-Gate aus dem Cross-Family-Gesamtaudit vom 2026-10-04 (007acc2,
