@@ -38,8 +38,6 @@ import math  # noqa: E402
 import sys  # noqa: E402
 import time  # noqa: E402
 import importlib.util  # noqa: E402
-import multiprocessing  # noqa: E402
-from concurrent.futures import ProcessPoolExecutor  # noqa: E402
 from pathlib import Path  # noqa: E402
 
 import numpy as np  # noqa: E402
@@ -151,21 +149,15 @@ def _job(args: tuple) -> dict:
 
 
 def _pool(max_workers: int):
-    """Prozess-Pool NUR mit fork-Kontext: dieses Modul ist unter einem
-    Kunstnamen per importlib geladen (Dateiname mit Leerzeichen) und damit
-    fuer spawn/forkserver-Kinder (Windows; Python-3.14-Default auf Linux)
-    NICHT per Modulname importierbar. Ohne fork wird sequenziell gerechnet -
-    die Ergebnisse sind per (Gitter, L, T, Seed) deterministisch und vom
-    Prozessmodell unabhaengig; nur die Wall-Zeit aendert sich."""
-    if max_workers <= 1:
-        return None
-    try:
-        ctx = multiprocessing.get_context("fork")
-    except ValueError:
-        print("PHY051: kein fork-Kontext verfuegbar -> sequenziell (Wall "
-              "laenger, Ergebnisse identisch)", flush=True)
-        return None
-    return ProcessPoolExecutor(max_workers=max_workers, mp_context=ctx)
+    """Prozess-Pool ueber den gemeinsamen Helfer `PHY045.job_pool` (Codex
+    #75 P1, AGENTS.md). Vorher baute PHY051 einen eigenen fork-Pool, der auch
+    auf macOS forkte, wo fork nach der numpy-/System-Framework-Initialisierung
+    nicht sicher ist. Jetzt: fork nur unter Linux; sonst Standard-Kontext,
+    wenn PHY051 als Skript laeuft (dann liegt `_job` in `__main__` und ist
+    fuer spawn-Kinder importierbar); sonst sequenziell. Die Ergebnisse sind
+    per (Gitter, L, T, Seed) deterministisch und vom Prozessmodell
+    unabhaengig; nur die Wall-Zeit aendert sich."""
+    return _p45.job_pool(_job, max_workers)
 
 
 def produce(lattice: str, ladder=None, t_grid=None, n_seeds=PHY051_N_SEEDS,
