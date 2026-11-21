@@ -146,3 +146,52 @@ def test_committed_adjudication_if_present():
     assert rep["assessment"]["decision"] in (
         "SUPPORTED_LOW", "SUPPORTED_LITERATURE", "OVERLAP",
         "OUTSIDE_PREREGISTERED_HYPOTHESES", "INCONCLUSIVE")
+    # Das adjudizierte Produkt ist byte-genau das committete (die Bindung an
+    # den Mess-Checkout leistet der Fingerprint im Produkt selbst; ein
+    # erneutes Adjudizieren im CI waere nach jeder spaeteren Aenderung an
+    # PHY045/049/050 per Design rot und wird deshalb hier NICHT verlangt).
+    root = Path(__file__).resolve().parents[1]
+    product = root / rep["product"]["path"]
+    assert phy053._sha256(product) == rep["product"]["sha256"]
+    prod = json.loads(product.read_text(encoding="utf-8"))
+    assert prod["checkpoint_status"] == rep["product"]["checkpoint_status"]
+    assert len(prod["rows"]) == rep["product"]["rows"]
+    # Pilot-Bindung: der Report nennt den committeten PHY052-Report
+    assert rep["pilot_report_sha256"] == phy053._sha256(phy053.PILOT_REPORT)
+    a = rep["assessment"]
+    if a["physics_interpretation_enabled"]:
+        assert all(v is True for v in a["gates"].values())
+        assert a["decision"] == p50.decision_label(
+            a["primary"]["tbkt"], a["sigma_tot"], gates_passed=True)
+    else:
+        assert a["decision"] == "INCONCLUSIVE"
+
+
+def test_posthoc_diagnostic_is_labelled_and_matches_the_fit():
+    prod = t50._synthetic_product_for_validation()
+    diag = phy053.posthoc_collapse_diagnostic(copy.deepcopy(prod))
+    assert diag["post_hoc"] is True and diag["decisive"] is False
+    assert "NOT a T_BKT estimate" in diag["note"]
+    fit = p50.fit_collapse(p50.product_to_aggregate(prod))
+    assert diag["fit"]["quotable"] == fit.quotable
+    assert diag["fit"]["profile_width"] == fit.profile_width
+    lo, hi = diag["accepted_T0_range"]
+    assert hi - lo == pytest.approx(fit.profile_width, abs=2e-4)
+    assert (diag["non_quotable_reasons"] == []) == fit.quotable
+
+
+def test_committed_posthoc_diagnostic_if_present():
+    root = Path(__file__).resolve().parents[1]
+    p = root / "results" / f"{phy053.POSTHOC_STEM}.json"
+    if not p.exists():
+        pytest.skip("Post-hoc-Diagnostik noch nicht committet")
+    diag = json.loads(p.read_text(encoding="utf-8"))
+    adj = json.loads((root / "results" / f"{phy053.ADJ_STEM}.json")
+                     .read_text(encoding="utf-8"))
+    assert diag["decisive"] is False and diag["post_hoc"] is True
+    assert diag["product_sha256"] == adj["product"]["sha256"]
+    # die Diagnostik erklaert das Label, sie widerspricht ihm nicht
+    if adj["assessment"]["decision"] == "INCONCLUSIVE" and \
+            adj["assessment"]["gates"]["G0_input"]:
+        assert diag["fit"]["quotable"] is False
+        assert diag["non_quotable_reasons"]

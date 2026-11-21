@@ -1,0 +1,26 @@
+PHY053 - W4 v03 Adjudikation (PHY050.assess_production)
+Coworker Research / Coworkerz, 2026-11-21
+======================================================================
+Produkt: results/260927 PHY049 honeycomb correlation-ratio production.json (sha256 68eb7eaeb48e791efa575daec3dabf030a9eeec98235b89fdb59294f4a834ba4), Status COMPLETE, 1740 Zeilen, Wall 12446 s
+Pilot-Report sha256 beae381becb7033bfb708061d23f16aeb447c22cd0bf572dc7a207e809914bee
+
+Gates: {'G0_input': True, 'G4_synthetic_recovery': True, 'G5_power': False, 'G6_robustness': False}
+Primaer (Collapse): T_BKT = null, c = null, Score null, Profilbreite null
+Bootstrap: sigma_boot = null (None/None gueltig), 95%-Quantile [null, null]
+sigma_model = null, sigma_tot = null
+
+
+ENTSCHEID: INCONCLUSIVE (Physik-Interpretation freigegeben: False)
+Claim-Decke: Primary collapse is non-quotable.
+
+Kontext (nicht entscheidend): persistenter 2-sigma-Splay je Paar (L1,L2):
+  (48,72): 0.6000
+  (48,96): 0.5975
+  (48,144): 0.5900
+  (48,192): 0.5900
+  (72,96): null
+  (72,144): 0.5925
+  (72,192): 0.5900
+  (96,144): 0.6000
+  (96,192): 0.5900
+  (144,192): 0.6000

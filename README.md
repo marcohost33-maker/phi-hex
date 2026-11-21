@@ -311,6 +311,16 @@ Grenze: der Zweistart-Test loest Bias erst ab ~0.01 in R auf; er schliesst grobe
 Thermalisierungsfehler aus, nicht kleine. Die W4-v03-Produktion laeuft ueber den
 Runner PHY053 (Freigabe -> PHY049 -> PHY050).
 
+**W4 v03 gemessen (2026-11-21): INCONCLUSIVE - Negativ-Resultat NR-PHY049-01.**
+Produktion vollstaendig (1740/1740, 3.46 h, G0 und G4 bestanden). Der
+vorregistrierte Primaer-Collapse ist nicht quotierbar: Profilbreite 0.015 > 0.012
+(akzeptierte T0 0.566..0.581, bis an die obere Suchgrenze 0.582). Damit gibt es
+**keinen** W4-v03-T_BKT und keine Diskriminierung zwischen der W4-v02-Lage und der
+Literatur-Lage. Nachtraeglich, nicht entscheidend: Minimum bei 0.5753; persistenter
+Splay der R_L-Kurven ab T ~ 0.590..0.600. Gate-Logs:
+`results/261121 PHY053 w4 v03 production adjudication report.*`,
+`results/261121 PHY053 w4 v03 post-hoc collapse diagnostic.*`.
+
 **PHY051 (#54) mit eingebauten Codex-Befunden.** Die sieben offenen
 Codex-Befunde von #54 sind eingebaut (Plan-Pruefung der Eingabe,
 O1-Label nur bei bestandenen Gates, Jackknife fail-closed, BLAS erzwungen,

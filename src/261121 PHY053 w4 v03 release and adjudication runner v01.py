@@ -167,6 +167,98 @@ def adjudicate(prod: dict, *, product_sha256: str | None = None,
     }
 
 
+POSTHOC_STEM = "261121 PHY053 w4 v03 post-hoc collapse diagnostic"
+
+
+def posthoc_collapse_diagnostic(prod: dict) -> dict:
+    """NACHTRAEGLICHE, NICHT ENTSCHEIDENDE Diagnostik (nach Sicht der
+    Adjudikation geschrieben): warum der Primaer-Collapse quotierbar ist
+    oder nicht. Benutzt nur PHY050-Funktionen mit den vorregistrierten
+    Gittern; aendert kein Label und keine Schwelle."""
+    agg = _p50.product_to_aggregate(prod)
+    if agg is None:
+        return {"post_hoc": True, "decisive": False, "agg_valid": False}
+    fit = _p50.fit_collapse(agg)
+    # exakt das Gitter von PHY050.fit_collapse (ungerundet; gerundet wird
+    # nur fuer die Anzeige - sonst weicht das Profil ab)
+    t0_grid = [float(x) for x in __import__("numpy").arange(
+        _p50.FSS_T0_BOUNDS[0], _p50.FSS_T0_BOUNDS[1] + 1e-12, 0.001)]
+    c_grid = __import__("numpy").geomspace(*_p50.FSS_C_BOUNDS, 80)
+    profile = []
+    for t0 in t0_grid:
+        best, best_c = math.inf, None
+        for c in c_grid:
+            got = _p50.collapse_score(agg, float(t0), float(c))
+            if got is not None and got["score"] < best:
+                best, best_c = float(got["score"]), float(c)
+        profile.append({"T0": t0, "min_score": best, "c_at_min": best_c})
+    profile_display = [dict(p, T0=round(p["T0"], 4)) for p in profile]
+    finite = [p for p in profile if math.isfinite(p["min_score"])]
+    qmin = min(p["min_score"] for p in finite) if finite else math.inf
+    accepted = [p["T0"] for p in finite
+                if p["min_score"] <= qmin + _p50.FSS_PROFILE_DELTA]
+    reasons = []
+    if fit is not None:
+        if not fit.identifiable:
+            reasons.append(f"profile width {fit.profile_width:.4f} > "
+                           f"{_p50.FSS_MAX_PROFILE_WIDTH}")
+        if fit.boundary_hit:
+            reasons.append("optimum on a T0 or c boundary")
+        if fit.score > _p50.FSS_MAX_SCORE:
+            reasons.append(f"score {fit.score:.3f} > {_p50.FSS_MAX_SCORE}")
+    return {
+        "post_hoc": True, "decisive": False,
+        "note": ("written after the preregistered adjudication; explains "
+                 "the INCONCLUSIVE label, does not change it; the location "
+                 "below is NOT a T_BKT estimate"),
+        "agg_valid": True,
+        "fit": None if fit is None else {
+            "tbkt_at_min": fit.tbkt, "c_at_min": fit.c, "score": fit.score,
+            "profile_width": fit.profile_width,
+            "identifiable": fit.identifiable,
+            "boundary_hit": fit.boundary_hit, "quotable": fit.quotable,
+            "n_comparisons": fit.n_comparisons},
+        "thresholds": {"max_profile_width": _p50.FSS_MAX_PROFILE_WIDTH,
+                       "profile_delta": _p50.FSS_PROFILE_DELTA,
+                       "max_score": _p50.FSS_MAX_SCORE,
+                       "t0_bounds": list(_p50.FSS_T0_BOUNDS),
+                       "c_bounds": list(_p50.FSS_C_BOUNDS),
+                       "t_window": list(_p50.FSS_T_WINDOW)},
+        "profile": profile_display,
+        "accepted_T0_range": ([round(min(accepted), 4), round(max(accepted), 4)]
+                              if accepted else None),
+        "accepted_T0_range_reaches_upper_search_bound": bool(
+            accepted and max(accepted) >= max(t0_grid) - 1e-9 - 0.001),
+        "non_quotable_reasons": reasons,
+    }
+
+
+def write_posthoc_text(diag: dict, path: Path) -> None:
+    f = diag["fit"] or {}
+    lines = ["PHY053 - NACHTRAEGLICHE Collapse-Diagnostik W4 v03 "
+             "(NICHT entscheidend)",
+             "Coworker Research / Coworkerz, 2026-11-21", "=" * 70,
+             diag["note"], "",
+             f"Collapse-Minimum: T0 = {f.get('tbkt_at_min'):.4f}, c = "
+             f"{f.get('c_at_min'):.3f}, Score {f.get('score'):.3f} "
+             f"(Grenze {diag['thresholds']['max_score']})",
+             f"Profil: akzeptiert (Q <= Q_min + "
+             f"{diag['thresholds']['profile_delta']}) T0 in "
+             f"{diag['accepted_T0_range']}, Breite "
+             f"{f.get('profile_width'):.4f} (Grenze "
+             f"{diag['thresholds']['max_profile_width']})",
+             f"Randtreffer: {f.get('boundary_hit')}; quotierbar: "
+             f"{f.get('quotable')}",
+             f"Gruende: {diag['non_quotable_reasons']}", "",
+             "  T0      min Q    c"]
+    for p in diag["profile"]:
+        q = p["min_score"]
+        lines.append(f"  {p['T0']:.3f}  "
+                     f"{'inf' if q is None or not math.isfinite(q) else format(q, '.3f')}"
+                     f"  {'-' if p['c_at_min'] is None else format(p['c_at_min'], '.3f')}")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def write_text_report(rep: dict, path: Path) -> None:
     a = rep["assessment"]
 
@@ -216,7 +308,19 @@ def _main(argv=None) -> int:
     p = sub.add_parser("produce", help="Freigabe pruefen, dann PHY049")
     p.add_argument("--resume", action="store_true")
     sub.add_parser("adjudicate", help="PHY050 auf das Produkt anwenden")
+    sub.add_parser("posthoc", help="nachtraegliche Collapse-Diagnostik")
     ns = ap.parse_args(argv)
+    if ns.cmd == "posthoc":
+        prod = json.loads(PRODUCT_PATH.read_text(encoding="utf-8"))
+        diag = _clean(posthoc_collapse_diagnostic(prod))
+        diag["product_sha256"] = _sha256(PRODUCT_PATH)
+        res = _ROOT / "results"
+        (res / f"{POSTHOC_STEM}.json").write_text(
+            json.dumps(diag, indent=1, allow_nan=False) + "\n",
+            encoding="utf-8")
+        write_posthoc_text(diag, res / f"{POSTHOC_STEM}.txt")
+        print(f"PHY053 post hoc: {diag['non_quotable_reasons']}")
+        return 0
     if ns.cmd == "release":
         rel = release_decision(load_pilot_report(), _p49.preflight())
         print(json.dumps(_clean(rel), indent=1))

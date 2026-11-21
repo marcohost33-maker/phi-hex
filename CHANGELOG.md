@@ -3,6 +3,50 @@
 Alle nennenswerten Aenderungen an Konventionen, Engine und Mess-Stand.
 Format lose an Keep-a-Changelog angelehnt.
 
+## [2026-11-21] W4 v03 gemessen: INCONCLUSIVE (NR-PHY049-01)
+
+Erste PHY049-Produktion, exakt nach W4 v03/v03a, freigegeben durch PHY053
+(PHY052-Pilot PASS + PHY049-Preflight), Kopf `1c2b873`. Produkt:
+`results/260927 PHY049 honeycomb correlation-ratio production.json`
+(1740/1740 Zeilen, COMPLETE, Wall 12446 s = 3.46 h << 24 h;
+linux x86_64, py3.13.18, numpy 2.5.5, numba 0.68.1, Backend numba; BLAS 1 Thread; 4 Prozesse). Adjudikation nur durch
+`PHY050.assess_production` (Runner PHY053):
+`results/261121 PHY053 w4 v03 production adjudication report.{json,txt}`.
+
+### Ergebnis (vorregistriert)
+- **G0 Input: PASS**, G4 synthetische Recovery: PASS.
+- **Primaer-Collapse nicht quotierbar** -> G5/G6 nicht auswertbar ->
+  **INCONCLUSIVE**. Kein T_BKT, keine Diskriminierung zwischen H_A
+  (W4-v02-Lage) und H_B (Literatur-Lage).
+- **NR-PHY049-01 (Negativ-Resultat):** mit L <= 192 und 12 Seeds legt der
+  normierungsfreie Correlation-Ratio-Collapse T_BKT nicht innerhalb der
+  vorregistrierten Profilbreite 0.012 fest.
+
+### Nachtraegliche Diagnostik (NICHT entscheidend)
+`results/261121 PHY053 w4 v03 post-hoc collapse diagnostic.{json,txt}`,
+nach Sicht der Adjudikation geschrieben, erklaert das Label, aendert es nicht:
+- einziger Grund: Profilbreite 0.015 > 0.012. Score (0.66 <= 2.5) und
+  Rand-Kriterium waeren erfuellt.
+- akzeptierter T0-Bereich [0.566, 0.581] reicht an die obere Suchgrenze
+  0.582 (v03a, vor Daten fixiert) -> die wahre Breite ist eher groesser.
+- Lage des Minimums 0.5753 (c = 1.20) - ausdruecklich KEIN T_BKT-Schaetzer.
+- Kontext: persistenter 2-sigma-Splay der R_L-Kurven je L-Paar bei
+  T = 0.5900..0.6000; unterhalb ~0.57 liegen die Kurven innerhalb
+  ~1e-3 aufeinander.
+
+### Konsequenz
+O1 bzw. die Spannung PHY046 (0.5649) gegen die Literatur-Lage bleibt
+offen. Die Schwelle wird NICHT nachtraeglich gelockert. Ein naechster
+Versuch braucht eine neue Vorregistrierung mit vorab gerechneter Power
+(groessere L und/oder mehr Seeds, Suchbereich mit Rand oberhalb 0.582).
+
+### Added
+- `src/261121 PHY053 ...`: `posthoc_collapse_diagnostic` + CLI `posthoc`
+  (gleiche Gitter wie PHY050, als post hoc / nicht entscheidend markiert).
+- Tests: Bindung des Adjudikations-Reports an die Produkt-Bytes (SHA-256)
+  und an den Pilot-Report; Label konsistent mit den Gates; Post-hoc-Report
+  markiert und konsistent mit dem Fit.
+
 ## [2026-11-21] PHY052 Mixing-Pilot: MIXING_PILOT_PASS; PHY053 Runner
 
 Pilot exakt nach der Vorregistrierung aus `a79c981` gerechnet (Linux,
