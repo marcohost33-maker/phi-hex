@@ -24,7 +24,8 @@ import os
 
 # ERZWUNGEN (Codex #75 P1, AGENTS.md): ein vom Runner geerbtes
 # OPENBLAS_NUM_THREADS=8 haette `setdefault` ueberlebt. Wirkt nur, wenn numpy
-# noch nicht geladen ist (CLI-Lauf, Pool-Worker).
+# noch nicht geladen ist (CLI-Lauf). Fork-Worker erben den Prozess-
+# zustand des Elternprozesses (Pin und BLAS-Pool inklusive).
 for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
     os.environ[_v] = "1"
 
@@ -120,7 +121,10 @@ def produce(ladder=W4V2_LADDER, t_grid=W4V2_T_GRID, n_seeds=W4V2_N_SEEDS,
     Abschnitt 5; Codex #75 P2): das Wall-Budget wird ZWISCHEN den Bloecken
     geprueft; ist es ueberschritten, werden die restlichen L NICHT gerechnet
     und als `unmeasured_L` ausgewiesen (NaN-Daten). Es wird nicht umgeplant.
-    Der erste Block laeuft immer. Jeder Job ist per (L, T, Seed) deterministisch,
+    Der erste Block laeuft immer. Ein Block, der vor Ablauf des Budgets
+    beginnt, laeuft zu Ende, auch wenn er es ueberschreitet; die Leiter
+    gilt dann als vollstaendig (Spec v02: "werden die fehlenden L als nicht
+    gemessen berichtet" - es fehlt keines). Jeder Job ist per (L, T, Seed) deterministisch,
     die Blockung aendert also keine Zahl. `_clock` nur fuer Tests."""
     if not (isinstance(wall_budget_h, (int, float))
             and not isinstance(wall_budget_h, bool)
@@ -264,7 +268,7 @@ def estimate(curves: dict, curves_se: dict, t_grid, ladder,
         keep = [i for i, a in enumerate(Ls) if a != reg[0][0]]
         v2 = (fit_hks([Ls[i] for i in keep], [Ts[i] for i in keep],
                       None if sig is None else [sig[i] for i in keep])
-              if len(Ls) >= 4 else None)
+              if len(keep) >= 3 else None)
         v3 = pc.get(reg[-1])
     else:
         v2 = v3 = None

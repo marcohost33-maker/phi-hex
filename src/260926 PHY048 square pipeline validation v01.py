@@ -18,7 +18,8 @@ import os
 
 # ERZWUNGEN (Codex #75 P1, AGENTS.md): ein vom Runner geerbtes
 # OPENBLAS_NUM_THREADS=8 haette `setdefault` ueberlebt. Wirkt nur, wenn numpy
-# noch nicht geladen ist (CLI-Lauf, Pool-Worker).
+# noch nicht geladen ist (CLI-Lauf). Fork-Worker erben den Prozess-
+# zustand des Elternprozesses (Pin und BLAS-Pool inklusive).
 for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
     os.environ[_v] = "1"
 

@@ -96,26 +96,70 @@ def test_no_src_module_pins_blas_threads_with_setdefault():
     assert offenders == []
 
 
-@pytest.mark.parametrize("fname", [F44, F45, F46, F48])
-def test_inherited_multithread_env_is_overridden_in_a_fresh_process(fname):
-    """Verhalten statt Quelltext: ein Runner exportiert 8 Threads; nach dem
-    Laden des Moduls in einem frischen Interpreter steht der Pin auf 1, und
-    numpy war beim Setzen noch nicht importiert."""
-    code = (
-        "import importlib.util, json, os, sys\n"
-        "assert 'numpy' not in sys.modules\n"
-        f"spec = importlib.util.spec_from_file_location('m', {str(SRC / fname)!r})\n"
-        "mod = importlib.util.module_from_spec(spec)\n"
-        "sys.modules['m'] = mod\n"
-        "spec.loader.exec_module(mod)\n"
-        f"print(json.dumps({{v: os.environ.get(v) for v in {THREAD_VARS!r}}}))\n"
-    )
+_PIN_PROBE = r"""
+import importlib.abc, importlib.util, json, os, sys
+assert "numpy" not in sys.modules
+SEEN = {}
+
+
+class Probe(importlib.abc.MetaPathFinder):
+    # merkt sich die Thread-Variablen im Moment des ERSTEN numpy-Imports -
+    # nur dann wirkt der Pin auf OpenBLAS
+    def find_spec(self, name, path=None, target=None):
+        if name == "numpy" and not SEEN:
+            SEEN.update({v: os.environ.get(v) for v in VARS})
+        return None
+
+
+VARS = __VARS__
+sys.meta_path.insert(0, Probe())
+spec = importlib.util.spec_from_file_location("m", __PATH__)
+mod = importlib.util.module_from_spec(spec)
+sys.modules["m"] = mod
+spec.loader.exec_module(mod)
+print("PIN " + json.dumps(SEEN))
+"""
+
+
+def _probe(path) -> str:
+    return (_PIN_PROBE.replace("__VARS__", repr(THREAD_VARS))
+            .replace("__PATH__", repr(str(path))))
+
+
+def _env_at_first_numpy_import(fname: str) -> dict:
+    code = _probe(SRC / fname)
     env = dict(os.environ, **{v: "8" for v in THREAD_VARS})
     out = subprocess.run([sys.executable, "-c", code], env=env, cwd=ROOT,
                          capture_output=True, text=True, timeout=600)
     assert out.returncode == 0, out.stderr[-2000:]
-    assert json.loads(out.stdout.strip().splitlines()[-1]) == {
-        v: "1" for v in THREAD_VARS}
+    line = [ln for ln in out.stdout.splitlines() if ln.startswith("PIN ")]
+    assert len(line) == 1, out.stdout[-1500:]
+    return json.loads(line[0][4:])
+
+
+@pytest.mark.parametrize("fname", [F44, F45, F46, F48, F49, F51])
+def test_pin_is_in_force_when_numpy_is_first_imported(fname):
+    """Verhalten statt Quelltext: der Runner exportiert 8 Threads; im Moment
+    des ersten numpy-Imports (nur dann liest OpenBLAS die Variable) steht
+    der Pin bereits auf 1. Die fruehere Fassung pruefte den Endzustand und
+    war fuer PHY046/PHY048 wirkungslos, weil PHY045 den Pin NACH deren
+    numpy-Import nachtraeglich setzt (Review 2026-11-21)."""
+    assert _env_at_first_numpy_import(fname) == {v: "1" for v in THREAD_VARS}
+
+
+def test_pin_probe_detects_a_late_pin(tmp_path):
+    """Positivkontrolle der Sonde: ein Modul, das numpy VOR dem Pin
+    importiert, liefert "8"."""
+    bad = tmp_path / "late_pin.py"
+    bad.write_text("import os\nimport numpy\nfor _v in %r:\n"
+                   "    os.environ[_v] = '1'\n" % (THREAD_VARS,),
+                   encoding="utf-8")
+    code = _probe(bad)
+    env = dict(os.environ, **{v: "8" for v in THREAD_VARS})
+    out = subprocess.run([sys.executable, "-c", code], env=env, cwd=ROOT,
+                         capture_output=True, text=True, timeout=600)
+    line = [ln for ln in out.stdout.splitlines() if ln.startswith("PIN ")]
+    assert json.loads(line[0][4:]) == {v: "8" for v in THREAD_VARS}
 
 
 # ============================================================================
@@ -363,6 +407,21 @@ def test_v2_drops_only_the_smallest_registered_pair(monkeypatch):
     assert out5["v2_hks_drop_smallest"] != out5["primary_hks"]
 
 
+def test_v2_exists_when_three_pairs_remain_after_dropping_the_smallest(
+        monkeypatch):
+    """Neue Bedeutung, neuer Waechter (Review 2026-11-21): kreuzt (32,64)
+    nicht und bleiben genau drei Paare, ist v2 der Fit ueber diese drei
+    (vorher None wegen `len(Ls) >= 4`)."""
+    pc = dict(zip(_PAIRS, [None, 0.5655, 0.5657, 0.5649, None]))
+    out = _estimate_with(monkeypatch, pc)
+    assert out["v2_hks_drop_smallest"] == phy046.fit_hks(
+        [48, 64, 96], [0.5655, 0.5657, 0.5649])
+    assert out["v2_hks_drop_smallest"] is not None
+    pc2 = dict(zip(_PAIRS, [0.5660, 0.5655, None, None, 0.5663]))
+    out2 = _estimate_with(monkeypatch, pc2)         # nach Drop nur zwei
+    assert out2["v2_hks_drop_smallest"] is None
+
+
 def test_missing_largest_pair_is_not_counted_in_sigma_fss(monkeypatch):
     """Auf Analyse-Ebene: Variante v3 ist None und fehlt in der Spannweite."""
     prod = _synthetic_prod(phy046.W4V2_LADDER)
@@ -429,6 +488,22 @@ def test_within_budget_every_size_is_measured_and_numbers_are_unchanged(
             for s in range(2):
                 assert prod["ups_area"][str(L)][k][s] == _fake_job(
                     (L, k, 0.0, s, 0, 0))["ups_area"]
+
+
+def test_block_started_inside_the_budget_finishes_and_counts(monkeypatch):
+    """S0-Semantik (Spec v02 Abschnitt 5): geprueft wird ZWISCHEN Bloecken.
+    Ein Block, der bei 0.5 h < 1 h Budget beginnt und bei 1.5 h endet,
+    zaehlt; erst der naechste startet nicht mehr."""
+    ticks = iter([0.0, 0.5, 1.5, 1.5, 1.5])        # Stunden
+
+    def clock():
+        return 3600.0 * next(ticks)
+    monkeypatch.setattr(phy046, "_job", _fake_job)
+    prod = phy046.produce(ladder=(4, 8, 16), t_grid=(0.55,), n_seeds=2,
+                          max_workers=1, wall_budget_h=1.0, _clock=clock)
+    assert prod["unmeasured_L"] == [4]               # 16 (Start 0), 8 (0.5 h)
+    assert np.all(np.isfinite(prod["ups_area"]["8"]))
+    assert prod["wall_s"] > 3600.0                   # Budget ueberschritten
 
 
 def test_zero_budget_still_measures_the_first_block(monkeypatch):
@@ -652,6 +727,7 @@ def test_job_pool_requests_fork_explicitly_where_it_exists(recorder,
                                                            monkeypatch):
     """Nicht den Standard-Kontext erben: der ist seit 3.14 forkserver."""
     import multiprocessing
+    monkeypatch.setattr(phy045.sys, "platform", "linux")
     monkeypatch.setattr(multiprocessing, "get_all_start_methods",
                         lambda: ["forkserver", "fork", "spawn"])
     sentinel = object()
@@ -660,6 +736,36 @@ def test_job_pool_requests_fork_explicitly_where_it_exists(recorder,
     assert isinstance(phy045.job_pool(_a_job, 3), _Recorder)
     assert recorder.calls == [{"max_workers": 3,
                                "mp_context": ("fork", sentinel)}]
+
+
+def test_job_pool_never_forks_on_macos(recorder, monkeypatch):
+    """macOS bietet fork an, ist aber nicht fork-sicher (Accelerate-BLAS):
+    dort Standard-Kontext nur fuer Skript-Jobs, sonst sequenziell."""
+    import multiprocessing
+    monkeypatch.setattr(phy045.sys, "platform", "darwin")
+    monkeypatch.setattr(multiprocessing, "get_all_start_methods",
+                        lambda: ["spawn", "fork", "forkserver"])
+    assert phy045.job_pool(_a_job, 4) is None
+    assert recorder.calls == []
+
+    def main_job(x):
+        return x
+    main_job.__module__ = "__main__"
+    phy045.job_pool(main_job, 4)
+    assert recorder.calls == [{"max_workers": 4}]       # kein mp_context
+
+
+def test_phy044_pool_never_forks_on_macos(monkeypatch):
+    import multiprocessing
+    p44 = conftest._load("phy044_wl_calibration", F44)
+    monkeypatch.setattr(p44.sys, "platform", "darwin")
+    monkeypatch.setattr(multiprocessing, "get_all_start_methods",
+                        lambda: ["spawn", "fork"])
+    monkeypatch.setattr(p44, "ProcessPoolExecutor",
+                        lambda **kw: pytest.fail(f"Pool trotz macOS: {kw}"))
+    monkeypatch.setattr(p44, "_job", lambda j: j)
+    assert p44._run_jobs([("x", 4, 0), ("x", 8, 1)], 2) == [("x", 8, 1),
+                                                           ("x", 4, 0)]
 
 
 def test_job_pool_without_fork_depends_on_where_the_job_lives(
@@ -705,6 +811,10 @@ if __name__ == "__main__":
     p44 = conftest._load("phy044_wl_calibration",
                          "260926 PHY044 honeycomb wl calibration v01.py")
     out = {"default_start_method": multiprocessing.get_start_method()}
+    pool = p45.job_pool(p46._job, 2)
+    out["pool_used"] = pool is not None
+    if pool is not None:
+        pool.shutdown()
 
     kw = dict(ladder=(4, 8), t_grid=(0.55, 0.60), n_seeds=2, n_therm=3,
               n_meas=6)
@@ -741,6 +851,8 @@ if __name__ == "__main__":
 """
 
 
+@pytest.mark.skipif(not sys.platform.startswith("linux"),
+                    reason="paralleler Pfad fuer Bibliotheksaufrufe nur Linux")
 def test_parallel_production_is_bit_equal_to_sequential_under_forkserver(
         tmp_path):
     """Ende-zu-Ende in einem frischen Interpreter mit forkserver als
@@ -754,7 +866,8 @@ def test_parallel_production_is_bit_equal_to_sequential_under_forkserver(
     line = [ln for ln in out.stdout.splitlines() if ln.startswith("RESULT ")]
     assert len(line) == 1, out.stdout[-2000:]
     assert json.loads(line[0][7:]) == {
-        "default_start_method": "forkserver", "phy046": True,
+        "default_start_method": "forkserver", "pool_used": True,
+        "phy046": True,
         "phy046_finite": True, "phy048": True, "phy045_part_b": True,
         "phy049": True, "phy044_wl": True}
 

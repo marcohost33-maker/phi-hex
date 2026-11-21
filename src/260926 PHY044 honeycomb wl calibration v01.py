@@ -65,7 +65,8 @@ import os
 # geerbtes OPENBLAS_NUM_THREADS=8 haette `setdefault` ueberlebt und sowohl
 # die K1-Wall-Zeiten als auch (ab L=64) die Aggregate veraendert. Der Pin
 # wird im Report protokolliert (`blas_threads_env`). Wirkt nur, wenn numpy
-# noch nicht geladen ist (CLI-Lauf, Pool-Worker).
+# noch nicht geladen ist (CLI-Lauf). Fork-Worker erben den Prozess-
+# zustand des Elternprozesses (Pin und BLAS-Pool inklusive).
 for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
     os.environ[_v] = "1"
 
@@ -513,14 +514,16 @@ def _curve_dict(c: dict) -> dict:
 def _run_jobs(jobs: list, max_workers: int) -> list:
     jobs = sorted(jobs, key=lambda j: (-j[1], j[2]))   # grosse L zuerst
     # Pool-Kontext wie PHY045.job_pool (dieses Modul importiert PHY045
-    # nicht): fork, wo es ihn gibt - seit Python 3.14 ist forkserver der
+    # nicht): fork nur unter Linux (macOS: nicht fork-sicher, Accelerate-
+    # BLAS) - seit Python 3.14 ist forkserver der
     # POSIX-Standard, und dessen Kinder koennen ein per Kunstnamen geladenes
     # Modul nicht importieren (BrokenProcessPool). Ohne fork: Standard-
     # Kontext nur als gestartetes Skript, sonst sequenziell. Die Jobs sind
     # per Seed deterministisch; das Prozessmodell aendert keine Zahl.
     if max_workers <= 1:
         return [_job(j) for j in jobs]
-    if "fork" in multiprocessing.get_all_start_methods():
+    if (sys.platform.startswith("linux")
+            and "fork" in multiprocessing.get_all_start_methods()):
         ex = ProcessPoolExecutor(
             max_workers=max_workers,
             mp_context=multiprocessing.get_context("fork"))

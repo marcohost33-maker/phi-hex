@@ -41,7 +41,8 @@ import os
 
 # ERZWUNGEN (Codex #75 P1, AGENTS.md): ein vom Runner geerbtes
 # OPENBLAS_NUM_THREADS=8 haette `setdefault` ueberlebt. Wirkt nur, wenn numpy
-# noch nicht geladen ist (CLI-Lauf, Pool-Worker).
+# noch nicht geladen ist (CLI-Lauf). Fork-Worker erben den Prozess-
+# zustand des Elternprozesses (Pin und BLAS-Pool inklusive).
 for _v in ("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"):
     os.environ[_v] = "1"
 
@@ -78,6 +79,12 @@ def _load(name: str, filename: str):
     return mod
 
 
+def _fork_is_safe() -> bool:
+    """fork nur unter Linux (siehe job_pool)."""
+    return (sys.platform.startswith("linux")
+            and "fork" in multiprocessing.get_all_start_methods())
+
+
 def job_pool(fn, max_workers: int):
     """Prozess-Pool fuer `fn`, oder None (= sequenziell rechnen).
 
@@ -87,14 +94,19 @@ def job_pool(fn, max_workers: int):
     wenn `fn` im gestarteten Skript (`__main__`) liegt. Seit Python 3.14 ist
     forkserver der POSIX-Standard: ohne expliziten Kontext brach der Pool
     dann mit BrokenProcessPool ab (gemessen 2026-11-21, py3.14.6).
-    Reihenfolge: (1) fork, wo es ihn gibt (das Kind erbt die geladenen
-    Module); (2) sonst der Standard-Kontext, wenn `fn` in `__main__` liegt
-    (CLI-Lauf unter Windows/macOS); (3) sonst sequenziell. Jeder Job ist per
-    Seed deterministisch, das Prozessmodell aendert also keine Zahl - nur
-    die Wall-Zeit."""
+    Reihenfolge: (1) fork, aber NUR unter Linux (das Kind erbt die
+    geladenen Module); macOS bietet fork zwar an, aber es ist dort nicht
+    fork-sicher (Accelerate-BLAS der numpy-Wheels, System-Frameworks) und
+    deshalb seit Python 3.8 nicht mehr Standard; (2) sonst der Standard-
+    Kontext, wenn `fn` in `__main__` liegt (CLI-Lauf unter Windows/macOS);
+    (3) sonst sequenziell. Jeder Job ist per Seed deterministisch, das
+    Prozessmodell aendert also keine Zahl - nur die Wall-Zeit.
+    Fork-Kinder erben Prozesszustand des Elternprozesses: den BLAS-Pin und
+    einen dort bereits gecachten VAL-BIT-Entscheid (gleicher JIT-Code, also
+    korrekt; geprueft wird dann einmal im Elternprozess, nicht je Worker)."""
     if max_workers <= 1:
         return None
-    if "fork" in multiprocessing.get_all_start_methods():
+    if _fork_is_safe():
         return ProcessPoolExecutor(
             max_workers=max_workers,
             mp_context=multiprocessing.get_context("fork"))
@@ -395,7 +407,7 @@ if HAVE_NUMBA:
 VAL_BIT_CASES = (("honeycomb", 6, 0.57), ("triangular", 5, 1.40))
 VAL_BIT_SWEEPS = (2, 4)            # (n_therm, n_meas)
 VAL_BIT_SEED = 45_999_001
-_VAL_BIT_OK: bool | None = None    # je Interpreter (also je Pool-Worker)
+_VAL_BIT_OK: bool | None = None    # je Interpreter (fork-Kinder erben ihn)
 
 
 def _kernel_args(lat: Lat) -> tuple:
@@ -444,8 +456,10 @@ def production_backend_name() -> str:
 def production_run_backend():
     """Der EINE Zugang zum Mess-Kernel fuer Produktion (PHY045 Teil B/C,
     PHY046, PHY048, PHY051). Numba wird nur nach bestandenem VAL-BIT
-    herausgegeben; das Ergebnis ist je Interpreter gecacht, jeder Pool-
-    Worker prueft also seine eigene Laufzeit vor seinem ersten Job. Faellt
+    herausgegeben; das Ergebnis ist je Interpreter gecacht. Ein spawn-/
+    forkserver-Worker prueft seine eigene Laufzeit vor seinem ersten Job;
+    ein fork-Worker erbt den Cache des Elternprozesses (gleicher Code und
+    dieselbe Laufzeit, daher gueltig). Faellt
     VAL-BIT, wird NICHT still auf Python umgeschaltet (das wuerde zwei
     Backends in einer Kampagne mischen), sondern abgebrochen."""
     global _VAL_BIT_OK

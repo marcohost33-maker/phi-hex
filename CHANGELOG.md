@@ -97,6 +97,36 @@ gefunden; alle drei sind gemessen, behoben und mit Regression belegt.
   Modul-Import noch nicht geladen ist (CLI, Pool-Worker) - der Wolff-Kernel
   selbst ruft kein BLAS, betroffen sind Aggregate ab L=64 im WL-Pfad.
 
+### Unabhaengige Review (dritte Runde, gleicher Tag)
+Ein frischer Review-Agent ohne Kenntnis der eigenen Schlussfolgerungen hat
+`1e21714..f30dc29` geprueft: kein Fehler, der eine committete Zahl aendert
+oder ein Gate umgeht; die PHY051-Reports regenerieren bytegleich (vom Test
+bisher nicht abgedeckt, hier von Hand gefahren). Vier Punkte, alle behoben:
+- **Wirkungsloser Test:** der Frischprozess-Test zum BLAS-Pin pruefte den
+  Endzustand. Fuer PHY046/PHY048 war er nicht diskriminierend, weil PHY045
+  den Pin NACH deren numpy-Import nachtraeglich setzt (ein zurueckgedrehtes
+  `setdefault` blieb gruen; nur der AST-Test fing es). Neu: eine Import-
+  Sonde misst die Variablen im Moment des ersten numpy-Imports - nur dann
+  liest OpenBLAS sie -, fuer alle sechs Numba-Module, mit Positivkontrolle.
+- **fork auf macOS:** `job_pool` (und PHY044 `_run_jobs`) haetten auf macOS
+  fork gewaehlt, das dort angeboten, aber nicht fork-sicher ist
+  (Accelerate-BLAS der numpy-Wheels). fork jetzt nur unter Linux. Die
+  Aussagen "jeder Pool-Worker prueft seine Laufzeit" bzw. "Pin wirkt im
+  Pool-Worker" waren fuer fork falsch (Kinder erben Pin und VAL-BIT-Cache
+  des Elternprozesses - gleicher Code, also korrekt, aber einmal geprueft);
+  Docstrings und Kommentare korrigiert.
+- **S0-Grenzfall dokumentiert und getestet:** ein Block, der innerhalb des
+  Budgets beginnt, laeuft zu Ende und zaehlt, auch wenn er es
+  ueberschreitet (Spec v02: nur "fehlende L" werden als nicht gemessen
+  berichtet). PHY049 prueft mit `>=` und kann - anders als PHY046/051 - auch
+  den ersten Block auslassen; das ist dort vorregistriert (v03a Abschnitt
+  9) und bleibt.
+- **v2-Waechter:** `len(Ls) >= 4` passte nicht mehr zur Bindung an das
+  registrierte kleinste Paar; jetzt `len(keep) >= 3` (genug Punkte fuer den
+  3-Parameter-Fit nach dem Weglassen). Kein Effekt auf committete Zahlen.
+- Der Forkserver-Ende-zu-Ende-Test belegt jetzt, dass wirklich ein Pool lief
+  (vorher waere er auf einer Plattform ohne fork leer durchgelaufen).
+
 ### Belege
 - Die committeten Reports PHY046 und PHY048 regenerieren weiterhin
   unveraendert (Vollvergleich im Test).
